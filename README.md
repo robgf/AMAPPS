@@ -4,9 +4,11 @@ This repository contains the scripts to QA/QC the USFWS AMAPPS aerial data and p
 Read Me for AMAPPS data management
 ========================================================
 Written by: Kaycee Coleman   
-Creadted: Nov. 2015   
-*All documentation is housed in M:/seabird_database folder and for now all working code is in the SeaDuck/NewCodeFromJeff_20150720 folder*  
-*This repository and QA/QC scripts are a work in progress, not a finished product*
+Creadted: Nov. 2015     
+
+All documentation is housed in M:/seabird_database folder and for now all working code is in the SeaDuck/NewCodeFromJeff_20150720 folder. This repository and QA/QC scripts are a work in progress, not a finished product  
+
+*The majority of this README was written off of the old scripts and needs to be altered for the new scripts*
 
 1) Understanding the data
 --------------------------------------------------------
