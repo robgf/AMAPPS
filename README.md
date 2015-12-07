@@ -77,6 +77,7 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
 - NWASC_codes.xlsx (list of all of the species codes used)
 - Creating yearlab\_ObsFilesFix.R: The *AMAPPS\_yearlab\_AOUErrors.xlsx* and *AMAPPS\_yearlab\_ObsFileErrors.xlsx* generated in the *DataProcessing -> Surveys -> AMAPPS -> AMAPPS\_yearlab* folder will help inform you of which errors to fix in the yearlab\_ObsFilesFix.R script. These are often typos. You may need to listen to the corresponding WAV file to find out what the observer was trying to enter. Common errors should be included in the yearlab\_ObsFilesFix.R script prior if you need to look them up for reference (e\.g\. changing TOWER to code TOWR).  Also if there are corrections in the pilot/observer notes these corrections should be included in the yearlab\_ObsFilesFix.R script.  
 - GISeditObsTrack_template (ArcGIS ArcMap Document)
+- atlanticCoastline_buffer_halfNM (shapefile)
 
 
 4) Entering the data in the Access "Atlantic_Coast_Surveys" database 
