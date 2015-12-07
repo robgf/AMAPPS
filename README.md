@@ -1,7 +1,7 @@
 # AMAPPS
 
 [id]: http://www.nefsc.noaa.gov/psb/AMAPPS/  
-This repository contains the scripts to QA/QC the USFWS Atlantic Marine Assessment Program for Protected Species ([AMAPPS][id]) aerial data and prepare it for import into the USFWS AMAPPS access database and the USFWS maintained Northwest Atlantic Seabird Catalog (NWASC) 
+This repository contains the scripts to QA/QC the USFWS Atlantic Marine Assessment Program for Protected Species ([AMAPPS][id]) aerial data and prepare it for import into the USFWS AMAPPS access database and the USFWS maintained Northwest Atlantic Seabird Catalog (NWASC). 
 
 Read Me for AMAPPS data management
 ========================================================
@@ -10,8 +10,9 @@ Creadted: Nov. 2015
 
 For USFWS MB personel, all documentation is housed in M:/seabird_database folder and for now all working code is in the SeaDuck/NewCodeFromJeff_20150720 folder. This repository and QA/QC scripts are a work in progress, not a finished product  
 
-1) Understanding the data
+1) <span style="color:blue">Understanding the data </span>
 --------------------------------------------------------
+[id2]: https://my.usgs.gov/confluence/display/mbmdl/Data+lifecycle+development+for+Migratory+Bird+surveys+Home  
 **For USFWS MB personel, in seabird_database/documentation Read:**
 - SeabirdSurvey_SOP.doc
 - seabirds key tables structure Aug2013
@@ -21,7 +22,6 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
 - Seabird Database Quality Checking and Editing_Jan26 2012.doc
 - Data Proofing.doc
 - Editing\_Database\_File_Registry.doc
-[id2]: https://my.usgs.gov/confluence/display/mbmdl/Data+lifecycle+development+for+Migratory+Bird+surveys+Home
 - In addition it might help to look at the Data lifecycle development for Migratory Birds surveys [website][id2]. You will need premission to log onto this site. 
 
 
@@ -30,13 +30,13 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
 - Zipkin, Elise F., Leirness, Jeffery B., Kinlan, Brian P., O'Connell, Allan F., and Emily D. Silverman. 2012. Fitting statistical distributions to sea duck count data: implications for survey design and abundance estimation
 
 
-2) Where to obtain survey data for processing
+2) <span style="color:blue">Where to obtain survey data for processing </span>
 --------------------------------------------------------
 [id3]: https://connect.doi.gov/fws/Portal/acjv/seabird/SitePages/Home.aspx
 - AMAPPS data can be found on the SharePoint [site][id3]. You will need premission to log onto this site. 
 
 
-3) Quality Control / Data Processing in R and GIS
+3) <span style="color:blue">Quality Control / Data Processing in R and GIS </span>
 --------------------------------------------------------
 Process:  
 - This section describes how to QA/QC the data using R, ArcMap, and Python within ArcMap. You will run "part1", check the shapefiles in ArcMap, save those files, then run "part2" of the scripts. 
@@ -78,7 +78,7 @@ Files Needed:
 - Creating yearlab\_ObsFilesFix.R: The *AMAPPS\_yearlab\_AOUErrors.xlsx* and *AMAPPS\_yearlab\_ObsFileErrors.xlsx* generated in the *DataProcessing -> Surveys -> AMAPPS -> AMAPPS\_yearlab* folder will help inform you of which errors to fix in the yearlab\_ObsFilesFix.R script. These are often typos. You may need to listen to the corresponding WAV file to find out what the observer was trying to enter. Common errors should be included in the yearlab\_ObsFilesFix.R script prior if you need to look them up for reference (e\.g\. changing TOWER to code TOWR).  Also if there are corrections in the pilot/observer notes these corrections should be included in the yearlab\_ObsFilesFix.R script.  
 
 
-4) Entering the data in the Access "Atlantic_Coast_Surveys" database
+4) <span style="color:blue">Entering the data in the Access "Atlantic_Coast_Surveys" database </span>
 --------------------------------------------------------
 Process:  
 - The "Atlantic_Coast_Surveys" database houses all of the AMAPPS data but excludes nonbirds. Nonbird and offline data are saved seperately.
@@ -97,7 +97,7 @@ Scripts needed:
     - UpdateGeoDatabase.py
 
     
-5) Reformating and entering the data for the NWASC Database
+5) <span style="color:blue">Reformating and entering the data for the NWASC Database </span>
 --------------------------------------------------------
 Process:  
 - All offline, bird, and nonbird data are entered into the NWASC. Segmentation of the data for NOAA also happens at this stage, once it is in the NWASC.
@@ -105,7 +105,7 @@ Process:
 Scripts needed:  
 
 
-6) Archiving the data
+6) <span style="color:blue">Archiving the data </span>
 --------------------------------------------------------
 Process:  
 [id4]: http://www.nodc.noaa.gov/cgi-bin/OAS/prd/accession/0115356
