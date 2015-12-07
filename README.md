@@ -122,11 +122,11 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
 [id7]:http://www.nodc.noaa.gov/archive/arc0070/0115356/1.1/data/0-data/seabird_data_structure_NODC_30Dec2013.csv
 [id8]:http://www.nodc.noaa.gov/archive/arc0070/0115356/1.1/data/0-data/Atlantic%20Offshore%20Seabird%20Dataset%20Catalog_NODC%20Metadata_FGDC.xml
 
-a) All data-object-tables from the database need to be extracted and combined in one flat 'csv' file, [see old][id6]
-b) Prepare a file with column descriptions, [see old][id7]
-c) Prepare a FGDC record metadata file, [see old][id8]
-d) Report needs to be in 'pdf' format.
-
+a) All data-object-tables from the database need to be extracted and combined in one flat 'csv' file, [see old][id6]  
+b) Prepare a file with column descriptions, [see old][id7]  
+c) Prepare a FGDC record metadata file, [see old][id8]  
+d) Report needs to be in 'pdf' format.  
+  
 The data should be submitted using the submission [website][id5]. 
 
 
