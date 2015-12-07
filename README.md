@@ -38,10 +38,10 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
 
 3) Quality Control / Data Processing in R and GIS 
 --------------------------------------------------------
-Process:  
+**Process:**  
 - This section describes how to QA/QC the data using R, ArcMap, and Python within ArcMap. You will run "part1", check the shapefiles in ArcMap, save those files, then run "part2" of the scripts. 
 
-Scripts needed:  
+**Scripts needed:**  
 - run_processSurveyData_part1.R (loads packages and functions, this is the file you should alter)
     - processSurveyData_part1.R (function used by run_processSurveyData_part1.R, do not change this)
     - RProfile.R loads neccessary librarys and runs the following functions: 
@@ -71,7 +71,7 @@ Scripts needed:
 - processSurveyData_part2.R
  
 
-Files Needed:  
+**Files Needed:**  
 - AMAPPS observation files (downloaded from SharePoint)
 - AMAPPS transect files (downloaded from SharePoint)
 - NWASC_codes.xlsx (list of all of the species codes used)
@@ -81,10 +81,10 @@ Files Needed:
 
 4) Entering the data in the Access "Atlantic_Coast_Surveys" database 
 --------------------------------------------------------
-Process:  
+**Process:**  
 - The "Atlantic_Coast_Surveys" database houses all of the AMAPPS data but excludes nonbirds. Nonbird and offline data are saved seperately.
 
-Scripts needed:  
+**Scripts needed:**  
 - Add2Database.R
 - Add2Database2.R
 - ArcGISCalc4Database.R (these are in Jeff's "old" folder so might reconsider this process)
@@ -98,17 +98,18 @@ Scripts needed:
     - UpdateGeoDatabase.py
 
     
-5) Reformating and entering the data for the NWASC Database 
+5) Reformating and entering the data in the NWASC Database 
 --------------------------------------------------------
-Process:  
+**Process:**  
 - All offline, bird, and nonbird data are entered into the NWASC. Segmentation of the data for NOAA also happens at this stage, once it is in the NWASC.
 
-Scripts needed:  
-
+**Scripts needed:**  
+- R script
+- SQL script
 
 6) Archiving the data 
 --------------------------------------------------------
-Process:  
+**Process:**  
 [id4]: http://www.nodc.noaa.gov/cgi-bin/OAS/prd/accession/0115356
 - Once the data has been entered into the NWASC database, the data are sent to the NOAA National Oceanographic Data Center (NODC) to be archived. A past submission can be seen [here][id4] (accessions_id: 0115356). Datasets that are already in the NODC can be found in the DataSets\_in_\NODC.xlsx file.
 
