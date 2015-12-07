@@ -1,7 +1,7 @@
 # AMAPPS
 
 [id]: http://www.nefsc.noaa.gov/psb/AMAPPS/  
-This repository contains the scripts to QA/QC the USFWS Atlantic Marine Assessment Program for Protected Species ([AMAPPS][id]) aerial data and prepare it for import into the USFWS AMAPPS access database and the USFWS maintained Northwest Atlantic Seabird Catalog (NWASC) database   
+This repository contains the scripts to QA/QC the USFWS Atlantic Marine Assessment Program for Protected Species ([AMAPPS][id]) aerial data and prepare it for import into the USFWS AMAPPS access database and the USFWS maintained Northwest Atlantic Seabird Catalog (NWASC) 
 
 Read Me for AMAPPS data management
 ========================================================
@@ -107,10 +107,11 @@ Scripts needed:
 
 6) Archiving the data
 --------------------------------------------------------
-*Sending the data to NOAA, National Oceanographic Data Center (NODC)*
+Process:  
 [id4]: http://www.nodc.noaa.gov/cgi-bin/OAS/prd/accession/0115356
-Once the data has been entered into the NWASC database, the data is also stored with the NODC on their [website][id4]   
-- Datasets that are already in the NODC can be found on the DataSets\_in_\NODC.xlsx file 
-- accessions_id: 0115356
+- Once the data has been entered into the NWASC database, the data are sent to the NOAA National Oceanographic Data Center (NODC) to be archived. A past submission can be seen [here][id4] (accessions_id: 0115356). Datasets that are already in the NODC can be found in the DataSets\_in_\NODC.xlsx file.
+
+[id5]: https://www.nodc.noaa.gov/s2n/
+The data should be submitted using the submission [website][id5]. 
 
 
