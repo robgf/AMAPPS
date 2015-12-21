@@ -18,7 +18,7 @@ setwd(dir)
 dbpath <- gsub("Jeff_Working_Folder", "DataBase", dir)
 dir.in <- paste(gsub("Jeff_Working_Folder", "SurveyData/", dir), surveyFolder, yearLabel, sep = "") 
 dir.out <- paste(dir,"DataProcessing/Surveys/", surveyFolder, yearLabel, sep = "") 
-speciesPath = paste(dir,"DataProcessing/",sep="")
+speciesPath <- paste(dir,"DataProcessing/",sep="")
 
 # SOURCE R FUNCTIONS
 source(file.path(dir, "_Rfunctions/sourceDir.R"))
