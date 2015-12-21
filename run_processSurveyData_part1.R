@@ -13,12 +13,12 @@ surveyFolder = "AMAPPS/"
 yearLabel = "AMAPPS_2013_09"
 
 # SET INPUT/OUTPUT DIRECTORY PATHS
-dir <- "//IFW9MBMSVR010/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/"
+dir <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/"
 setwd(dir)
 dbpath <- gsub("Jeff_Working_Folder", "DataBase", dir)
-dir.in <- paste("//IFW9MBMSVR010/SeaDuck/NewCodeFromJeff_20150720/SurveyData/", surveyFolder, yearLabel, sep = "") 
-dir.out <- paste("//IFW9MBMSVR010/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/DataProcessing/Surveys/", surveyFolder, yearLabel, sep = "") 
-speciesPath = "//IFW9MBMSVR010/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/DataProcessing/"
+dir.in <- paste(gsub("Jeff_Working_Folder", "SurveyData/", dir), surveyFolder, yearLabel, sep = "") 
+dir.out <- paste(dir,"DataProcessing/Surveys/", surveyFolder, yearLabel, sep = "") 
+speciesPath = paste(dir,"DataProcessing/",sep="")
 
 # SOURCE R FUNCTIONS
 source(file.path(dir, "_Rfunctions/sourceDir.R"))
