@@ -86,6 +86,7 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
 
 **Manual editing in GIS:**  
 - This happens after processSurvey_part1 and before processSurvey_part2   
+
 a) open the shapefiles created in part1    
   b) visually inspect each crew/day shapefile (check the points flagged that are on land, track points that aren't on a transect, points were the pilots are not flying a straight line where they could be looping back around, etc.)    
   
