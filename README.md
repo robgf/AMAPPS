@@ -108,17 +108,17 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
 - The "Atlantic_Coast_Surveys" database houses all of the AMAPPS data but excludes nonbirds (except for boats). Nonbird and offline data are saved seperately or in the Misc_observations table of the "Atlantic_Coast_Surveys" database. The database includes tables for  "Crew_Information", "Observations", "Survey_Information", "Tracks", and "Transect_Information". 
 
 **Scripts needed:**  
-- Add2Database.R
-        - CalcDistFlown.py (calculates distance flown by the pilots on each transect)
-        - CalcObsCovariates.py (if you need bathymetry, shelf slope etc.)
-        - UpdateGeoDatabase.py 
-- Add2Database2.R
-        - formats the data to go into each table and adds the data to the access "Atlantic_Coast_Surveys" database  
-- ArcGISCalc4Database.R (these are in Jeff's "old" folder so might reconsider this process)
-        - TrackFileSort.R
-        - TrackFileSEGCNTChange.R
-        - CreateID4DistFlownCalc.R
-        - AvgCondition.R
+- Add2Database.R  
+        - CalcDistFlown.py (calculates distance flown by the pilots on each transect)  
+        - CalcObsCovariates.py (if you need bathymetry, shelf slope etc.)  
+        - UpdateGeoDatabase.py   
+- Add2Database2.R  
+        - formats the data to go into each table and adds the data to the access "Atlantic_Coast_Surveys" database    
+- ArcGISCalc4Database.R (these are in Jeff's "old" folder so might reconsider this process)  
+        - TrackFileSort.R  
+        - TrackFileSEGCNTChange.R  
+        - CreateID4DistFlownCalc.R  
+        - AvgCondition.R  
     
 
 5) Reformating and entering the data in the NWASC Database 
