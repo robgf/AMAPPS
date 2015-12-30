@@ -112,8 +112,7 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
         - CalcDistFlown.py (calculates distance flown by the pilots on each transect)  
         - CalcObsCovariates.py (if you need bathymetry, shelf slope etc.)  
         - UpdateGeoDatabase.py   
-- Add2Database2.R  
-        - formats the data to go into each table and adds the data to the access "Atlantic_Coast_Surveys" database    
+- Add2Database2.R (formats the data to go into each table and adds the data to the access "Atlantic_Coast_Surveys" database)     
 - ArcGISCalc4Database.R (these are in Jeff's "old" folder so might reconsider this process)  
         - TrackFileSort.R  
         - TrackFileSEGCNTChange.R  
