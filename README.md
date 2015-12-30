@@ -87,16 +87,14 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
 **Manual editing in GIS:**  
   - This happens after processSurvey_part1 and before processSurvey_part2   
 
-  a) open the shapefiles created in part1    
-  b) visually inspect each crew/day shapefile (check the points flagged that are on land, track points that aren't on a transect, points were the pilots are not flying a straight line where they could be looping back around, etc.)    
-  
+>  a) open the shapefiles created in part1    
+>  b) visually inspect each crew/day shapefile (check the points flagged that are on land, track points that aren't on a transect, points were the pilots are not flying a straight line where they could be looping back around, etc.) 
 >       Color & numeric codes:    
 >       - green:  
 >       - red:  
 >       - yellow:  
 >       - purple:  
 >       - grey: normal points    
-
   c) delete points you find unfit, they will be saved in a csv format in part2. These points should be track file points NOT observation points. You can tell this by checking the information when you click on that point. If you find an issue with an observation point be certain that it is an error before deleting it.   
   d) save each crew/day shapefile in an edited_shapefiles folder  
 
