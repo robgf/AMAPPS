@@ -74,28 +74,28 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
 - AMAPPS observation files (downloaded from SharePoint)
 - AMAPPS transect files (downloaded from SharePoint)
 - NWASC_codes.xlsx (list of all of the species codes used, path defined as dbpath in the process scripts)
-- ObsFilesFix\_yearlabel.R 
+- ObsFilesFix\_yearlabel.R   
         - Creating yearlab\_ObsFilesFix.R: You will add to this script as you run through the error checks and find new errors. The *AMAPPS\_yearlab\_AOUErrors.xlsx* and *AMAPPS\_yearlab\_ObsFileErrors.xlsx* generated in the *DataProcessing -> Surveys -> AMAPPS -> AMAPPS\_yearlab* folder will help inform you of which errors to fix in the yearlab\_ObsFilesFix.R script. These are often typos. You may need to listen to the corresponding WAV file (on the SharePoint site) to find out what the observer was trying to enter. Common errors should be included in the yearlab\_ObsFilesFix.R script prior if you need to look them up for reference (e\.g\. changing TOWER to code TOWR).  Also if there are corrections in the pilot/observer notes these corrections should be included in the yearlab\_ObsFilesFix.R script.  
-- GISeditObsTrack_template (ArcGIS ArcMap Document)
+- GISeditObsTrack_template (ArcGIS ArcMap Document)  
         - used to create shapefiles for each crew/day
-- atlanticCoastline_buffer_halfNM (shapefile)
+- atlanticCoastline_buffer_halfNM (shapefile)  
         - used to check if points are on land
-- all_atlantic_flylines_wNE_extended (shapefile) 
+- all_atlantic_flylines_wNE_extended (shapefile)   
         - used to check if transects are labeled incorrectly or if points are too far off a transect
 
 
-**Manual editing in GIS**
-- this happens after processSurvey_part1 and before processSurvey_part2
-        a) open the shapefiles created in part1
-        b) visually inspect each crew/day shapefile for (check the points flagged that are on land, track points that aren't on a transect, points were the pilots are not flying a straight line where they could be looping back around, etc.)
-            Color & numeric codes:
-            - green:
-            - red:
-            - yellow:
-            - purple:
-            - grey: normal points
-        c) delete points you find unfit, they will be saved in an csv in part2. These points should be track file points NOT observation points. You can tell this by checking the information when you click on that point. If you find an issue with an observation point be certain that it is an error before deleting it. 
-        d) save each crew/day shapefile in an edited_shapefiles folder
+**Manual editing in GIS:**
+- this happens after processSurvey_part1 and before processSurvey_part2  
+        a) open the shapefiles created in part1  
+        b) visually inspect each crew/day shapefile for (check the points flagged that are on land, track points that aren't on a transect, points were the pilots are not flying a straight line where they could be looping back around, etc.)  
+            Color & numeric codes:  
+            - green:  
+            - red:  
+            - yellow:  
+            - purple:  
+            - grey: normal points  
+        c) delete points you find unfit, they will be saved in an csv in part2. These points should be track file points NOT observation points. You can tell this by checking the information when you click on that point. If you find an issue with an observation point be certain that it is an error before deleting it.   
+        d) save each crew/day shapefile in an edited_shapefiles folder  
 
 
 
