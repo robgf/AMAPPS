@@ -11,27 +11,35 @@
 
 
 # since most likely you are running part 2 at a later date than part 1
-# install packages
+# INSTALL PACKAGES
 require(rgdal) # read shapefiles
 require(parallel) # used to make a cluster
 require(RODBC) #for NWASC codes
 
-# Set dir
+# SET DIR
 dir <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/"
 setwd(dir)
 surveyFolder = "AMAPPS/"
 dbpath <- gsub("Jeff_Working_Folder", "DataBase", dir)
-source(file.path(paste(dir,"DataProcessing/Code",sep=""),"yearLabelPrompt.R"))
-source(file.path(paste(dir,"DataProcessing/Code",sep=""),"surveyPrompt.R"))
-source(file.path(paste(dir,"DataProcessing/Code",sep=""),"surveyNumberPrompt.R"))
+
+## CHANGE THESE ##
+yearLabel = "AMAPPS_2013_09"
+survey = "2013 Fall AMAPPS"
+surveyNbr = 13
+# Eventually I would like there to be prompts or something so that the user knows there's something to change
+# but the prompts won't run if you run the whole code together, only line my line...
+#source(file.path(paste(dir,"DataProcessing/Code",sep=""),"yearLabelPrompt.R"))
+#source(file.path(paste(dir,"DataProcessing/Code",sep=""),"surveyPrompt.R"))
+#source(file.path(paste(dir,"DataProcessing/Code",sep=""),"surveyNumberPrompt.R"))
 dir.out <- paste("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/DataProcessing/Surveys/", surveyFolder, yearLabel, sep = "") 
+speciesPath <- paste(dir,"DataProcessing/",sep="")
        
 # Link R functions
 source(file.path(dir, "_Rfunctions/sourceDir.R"))
 sourceDir(file.path(dir, "_Rfunctions"))
        
 # Shapefile prompt to make sure shapefiles were edited before running this script
-source(file.path(paste(dir,"DataProcessing/Code",sep=""),"shapefilePrompt.R"))
+#source(file.path(paste(dir,"DataProcessing/Code",sep=""),"shapefilePrompt.R"))
        
 # Upload obstack 
 load(paste(dir.out,"obstrackWorkspace.Rdata",sep="/")) # use obstrack_part1.csv if workspace corrupt
