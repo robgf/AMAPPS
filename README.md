@@ -23,10 +23,14 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
 - Editing\_Database\_File_Registry.doc
 - In addition it might help to look at the Data lifecycle development for Migratory Birds surveys [website][id2]. You will need premission to log onto this site. 
 
+[id9]: https://www.researchgate.net/publication/281667883_Statistical_guidelines_for_assessing_marine_avian_hotspots_and_coldspots_A_case_study_on_wind_energy_development_in_the_US_Atlantic_Ocean
+[id10]: https://www.researchgate.net/publication/259163159_Fitting_statistical_distributions_to_sea_duck_count_data_Implications_for_survey_design_and_abundance_estimation
 
 **References:**    
 - O'Connell, A., Gardner, B., Gilbert, A., and Laurent, K. 2009. Compendium of Avian Occurrence Information for the Continental Shelf Waters along the Atlantic Coast of the United States. Final Report to USFWS. USGS, Patuxent Wildlife Research Center.
-- Zipkin, Elise F., Leirness, Jeffery B., Kinlan, Brian P., O'Connell, Allan F., and Emily D. Silverman. 2012. Fitting statistical distributions to sea duck count data: implications for survey design and abundance estimation
+- Zipkin, Elise F., Leirness, Jeffery B., Kinlan, Brian P., O'Connell, Allan F., and Emily D. Silverman. 2014. [Fitting statistical distributions to sea duck count data: Implications for survey design and abundance estimation][id10]. STATISTICAL METHODOLOGY 17:67–81.  DOI: 10.1016/j.stamet.2012.10.002
+- Zipkin, Elise F., Kinlan, Brian P., Sussman, Allison, Rypkema, Diana, Wimer, Mark, and Allan F. O'Connell. 2015. [Statistical guidelines for assessing marine avian hotspots and coldspots: A case study on wind energy development in the U.S. Atlantic Ocean][id9]. BIOLOGICAL CONSERVATION 191:216-223. DOI: 10.1016/j.biocon.2015.06.035 
+
 
 
 2) Where to obtain survey data for processing 
