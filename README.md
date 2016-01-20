@@ -112,13 +112,13 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
         - Click on the suspicious point  
         - Hit delete  
 
-  d) save each crew/day shapefile in an edited_shapefiles folder  
-- Save each edited layer as a shapefile
-        - Right click on layer
-        - Click on data
-        - Click on export data 
-        - Click on the folder icon and 
-        - Switch 'save type as' to shapefile
+d) save each crew/day shapefile in an edited_shapefiles folder  
+- Save each edited layer as a shapefile  
+        - Right click on layer  
+        - Click on data  
+        - Click on export data   
+        - Click on the folder icon and  
+        - Switch 'save type as' to shapefile  
 
 
 4) Entering the data in the Access "Atlantic_Coast_Surveys" database 
