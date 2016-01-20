@@ -104,13 +104,13 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
 >    1,1,0 = green = start or end point and distance error  
 >    1,0,1 = purple = distance and bearing error   
 
-  c) delete points you find unfit, they will be saved in a csv format in part2. These points should be track file points NOT observation points. You can tell this by checking the information when you click on that point. If you find an issue with an observation point be certain that it is an error before deleting it.   
- - Manually delete suspicious points
-        - First use the information tool to check if it is an observation or a waypoint. If it is an observation it is most likely a true data point.  The land maps in ArcMap may not be accurate. 
-        - As a rule of thumb, if there are less than 6 points crossing an Island most likely you can leave these. You are trying to target larger areas across land. The island topography could be off. 
-        - Use the editor tool
-        - Click on the suspicious point
-        - Hit delete
+  c) delete points you find unfit, they will be saved in a csv format in part2. These points should be track file points NOT observation points. You can tell this by checking the information when you click on that point. If you find an issue with an observation point be certain that it is an error before deleting it.    
+ - Manually delete suspicious points  
+        - First use the information tool to check if it is an observation or a waypoint. If it is an observation it is most likely a true data point.  The land maps in ArcMap may not be accurate.  
+        - As a rule of thumb, if there are less than 6 points crossing an Island most likely you can leave these. You are trying to target larger areas across land. The island topography could be off.  
+        - Use the editor tool  
+        - Click on the suspicious point  
+        - Hit delete  
 
   d) save each crew/day shapefile in an edited_shapefiles folder  
 - Save each edited layer as a shapefile
