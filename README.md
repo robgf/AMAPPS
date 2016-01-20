@@ -93,12 +93,16 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
   a) open the shapefiles created in part1    
   b) visually inspect each crew/day shapefile (check the points flagged that are on land, track points that aren't on a transect, points were the pilots are not flying a straight line where they could be looping back around, etc.)  
 
->       Color & numeric codes:    
->       - green:  
->       - red:  
->       - yellow:  
->       - purple:  
->       - grey: normal points    
+ 
+>   Flag color coding:
+>    0,0,0 = grey = no error
+>    0,0,1 = purple = bearing error
+>    0,1,0 = yellow = distance error
+>    1,0,0 = red = start or end point
+>    0,1,1 = green = start or end point and bearing error
+>    1,1,1 = green = start or end point, bearing, and distance
+>    1,1,0 = green = start or end point and distance error
+>    1,0,1 = purple = distance and bearing error 
 
   c) delete points you find unfit, they will be saved in a csv format in part2. These points should be track file points NOT observation points. You can tell this by checking the information when you click on that point. If you find an issue with an observation point be certain that it is an error before deleting it.   
   d) save each crew/day shapefile in an edited_shapefiles folder  
