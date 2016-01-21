@@ -1,9 +1,14 @@
 # ------------------------------------------------------------------------- #
-# Add2Database2.R
+# add2ACSdatabase.R
+# formally Add2Database2.R
 # Date Created: 2013-07-24
 # Author: JBL
+# edited Jan. 2016 by Kaycee Coleman
 #
 # Description: 
+# This script adds the AMAPPS observations, tracks, etc. to the 
+# Atlantic Coast Surveys accesss database and adds obs.misc 
+# (e.g. marine mammals) to Atlantic_Coast_Surveys_MiscObservations.csv
 # ------------------------------------------------------------------------- #
 
 
@@ -95,19 +100,6 @@ odbcCloseAll()
 # ------------------------------------------------------------------------- #
 
 
-# ADD MISCELLANEOUS OBSERVATIONS TO Atlantic_Coast_Surveys_MiscObservations.csv DATA FILE
-# ------------------------------------------------------------------------- #
-obs.misc = read.csv(file.path(dbpath, "Atlantic_Coast_Surveys_MiscObservations.csv"), 
-                    stringsAsFactors = FALSE)
-obs.misc.add = read.csv(file.path(dir, "DataProcessing/temp_MiscObservations.csv"), 
-                        stringsAsFactors = FALSE)
-obs.misc = rbind(obs.misc, obs.misc.add)
-obs.misc = obs.misc[order(obs.misc$SurveyNbr, obs.misc$Crew, obs.misc$Seat, obs.misc$Obs, 
-                          obs.misc$Year, obs.misc$Month, obs.misc$Day, obs.misc$Sec), ]
-write.csv(obs.misc, file.path(dbpath, "Atlantic_Coast_Surveys_MiscObservations.csv"), 
-          row.names = FALSE, na = "")
-# ------------------------------------------------------------------------- #
-
 
 # ADD DISTANCE FLOWN BY OBSERVATION CONDITION TO Atlantic_Coast_Surveys_DistanceFlownByCondition.csv DATA FILE
 # ------------------------------------------------------------------------- #
@@ -175,5 +167,3 @@ RunArcGISpy(file.path(dir, "DataProcessing/UpdateGeoDatabase.py"))
 file.del = list.files(file.path(dir, "DataProcessing/temp"))
 file.del = file.del[c(grep("temp_", file.del), grep("Database_", file.del))]
 unlink(file.path(dir, "DataProcessing/temp", file.del))
-
-
