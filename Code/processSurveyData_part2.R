@@ -231,9 +231,13 @@ write.csv(forNOAA, file =paste(dir.out,"/forNOAA_", yearLabel, ".csv", sep=""), 
 # include all birds & boats but not marine life
 # if catagory 'species_type-cd' 2, 3, or 4 in NWASC_codes list exclude from AMAPPS access database
 
-# NON-SURVEY SPECIES (all marine mammals, reptiles, and fish) 
-tmp = !(track.final$type %in% c(as.character(spplist[sppcode=="1" | sppcode=="5"]), "", 
-                                "BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH"))
+# NON-SURVEY SPECIES (all marine mammals, reptiles, and fish) CHANGE KEEP TO 0
+# out of species code 5 only boats and balloons go into ACS database
+tmp = !(track.final$type %in% c(as.character(spplist[sppcode=="1", "", 
+                                "BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH", "BALN",
+                                "BOTD","BOAC","BOAT","BOBA","BOCA","BOCF","BOCG","BOCR",
+                                "BOCS","BOFE","BOFI","BOLO","BOME","BONA","BOPL","BOPS",
+                                "BORF","BORV","BOSA","BOSU","BOTA","BOTU","BOWW","BOYA")                    ))
 sort(unique(track.final$type[tmp]))
 track.final$keep[tmp] = 0
   
@@ -286,24 +290,27 @@ temp_Transect_Information.csv
 ### STEP 24: ADD BOATS, BALLOONS, AND MISC. OBS TO EXCEL FILES
 # ------------------------------------------------------------------------- #
 
+track.final$SurveyNbr = surveyNbr
+
+# these are calculated using Jeff's old "add2database" script which at the moment I am not running... 
+track.final$Dist2Coast_m = ""  
+track.final$Dist2Coast_nm = ""   
+track.final$Depth = ""           
+track.final$Slope = ""   
+
+# RENAME TO MATCH HEADERS IN DOCUMENTS
+track.final = rename(track.final, c("transect"= "Transect", "replicate" = "Replicate", "crew" = "Crew", 
+                                      "seat" = "Seat", "obs" = "Obs", "year" = "Year", "month" = "Month", 
+                                      "day" = "Day", "sec" = "Sec", "lat"="Lat", "long"="Long", "GPSerror"="GpsError", 
+                                      "type"="Species", "count"="FlockSize", "condition" = "Condition", "band" = "Band"))
+
 
 # ADD BOAT OBSERVATIONS TO Atlantic_Coast_Surveys_BoatObservations.csv DATA FILE
 boats = read.csv(file.path(dbpath, "Atlantic_Coast_Surveys_BoatObservations.csv"), stringsAsFactors = FALSE)
 boats_to_add = track.final[track.final$type %in% c("BOTD","BOAC","BOAT","BOBA","BOCA","BOCF","BOCG","BOCR",
                                                "BOCS","BOFE","BOFI","BOLO","BOME","BONA","BOPL","BOPS",
                                                "BORF","BORV","BOSA","BOSU","BOTA","BOTU","BOWW","BOYA"),]
-
-boats_to_add = rename(boats_to_add, c("transect"= "Transect", "replicate" = "Replicate", "crew" = "Crew", 
-                                            "seat" = "Seat", "obs" = "Obs", "year" = "Year", "month" = "Month", 
-                                            "day" = "Day", "sec" = "Sec", "lat"="Lat", "long"="Long", "GPSerror"="GpsError", 
-                                            "type"="Species", "count"="FlockSize", "condition" = "Condition", "band" = "Band"))
-
 boats_to_add$FlockSize[boats_to_add$FlockSize == 0] = 1 # CHANGE FLOCK SIZE FOR BOATS WHERE FLOCK SIZE == 0 TO 1
-boats_to_add$SurveyNbr = surveyNbr
-boats_to_add$Dist2Coast_m = ""  
-boats_to_add$Dist2Coast_nm = ""   
-boats_to_add$Depth = ""           
-boats_to_add$Slope = ""   
 if(any(boats$Species=="TRAW")) {boats$Species[boats$Species=="TRAW"]="BOTD"} # one time thing since Jeff used TRAW but NWASC code for trawler is BOTD
 boats = rbind(boats, subset(boats_to_add, select=colnames(boats)))
 if(any(duplicated(boats))) {boats = boats[!duplicated(boats, MARGIN = 1),]} # make sure there are not duplicates in case this is run more than once
@@ -313,18 +320,10 @@ write.csv(boats, file.path(dbpath, "Atlantic_Coast_Surveys_BoatObservations.csv"
 # ADD BALLOON OBSERVATIONS TO Atlantic_Coast_Surveys_BalloonObservations.csv DATA FILE
 balloons = read.csv(file.path(dbpath, "Atlantic_Coast_Surveys_BalloonObservations.csv"), stringsAsFactors = FALSE)
 balloons_to_add = track.final[track.final$type=="BALN",]
-balloons_to_add = rename(balloons_to_add, c("transect"= "Transect", "replicate" = "Replicate", "crew" = "Crew", 
-                          "seat" = "Seat", "obs" = "Obs", "year" = "Year", "month" = "Month", 
-                          "day" = "Day", "sec" = "Sec", "lat"="Lat", "long"="Long", "GPSerror"="GpsError", 
-                          "type"="Species", "count"="FlockSize", "condition" = "Condition", "band" = "Band"))
-balloons_to_add$SurveyNbr = surveyNbr
-balloons_to_add$Dist2Coast_m = ""  
-balloons_to_add$Dist2Coast_nm = ""   
-balloons_to_add$Depth = ""           
-balloons_to_add$Slope = ""   
 balloons = rbind(balloons, subset(balloons_to_add, select=colnames(balloons)))
 if(any(duplicated(balloons))) {balloons = balloons[!duplicated(balloons),]} # make sure there are not duplicates in case this is run more than once
 write.csv(balloons, file.path(dbpath, "Atlantic_Coast_Surveys_BalloonsObservations.csv"), row.names = FALSE, na = "")
+
 
 # ADD MISCELLANEOUS OBSERVATIONS TO Atlantic_Coast_Surveys_MiscObservations.csv DATA FILE
 obs.misc = read.csv(file.path(dbpath, "Atlantic_Coast_Surveys_MiscObservations.csv"), stringsAsFactors = FALSE)
