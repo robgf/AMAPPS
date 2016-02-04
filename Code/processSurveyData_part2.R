@@ -7,7 +7,6 @@
 ##
 ## This script was based off Jeff Lierness' ObsTrackEdit script
 # ------------------------------------------------------------------------- #
-#Define the function
 
 
 # since most likely you are running part 2 at a later date than part 1
@@ -15,7 +14,10 @@
 require(rgdal) # read shapefiles
 require(parallel) # used to make a cluster
 require(RODBC) #for NWASC codes
-library(plyr) #used to rename columns
+#library(plyr) #used to rename columns
+library(dplyr)
+library(gmt) #geodist
+require(geosphere)
 
 # Set dir
 dir <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/"
@@ -40,6 +42,8 @@ sourceDir(file.path(dir, "_Rfunctions"))
 # Upload obstack 
 #obstrack = read.csv(paste(dir.out, "obstrack_part1.csv",sep="/"))
 load(paste(dir.out,"obstrackWorkspace.Rdata",sep="/")) # use obstrack_part1.csv if workspace corrupt
+# ------------------------------------------------------------------------- #
+
 
 # ------------------------------------------------------------------------- #
 ### STEP 14: IMPORT EDITED SHAPEFILES
@@ -97,6 +101,7 @@ ifelse(any(deletedPoints$type != "WAYPNT" &
              deletedPoints$offline == 0),
        stop("You deleted an online observation point, please investigate this before continuing"),
        "No online observations were deleted in your edits")
+# ------------------------------------------------------------------------- #
 
 
 # ------------------------------------------------------------------------- #
@@ -147,6 +152,7 @@ shapefileDataframe$dataChange[shapefileDataframe$flag1==1] = paste(shapefileData
                                                                    sep="")
 shapefileDataframe$transect[shapefileDataframe$flag1==1] = as.character(trans$latidext[d[,5]])
 rm(trans, d)
+# ------------------------------------------------------------------------- #
 
 
 # ------------------------------------------------------------------------- #
@@ -171,11 +177,11 @@ summary(track.final)
 # ------------------------------------------------------------------------- #
 ### STEP 18: ADD REPLICATE COLUMN IF TRANSECT WAS FLOWN TWICE
 # ------------------------------------------------------------------------- #
-
 # Create replicate column for if a transect was flown more than once in a survey
 track.final$replicate = 1
 track.final$replicate[duplicated(substr(unique(paste(track.final$transect,track.final$day,sep="_")),1,6))] = 2
 # need to check that this works
+# ------------------------------------------------------------------------- #
 
 
 # ------------------------------------------------------------------------- #
@@ -197,10 +203,8 @@ track.final = rbind(track.final, deletedPoints[deletedPoints$offline==1,])
 # save deleted points as a .csv
 deletedPoints = deletedPoints[deletedPoints$offline == 0,]
 write.csv(deletedPoints, file =paste(dir.out,"/deletedShapefilePoints_", yearLabel, "_Final.csv", sep=""), row.names=FALSE)
-
-# save offline points as a .csv
-offlinePoints = track.final[track.final$offline == 1,]
-write.csv(offlinePoints, file =paste(dir.out,"/offlinePoints_", yearLabel, "_Final.csv", sep=""), row.names=FALSE)
+rm(deletedPoints)
+# ------------------------------------------------------------------------- #
 
 
 # ------------------------------------------------------------------------- #
@@ -223,6 +227,7 @@ forNOAA = forNOAA[,!names(forNOAA) %in% c("dataError","transLat", "transLong", "
                                           "flag3", "onLand", "begend", "replicate", "keep")]
 write.csv(forNOAA, file =paste(dir.out,"/forNOAA_", yearLabel, ".csv", sep=""), row.names=FALSE)
 rm(forNOAA)
+# ------------------------------------------------------------------------- #
 
 
 # ------------------------------------------------------------------------- #
@@ -238,10 +243,13 @@ track.final$Depth = ""
 track.final$Slope = ""   
 
 # RENAME TO MATCH HEADERS IN DOCUMENTS
+if (is.null(track.final$flightStatus)) track.final$flightStatus = NA
 track.final = rename(track.final, c("transect"= "Transect", "replicate" = "Replicate", "crew" = "Crew", 
                                     "seat" = "Seat", "obs" = "Obs", "year" = "Year", "month" = "Month", 
                                     "day" = "Day", "sec" = "Sec", "lat"="Lat", "long"="Long", "GPSerror"="GpsError", 
-                                    "type"="Species", "count"="FlockSize", "condition" = "Condition", "band" = "Band"))
+                                    "type"="Species", "count"="FlockSize", "condition" = "Condition", 
+                                    "band" = "Band", "comment" = "Comment", "flightStatus" = "FlightStatus"))
+
 
 # ADD BOAT OBSERVATIONS TO Atlantic_Coast_Surveys_BoatObservations.csv DATA FILE
 boats = read.csv(file.path(dbpath, "Atlantic_Coast_Surveys_BoatObservations.csv"), stringsAsFactors = FALSE)
@@ -254,6 +262,7 @@ boats = rbind(boats, subset(boats_to_add, select=colnames(boats)))
 boats = boats[complete.cases(boats[,10:12]),] # get rid of NA rows that might pop up
 if(any(duplicated(boats[,1:15]))) {boats = boats[!duplicated(boats[,1:15]),]} # make sure there are not duplicates in case this is run more than once
 write.csv(boats, file.path(dbpath, "Atlantic_Coast_Surveys_BoatObservations.csv"),  row.names = FALSE, na = "")
+rm(boats, boats_to_add)
 
 
 # ADD BALLOON OBSERVATIONS TO Atlantic_Coast_Surveys_BalloonObservations.csv DATA FILE
@@ -265,13 +274,24 @@ if(any(duplicated(balloons[,1:15]))) {balloons = balloons[!duplicated(balloons[,
 write.csv(balloons, file.path(dbpath, "Atlantic_Coast_Surveys_BalloonsObservations.csv"), row.names = FALSE, na = "")
 rm(balloons, balloons_to_add)
 
+
 # ADD MISCELLANEOUS OBSERVATIONS TO Atlantic_Coast_Surveys_MiscObservations.csv DATA FILE
+# SAVE EXTRANEOUS OBSERVATIONS TO FILE FOR NWASC DATABASE
+obs.misc_to_add = subset(track.final, keep == 0, select = c(SurveyNbr, Crew, Seat, Obs, Year, Month, Day, 
+                                                     Sec, Lat, Long, GpsError, Species, FlockSize, 
+                                                     Condition, Band, Comment, FlightStatus))
+# reorder and save both as offline (final) and misc (temp)
+obs.misc_to_add = obs.misc_to_add[order(obs.misc_to_add$SurveyNbr, obs.misc_to_add$Crew, obs.misc_to_add$Seat, 
+                                        obs.misc_to_add$Obs, obs.misc_to_add$Year, obs.misc_to_add$Month, 
+                                        obs.misc_to_add$Day, obs.misc_to_add$Sec), ]
+write.csv(obs.misc_to_add, file.path(dir.out, paste("OfflineObs", yearLabel, "_Final.csv", sep = "")), row.names = FALSE, na = "")
+
 obs.misc = read.csv(file.path(dbpath, "Atlantic_Coast_Surveys_MiscObservations.csv"), stringsAsFactors = FALSE)
-obs.misc.add = read.csv(file.path(dir, "DataProcessing/temp_MiscObservations.csv"), stringsAsFactors = FALSE)
-obs.misc = rbind(obs.misc, obs.misc.add)
-obs.misc = obs.misc[order(obs.misc$SurveyNbr, obs.misc$Crew, obs.misc$Seat, obs.misc$Obs, 
-                          obs.misc$Year, obs.misc$Month, obs.misc$Day, obs.misc$Sec), ]
+obs.misc = rbind(obs.misc, obs.misc_to_add)
+obs.misc = obs.misc[complete.cases(obs.misc[,12]),] # get rid of NA rows that might pop up
+if(any(duplicated(obs.misc[,1:13]))) {obs.misc = obs.misc[!duplicated(obs.misc[,1:13]),]} # make sure there are not duplicates in case this is run more than once
 write.csv(obs.misc, file.path(dbpath, "Atlantic_Coast_Surveys_MiscObservations.csv"),  row.names = FALSE, na = "")
+rm(obs.misc,obs.misc_to_add)
 # ------------------------------------------------------------------------- #
 
 
@@ -283,57 +303,65 @@ write.csv(obs.misc, file.path(dbpath, "Atlantic_Coast_Surveys_MiscObservations.c
 # if catagory 'species_type-cd' 2, 3, or 4 in NWASC_codes list exclude from AMAPPS access database
 
 # NON-SURVEY SPECIES (all marine mammals, reptiles, and fish) CHANGE KEEP TO 0
-# out of species code 5 only boats and balloons go into ACS database
-tmp = !(track.final$type %in% c(as.character(spplist[sppcode=="1", "", 
+# out of species code 5 only boats (listed) and balloons go into ACS database
+# species code 1 is all birds
+tmp = !(track.final$type %in% c(as.character(spplist[sppcode=="1"],  
                                                      "BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH", "BALN",
                                                      "BOTD","BOAC","BOAT","BOBA","BOCA","BOCF","BOCG","BOCR",
                                                      "BOCS","BOFE","BOFI","BOLO","BOME","BONA","BOPL","BOPS",
-                                                     "BORF","BORV","BOSA","BOSU","BOTA","BOTU","BOWW","BOYA")                    ))
-sort(unique(track.final$type[tmp]))
+                                                     "BORF","BORV","BOSA","BOSU","BOTA","BOTU","BOWW","BOYA")))
+sort(unique(track.final$Species[tmp]))
 track.final$keep[tmp] = 0
 
-# SAVE EXTRANEOUS OBSERVATIONS TO FILE FOR DATABASE
-track.final$survey = surveyNbr
-obs.misc = subset(track.final, keep == 0, select = c(survey, crew, seat, obs, year, month, day, 
-                                                     sec, lat, long, GPSerror, type, count, 
-                                                     condition, band, comment)) #flightStatus,
-names(obs.misc) = c("SurveyNbr", "Crew", "Seat", "Obs", "Year", "Month", "Day", "Sec", "Lat", "Long", 
-                    "GpsError", "Species", "FlockSize", "Condition", "Band", "Comment") #"FlightStatus", 
+# REMOVE OFFLINE OBSERVATIONS FROM track.final for Atlantic Coast Survey Access Database#
+track.final.ACS = subset(track.final, keep == 1)
+track.final.ACS$keep = NULL
+track.final.ACS$survey = NULL
+summary(track.final.ACS)
 
-# reorder and save both as offline (final) and misc (temp)
-obs.misc = obs.misc[order(obs.misc$SurveyNbr, obs.misc$Crew, obs.misc$Seat, obs.misc$Obs, 
-                          obs.misc$Year, obs.misc$Month, obs.misc$Day, obs.misc$Sec), ]
-write.csv(obs.misc, file.path(dir.out, paste("OfflineObs", yearLabel, "_Final.csv", sep = "")), 
-          row.names = FALSE, na = "")
-write.csv(obs.misc, file.path(dir, "DataProcessing/temp_MiscObservations.csv"), 
-          row.names = FALSE, na = "")
+# OBS TABLE
+!WAYPOINT
+write.csv(track.final.ACS, file = paste(dir.out,"/temp_Observations.csv", sep=""), row.names=FALSE)
 
-# REMOVE OFFLINE OBSERVATIONS FROM track.final #
-track.final = subset(track.final, keep == 1)
-track.final$keep = NULL
-track.final$survey = NULL
-summary(track.final)
+# TRACK TABLE
+final.ACS$Species %in% c("WAYPOINT","BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH")
+BEGTRAN
+ENDTRAN
+write.csv("temp_Tracks.csv", sep=""), row.names=FALSE)
+
+
+# TRANSECT INFORMATION TABLE
+ti = subset(track.final, select = c(SurveyNbr, Transect, Replicate, Crew,  Seat, Obs, Year, Month, Day))
+ti = ti[!duplicated(ti), ]
+
+# average condition is weighted by distance flown at each observation condition
+df = track.final %>% group_by(Transect,Obs) %>% arrange(Sec) %>% 
+  mutate(lon = lead(Long, default = last(Long), order_by = Sec),
+         lat = lead(Lat, default = last(Lat), order_by = Sec)) %>%
+  rowwise() %>% mutate(distance = distVincentySphere(c(Long, Lat), c(lon, lat))) %>%
+  select(-lon, -lat)
+
+
+                     FUN = weighted.mean, w = )
+write.csv(ti, file = paste(dir.out,"/temp_Transect_Information.csv", sep=""), row.names=FALSE)
+# ------------------------------------------------------------------------- #
 
 
 # ------------------------------------------------------------------------- #
 ### STEP 23: OUTPUT FINAL EDITED TRACK FILE 
 # ------------------------------------------------------------------------- #
-# check files, create csvs for Missing observation files, Crew Summary
-obsTrackFinalOutput(track.final, yearLabel, dir.in)
+# This includes all observations (even marine)
+obsTrackFinalOutput(track.final, yearLabel, dir.out)
 write.csv(track.final, file =paste(dir.out,"/obstrack_", yearLabel, "_Final.csv", sep=""), row.names=FALSE)
 # ------------------------------------------------------------------------- #
 
 
 # ------------------------------------------------------------------------- #
-### STEP 24: TEMP OBS AND TRACK FILES FOR ATLANTIC COAST SURVEYS DATABASE 
-#            (TEMP OBS.MISC ALREADY CREATED)
+# NEXT STEP...
+# TO IMPORT DATA INTO THE ACS DATABASE USE add2ACSDatabase.R
 # ------------------------------------------------------------------------- #
-# in DataProcessing folder, deleted after use
-temp_Observations.csv
-temp_Tracks.csv
-temp_Transect_Information.csv
-#temp_MiscObservations.csv (not going to make this, just going to put it in csv)
-# ------------------------------------------------------------------------- #
+
+
 
 
 
