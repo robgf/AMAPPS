@@ -14,7 +14,7 @@
 require(rgdal) # read shapefiles
 require(parallel) # used to make a cluster
 require(RODBC) #for NWASC codes
-#library(plyr) #used to rename columns
+library(plyr) #used to rename columns
 library(dplyr)
 library(gmt) #geodist
 require(geosphere)
@@ -229,18 +229,42 @@ write.csv(forNOAA, file =paste(dir.out,"/forNOAA_", yearLabel, ".csv", sep=""), 
 rm(forNOAA)
 # ------------------------------------------------------------------------- #
 
-
 # ------------------------------------------------------------------------- #
-### STEP 21: ADD BOATS, BALLOONS, AND MISC. OBS TO EXCEL FILES
+# ADD COVARIATES
 # ------------------------------------------------------------------------- #
 
-track.final$SurveyNbr = surveyNbr
+require(FNN)
+findClosestCoord <- function(inCoords, covariate, refCoords) {
+  colnames(inCoords) = c("lat","lon") # points we want to match to covariate coords 
+  colnames(refCoords) = c("lat", "lon") # points for the covariate that we want to find closest to our data 
+  nns <- get.knnx(refCoords, inCoords, k=1) 
+  matched <- covariate[nns$nn.index, c("lat", "lon")] 
+  return(matched)
+}
+
+# load shapefiles used for reference
+# coastline
+library(geosphere)
+coast <- readOGR(dsn = file.path(paste(dir, "DataProcessing/GIS/data", sep="")), layer = "NEUScoastline")
+Dist2Coast = track.final %>% dist2Line(as.numeric(c(Long,Lat)), coordinates(coast))
+
+# depth
+
+# slope
 
 # these are calculated using Jeff's old "add2database" script which at the moment I am not running... 
 track.final$Dist2Coast_m = ""  
 track.final$Dist2Coast_nm = ""   
 track.final$Depth = ""           
 track.final$Slope = ""   
+
+# ------------------------------------------------------------------------- #
+### STEP 21: ADD BOATS, BALLOONS, AND MISC. OBS TO EXCEL FILES
+# ------------------------------------------------------------------------- #
+
+track.final$SurveyNbr = surveyNbr
+if track.final$FlightStatus = "" 
+
 
 # RENAME TO MATCH HEADERS IN DOCUMENTS
 if (is.null(track.final$flightStatus)) track.final$flightStatus = NA
@@ -299,6 +323,52 @@ rm(obs.misc,obs.misc_to_add)
 ### STEP 22: AMAPPS database vs. NWASC database seperation
 # ------------------------------------------------------------------------- #
 
+# ------------------------------------------------------------------------- #
+# FOR ACS db
+# ------------------------------------------------------------------------- #
+
+  # ----------------------------------------------------------------------- #
+  # TRANSECT INFORMATION TABLE
+  # ----------------------------------------------------------------------- #
+
+# average condition is weighted by distance flown at each observation condition
+# distance flown per transect is in nautical miles, distance between points in meters 
+df = track.final %>% group_by(SurveyNbr,Transect,Replicate,Crew,Seat,Obs)  %>% 
+  mutate(lon = lead(Long, default = last(Long), order_by = index),
+         lat = lead(Lat, default = last(Lat), order_by = index)) %>%
+  rowwise() %>% mutate(distance = distVincentySphere(c(Long, Lat), c(lon, lat))) %>%
+  select(-lon, -lat) %>% group_by(SurveyNbr,Transect,Replicate,Crew,Seat,Obs) %>%  
+  summarise(AvgCondition = as.numeric(weighted.mean(Condition, distance)), 
+            DistFlown = sum(distance)*0.000539957,
+            minDay = min(Day), maxDay = max(Day),
+            minMonth = min(Month), maxMonth = max(Month),
+            minYear = min(Year), maxYear = max(Year))  %>%
+  ungroup()
+df$StartDt = paste(df$minMonth,"/", df$minDay, "/", df$minYear,sep="")
+df$EndDt = paste(df$maxMonth,"/", df$maxDay, "/", df$maxYear,sep="")
+df = subset(df, select=-c(minYear, minMonth, minDay, maxYear, maxMonth, maxDay))
+df[1:10,] #check to make sure it looks ok...
+
+# Columns in the ACS db that we should probably do something about but need to talk about it...
+df$ACWSD=""
+df$ACWSDreport=""
+df$WindArea=""
+df$MissingTrackFile=""
+df$ImputedDistFlown=""
+
+write.csv(df, file = paste(dir.out,"/Transect_Information.csv", sep=""), row.names=FALSE)
+rm(df)
+
+  # ----------------------------------------------------------------------- #
+  # TRACK INFORMATION TABLE
+  # ----------------------------------------------------------------------- #
+
+df = track.final$Species %in% c("WAYPOINT","BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH")
+BEGTRAN
+ENDTRAN
+write.csv("temp_Tracks.csv", sep=""), row.names=FALSE)
+rm(df)
+
 # include all birds & boats but not marine life
 # if catagory 'species_type-cd' 2, 3, or 4 in NWASC_codes list exclude from AMAPPS access database
 
@@ -323,27 +393,8 @@ summary(track.final.ACS)
 !WAYPOINT
 write.csv(track.final.ACS, file = paste(dir.out,"/temp_Observations.csv", sep=""), row.names=FALSE)
 
-# TRACK TABLE
-final.ACS$Species %in% c("WAYPOINT","BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH")
-BEGTRAN
-ENDTRAN
-write.csv("temp_Tracks.csv", sep=""), row.names=FALSE)
 
 
-# TRANSECT INFORMATION TABLE
-ti = subset(track.final, select = c(SurveyNbr, Transect, Replicate, Crew,  Seat, Obs, Year, Month, Day))
-ti = ti[!duplicated(ti), ]
-
-# average condition is weighted by distance flown at each observation condition
-df = track.final %>% group_by(Transect,Obs) %>% arrange(Sec) %>% 
-  mutate(lon = lead(Long, default = last(Long), order_by = Sec),
-         lat = lead(Lat, default = last(Lat), order_by = Sec)) %>%
-  rowwise() %>% mutate(distance = distVincentySphere(c(Long, Lat), c(lon, lat))) %>%
-  select(-lon, -lat)
-
-
-                     FUN = weighted.mean, w = )
-write.csv(ti, file = paste(dir.out,"/temp_Transect_Information.csv", sep=""), row.names=FALSE)
 # ------------------------------------------------------------------------- #
 
 
