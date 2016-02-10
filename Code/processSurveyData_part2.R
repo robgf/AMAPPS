@@ -14,10 +14,11 @@
 require(rgdal) # read shapefiles
 require(parallel) # used to make a cluster
 require(RODBC) #for NWASC codes
-library(plyr) #used to rename columns
-library(dplyr)
+library(dplyr) # %>%
 library(gmt) #geodist
-require(geosphere)
+require(geosphere) #dist2Line
+library(sp) #SpatialLines from SpatialLinesDataFrame
+library(FNN) #nearest neighbor
 
 # Set dir
 dir <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/"
@@ -229,24 +230,56 @@ write.csv(forNOAA, file =paste(dir.out,"/forNOAA_", yearLabel, ".csv", sep=""), 
 rm(forNOAA)
 # ------------------------------------------------------------------------- #
 
+
+
+# RENAME TO MATCH HEADERS IN DOCUMENTS
+if (is.null(track.final$flightStatus)) track.final$flightStatus = NA
+track.final = rename(track.final, Transect = transect, Replicate = replicate, Crew = crew, 
+                     Seat = seat, Obs = obs, Year = year, Month = month, Day = day,
+                     Sec = sec, Lat = lat, Long = long, GpsError = GPSerror, 
+                     Species = type, FlockSize = count, Condition = condition, 
+                     Band = band, Comment = comment, FlightStatus = flightStatus)
+track.final$SurveyNbr = surveyNbr
+
+
+
+# ----------------------------------------------------------------------- #
+# TRACK INFORMATION TABLE
+# ----------------------------------------------------------------------- #
+
+trackTbl = track.final[track.final$Species %in% c("WAYPNT","BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH"),]
+
+ BEGTRAN
+ ENDTRAN
+
+write.csv(trackTbl, file =paste(dir.out,"/temp_Tracks.csv", sep=""), row.names=FALSE)
+
+
 # ------------------------------------------------------------------------- #
-# ADD COVARIATES
+# ADD COVARIATES TO OBSERVATIONS (DEPTH, SLOPE, DISTANCE TO COAST)
 # ------------------------------------------------------------------------- #
 
-require(FNN)
-findClosestCoord <- function(inCoords, covariate, refCoords) {
-  colnames(inCoords) = c("lat","lon") # points we want to match to covariate coords 
-  colnames(refCoords) = c("lat", "lon") # points for the covariate that we want to find closest to our data 
-  nns <- get.knnx(refCoords, inCoords, k=1) 
-  matched <- covariate[nns$nn.index, c("lat", "lon")] 
+track.final = track.final[!track.final$Species %in% c("WAYPNT","COCH"),]
+
+
+nnSearch <- function(inCoords, refCoords, covariate, toPull) {
+  x = inCoords[,c("Lat","Long")]  
+  colnames(x) = c("lat","lon") 
+  
+  ref = refCoords[,c("Lat","Long")]  
+  colnames(ref) = c("lat","lon") 
+  
+  nns <- get.knnx(ref, x, k=1) 
+  matched <- covariate[nns$nn.index, toPull] # to pull = c("lat","lon") or "depth" etc. variable name in ref df
   return(matched)
 }
 
 # load shapefiles used for reference
 # coastline
-library(geosphere)
 coast <- readOGR(dsn = file.path(paste(dir, "DataProcessing/GIS/data", sep="")), layer = "NEUScoastline")
-Dist2Coast = track.final %>% dist2Line(as.numeric(c(Long,Lat)), coordinates(coast))
+coastLines = as.SpatialLines.SLDF(coast)
+print("This will take a few minutes to calculate the distance to the coast for each point...")
+df = track.final %>% mutate(Dist2Coast = dist2Line(cbind(Long, Lat), coastLines, distHaversine)distance) #default meters
 
 # depth
 
@@ -261,18 +294,6 @@ track.final$Slope = ""
 # ------------------------------------------------------------------------- #
 ### STEP 21: ADD BOATS, BALLOONS, AND MISC. OBS TO EXCEL FILES
 # ------------------------------------------------------------------------- #
-
-track.final$SurveyNbr = surveyNbr
-if track.final$FlightStatus = "" 
-
-
-# RENAME TO MATCH HEADERS IN DOCUMENTS
-if (is.null(track.final$flightStatus)) track.final$flightStatus = NA
-track.final = rename(track.final, c("transect"= "Transect", "replicate" = "Replicate", "crew" = "Crew", 
-                                    "seat" = "Seat", "obs" = "Obs", "year" = "Year", "month" = "Month", 
-                                    "day" = "Day", "sec" = "Sec", "lat"="Lat", "long"="Long", "GPSerror"="GpsError", 
-                                    "type"="Species", "count"="FlockSize", "condition" = "Condition", 
-                                    "band" = "Band", "comment" = "Comment", "flightStatus" = "FlightStatus"))
 
 
 # ADD BOAT OBSERVATIONS TO Atlantic_Coast_Surveys_BoatObservations.csv DATA FILE
@@ -359,16 +380,7 @@ df$ImputedDistFlown=""
 write.csv(df, file = paste(dir.out,"/Transect_Information.csv", sep=""), row.names=FALSE)
 rm(df)
 
-  # ----------------------------------------------------------------------- #
-  # TRACK INFORMATION TABLE
-  # ----------------------------------------------------------------------- #
-
-df = track.final$Species %in% c("WAYPOINT","BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH")
-BEGTRAN
-ENDTRAN
-write.csv("temp_Tracks.csv", sep=""), row.names=FALSE)
-rm(df)
-
+  
 # include all birds & boats but not marine life
 # if catagory 'species_type-cd' 2, 3, or 4 in NWASC_codes list exclude from AMAPPS access database
 
