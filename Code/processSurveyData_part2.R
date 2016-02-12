@@ -264,11 +264,7 @@ track.final = track.final[!track.final$Species %in% c("WAYPNT","COCH"),]
 
 nnSearch <- function(inCoords, refCoords, covariate, toPull) {
   x = inCoords[,c("Lat","Long")]  
-  colnames(x) = c("lat","lon") 
-  
-  ref = refCoords[,c("Lat","Long")]  
-  colnames(ref) = c("lat","lon") 
-  
+  ref = refCoords[,c("Lat","Long")]  # note names have to be the same
   nns <- get.knnx(ref, x, k=1) 
   matched <- covariate[nns$nn.index, toPull] # to pull = c("lat","lon") or "depth" etc. variable name in ref df
   return(matched)
@@ -276,20 +272,22 @@ nnSearch <- function(inCoords, refCoords, covariate, toPull) {
 
 # load shapefiles used for reference
 # coastline
-coast <- readOGR(dsn = file.path(paste(dir, "DataProcessing/GIS/data", sep="")), layer = "NEUScoastline")
-coastLines = as.SpatialLines.SLDF(coast)
-print("This will take a few minutes to calculate the distance to the coast for each point...")
-df = track.final %>% mutate(Dist2Coast = dist2Line(cbind(Long, Lat), coastLines, distHaversine)distance) #default meters
+coastline <- read.csv(paste(dir,"DataProcessing/coastline.csv",sep=""))
+nnCoords = nnSearch(track.final, coastline, coastline, c("Long","Lat"))
+track.final$nnLong = nnCoords$Long
+track.final$nnLat = nnCoords$Lat
+track.final$Dist2Coast_m = distVincentySphere(cbind(track.final$Long, track.final$Lat), cbind(track.final$nnLong,track.final$Lat))
+track.final$Dist2Coast_nm = track.final$Dist2Coast_m * 0.000539957
+track.final = track.final[,!colnames(track.final) %in% c("nnLong","nnLat")]
 
 # depth
+nnCoords = nnSearch(track.final, , , c("Depth"))
+track.final$Depth = ""  
 
 # slope
+track.final$Slope = ""
 
-# these are calculated using Jeff's old "add2database" script which at the moment I am not running... 
-track.final$Dist2Coast_m = ""  
-track.final$Dist2Coast_nm = ""   
-track.final$Depth = ""           
-track.final$Slope = ""   
+   
 
 # ------------------------------------------------------------------------- #
 ### STEP 21: ADD BOATS, BALLOONS, AND MISC. OBS TO EXCEL FILES
