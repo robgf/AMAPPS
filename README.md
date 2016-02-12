@@ -72,6 +72,14 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
            d) Breaks apart mixed flock records
     - GISeditObsTrack (python file used in ArcMap to fix spatial errors in the data)
 - processSurveyData_part2.R (after the GIS edits this rechecks the data for errors caused in manual editing and combines the files for entry into the Atlantic_Coast_Surveys and NWASC databases)
+    - creates final_ .csv
+    - creates temp observation and track files for add2database.R
+    - updates Atlantic_Coast_Surveys_MiscObservations.csv
+    - updates Atlantic_Coast_Surveys_BalloonsObservations.csv
+    - updates Atlantic_Coast_Surveys_BoatObservations.csv
+    - creates Transect Information table for access database
+    - adds covariates (depth, slope, distance to coast) to observation data  
+    - calculated distance flown and average condition for each transect
  
 
 **Files Needed:**  
@@ -127,17 +135,8 @@ d) save each crew/day shapefile in an edited_shapefiles folder
 - The "Atlantic_Coast_Surveys" database houses all of the AMAPPS data but excludes nonbirds (except for boats). Nonbird and offline data are saved seperately or in the Misc_observations table of the "Atlantic_Coast_Surveys" database. The database includes tables for  "Crew_Information", "Observations", "Survey_Information", "Tracks", and "Transect_Information". 
 
 **Scripts needed:**  
-- Add2Database.R  
-        - CalcDistFlown.py (calculates distance flown by the pilots on each transect)  
-        - CalcObsCovariates.py (if you need bathymetry, shelf slope etc.)  
-        - UpdateGeoDatabase.py   
-- Add2Database2.R (formats the data to go into each table and adds the data to the access "Atlantic_Coast_Surveys" database)     
-- ArcGISCalc4Database.R (these are in Jeff's "old" folder so might reconsider this process)  
-        - TrackFileSort.R  
-        - TrackFileSEGCNTChange.R  
-        - CreateID4DistFlownCalc.R  
-        - AvgCondition.R  
-    
+-- Add2Database2.R (formats the data to go into each table and adds the data to the access "Atlantic_Coast_Surveys" database)     
+
 
 5) Reformating and entering the data in the NWASC Database 
 --------------------------------------------------------
