@@ -45,8 +45,8 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
 - This section describes how to QA/QC the data using R, ArcMap, and Python within ArcMap. You will run "part1", check the shapefiles in ArcMap, save those files, then run "part2" of the scripts. 
 
 **Scripts needed:**  
-- run_processSurveyData_part1.R (loads packages and functions, this is the file you should alter)
-    - processSurveyData_part1.R (function used by run_processSurveyData_part1.R, do not change this)
+- run_processSurveyData_part1.R This will load packages and functions, this is the file you should alter. You will at least have to change the yearLabel, but might also need to change the pathways. The "py.exe" will be dependent on your ArcGIS version (e.g. 10.3) and you might also have installer issues (64 bit vs. 32 bit) -- to test this you can go into the python window in ArcGIS and type *import sys;print("%x" % sys.maxsize, sys.maxsize > 2**32)*, if you get *('7fffffff', False)* then it is a 32 bit version and you would use ArcGIS10.3/python.exe; however, if you get *True* it's a 64 bit version and you would use ArcGISx6410.3/python.exe. You might also need to check your Rstudio version (Tools-Options).
+    - processSurveyData_part1.R. This function is used by run_processSurveyData_part1.R, you should generally not have to change this. This will clean the data and generate temporary shapefiles.
     - RProfile.R loads neccessary librarys and runs the following functions: 
         - addBegEnd\_GISeditObsTrack.R (this is for after the GIS edits, if points were deleted and new BEG/END counts need to be added)
         - addBegEnd\_Obs.R (this adds BEG/END counts if needed)
@@ -64,14 +64,13 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
         - runArcGISpy.R 
         - SECFix.R 
         - sourceDir.R 
-    - ObsFilesFix\_yearlabel.R 
-        - This script is unique to each input year/season file and fixes errors in the observation files:  
+    - ObsFilesFix\_yearlabel.R This script is unique to each input year/season file and fixes errors in the observation files:  
            a) Flags offine/useless information  
            b) Fixes incorrect type codings  
            c) Fix condition change errors
            d) Breaks apart mixed flock records
     - GISeditObsTrack (python file used in ArcMap to fix spatial errors in the data)
-- processSurveyData_part2.R (after the GIS edits this rechecks the data for errors caused in manual editing and combines the files for entry into the Atlantic_Coast_Surveys and NWASC databases)
+- processSurveyData_part2.R. After the manual GIS edits, this rechecks the data for errors caused in manual editing and combines the files for entry into the Atlantic_Coast_Surveys and NWASC databases.
     - creates final_ .csv
     - creates temp observation and track files for add2database.R
     - updates Atlantic_Coast_Surveys_MiscObservations.csv
