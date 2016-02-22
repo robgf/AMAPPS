@@ -28,9 +28,9 @@ sourceDir(file.path(dir, "_Rfunctions"))
 errfix.file <- file.path(dir.out, paste(yearLabel, "_ObsFilesFix.R", sep = ""))
 
 # SET PATH TO python.exe FILE
-py.exe = "E:/Python27/ArcGISx6410.2/python.exe"
+py.exe = "C:/Python27/ArcGISx6410.3/python.exe"
 
 # RUN EDIT FUNCTION
-source("//IFW9MBMSVR010/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/DataProcessing/Code/processSurveyData_part1.R")
+source("//IFW9MBM-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/DataProcessing/Code/processSurveyData_part1.R")
 
 processSurveyData_part1(dir.in, dir.out, errfix.file, py.exe = "'C:/Program Files (x86)/ArcGIS/ArcGIS 10.2/python.exe'")
