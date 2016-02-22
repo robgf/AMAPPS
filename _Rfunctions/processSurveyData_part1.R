@@ -2,7 +2,7 @@
 # processSurveyData_part1.R
 # Author: Jeffery Leirness
 # Date Created: 2015-03-20
-# Edited by: Kaycee Coleman, Nov. 2015
+# edited by: Kaycee Coleman, Feb. 2016
 #
 # Description: This program reads in the pilot and observer raw observation 
 # files and creates a header row. It then checks for general errors & 
@@ -231,7 +231,7 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   obstrack <- obstrack[order(obstrack$ID), ]
   obstrack$key <- paste(obstrack$crew, obstrack$seat, obstrack$year, obstrack$month, 
                         obstrack$day, obstrack$transLat, obstrack$transLong, sep = "_")
-  allkeys <- unique(obstrack$key[obstrack$transLat > 0])
+  allkeys <- unique(obstrack$key[as.numeric(obstrack$transLat) > 0])
   obstrack$bearing <- NA
   obstrack$sbearing <- NA
   obstrack$flag2 <- 0
@@ -302,7 +302,7 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   # READ IN GENERIC GISeditObsTrack.py FILE, CHANGE NECESSARY DIRECTORIES, & SAVE 
   # NEW .py FILE
   py <- readLines(file.path(dir, "DataProcessing/Code/GISeditObsTrack.py"))
-  py[grep("^sdpath = ", py)] <- paste("sdpath = '", "//IFW9MBMSVR010/SeaDuck/NewCodeFromJeff_20150720/'", sep = "")
+  py[grep("^sdpath = ", py)] <- paste("sdpath = '", "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/'", sep = "")
   py[grep("^projpath = ", py)] <- paste("projpath = '", dir.out, "/'", sep = "")
   writeLines(py, file.path(dir.out, "GISeditObsTrack.py"))
   
