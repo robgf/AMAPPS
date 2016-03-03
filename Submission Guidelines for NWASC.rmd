@@ -5,11 +5,11 @@
 variable names  
     a. Metadata for spatial data should conform to FGDC [guidelines](https://www.fgdc.gov/metadata/geospatial-metadata-standards)  
     b. At a minimum metadata for bird observations should contain the following fields  
-        i. Source of data including contact information  
-        ii. Dates inclusive of all surveys submitted  
-        iii. Type of platform used for observations (boat, aircraft, etc.)  
-        iv. Preferred citation if data are made public  
-        v. Definition of fields transferred to NWASC including range of values  
+>        i. Source of data including contact information  
+>        ii. Dates inclusive of all surveys submitted  
+>        iii. Type of platform used for observations (boat, aircraft, etc.)  
+>        iv. Preferred citation if data are made public  
+>        v. Definition of fields transferred to NWASC including range of values  
 2. The observation data should be accompanied by a transect/ effort file  
     a. Please provide this information in WGS84 datum or provide information on projection. Coordinates would be in decimal degrees 
     (not UTMs)  
