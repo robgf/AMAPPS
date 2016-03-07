@@ -67,7 +67,7 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
     - ObsFilesFix\_yearlabel.R This script is unique to each input year/season file and fixes errors in the observation files:  
            a) Flags offine/useless information  
            b) Fixes incorrect type codings  
-           c) Fix condition change errors
+           c) Fix condition change errors  
            d) Breaks apart mixed flock records
     - GISeditObsTrack (python file used in ArcMap to fix spatial errors in the data)
 - processSurveyData_part2.R. After the manual GIS edits, this rechecks the data for errors caused in manual editing and combines the files for entry into the Atlantic_Coast_Surveys and NWASC databases.
