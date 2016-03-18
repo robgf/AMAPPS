@@ -6,7 +6,7 @@ create a new database in Microsoft SQL server, which can be run on FWS computers
 database redesign. Other updates on the progree of this endeavor can be read in the BOEM bimonthly progress reports for this project.
 
 ### **1. Collect datasets at large**   
-This is an ongoing effor by FWS, NOAA, and BOEM. A progress table can be seen [here](https://sites.google.com/a/fws.gov/nwasc/progress-table)
+This is an ongoing effort by FWS, NOAA, and BOEM. A progress table can be seen [here](https://sites.google.com/a/fws.gov/nwasc/progress-table)
 
 ### **2. Quality control data**  
 This will most likely be simple data checks (e.g. do species codes match those in the catalog) - data should be cleaned by the data provider before submission
