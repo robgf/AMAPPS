@@ -1,0 +1,32 @@
+# **Northwest Atlantic Seabird Catalog - Read Me** 
+
+Details can be found at the FWS [website](https://sites.google.com/a/fws.gov/nwasc/), only FWS personnel can view this website. 
+Currently the working version of the database is in PostgreSQL and can only be accessed from non-FWS computers. The long term goal is to 
+create a new database in Microsoft SQL server, which can be run on FWS computers. This might be a simple client switch or might involve a 
+database redesign. Other updates on the progree of this endeavor can be read in the BOEM bimonthly progress reports for this project.
+
+### **1. Collect datasets at large**   
+This is an ongoing effor by FWS, NOAA, and BOEM. A progress table can be seen [here](https://sites.google.com/a/fws.gov/nwasc/progress-table)
+
+### **2. Quality control data**  
+This will most likely be simple data checks (e.g. do species codes match those in the catalog) - data should be cleaned by the data provider before submission
+
+### **3. Enter data into the database**  
+There are several tables in the seabird schema; however, the most important ones are the observations and transect tables. 
+Track data is stored in the QGIS spatial portion of PostgreSQL. 
+
+### **4. Check database integrity**  
+After adding data, you should verify that the joins were successful.
+
+### **5. Submit data to users and archives**  
+- NODC
+- OBIS
+- BISON
+- AKN
+- NOAA
+  - The NOAA Biogeography branch uses all of the data in the catalog in a predictive distribution model. 
+  This involves processing all of the seabird data into segments. See segmentation script. 
+
+### **6. Handle data requests**  
+Anyone can request the data. These requests will most likely be specific and require querying the database
+
