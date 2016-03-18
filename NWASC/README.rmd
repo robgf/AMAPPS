@@ -19,11 +19,18 @@ Track data is stored in the QGIS spatial portion of PostgreSQL.
 After adding data, you should verify that the joins were successful.
 
 ### **5. Submit data to users and archives**  
-- NODC
-- OBIS
-- BISON
-- AKN
-- NOAA
+- NODC ([National Oceanographic Data Center](https://www.nodc.noaa.gov/))  
+  - *Process:* Once the data has been entered into the NWASC database, the data are sent to the NOAA National Oceanographic Data Center (NODC) to be archived. A past submission can be seen [here](http://www.nodc.noaa.gov/cgi-bin/OAS/prd/accession/0115356) (accessions_id: 0115356). Datasets that are already in the NODC can be found in the [DataSets\_in_\NODC.xlsx file](https://sites.google.com/a/fws.gov/nwasc/archived-in-nodc).
+    - All data-object-tables from the database need to be extracted and combined in one flat 'csv' file, [see old](http://www.nodc.noaa.gov/archive/arc0070/0115356/1.1/data/0-data/seabird_data_archive_NODC_30Dec2013.csv)  
+    - Prepare a file with column descriptions, [see old](http://www.nodc.noaa.gov/archive/arc0070/0115356/1.1/data/0-data/seabird_data_structure_NODC_30Dec2013.csv)  
+    - Prepare a FGDC record metadata file, [see old](http://www.nodc.noaa.gov/archive/arc0070/0115356/1.1/data/0-data/Atlantic%20Offshore%20Seabird%20Dataset%20Catalog_NODC%20Metadata_FGDC.xml)  
+    - Report needs to be in 'pdf' format.  
+    - The data should be submitted using the submission [website](https://www.nodc.noaa.gov/s2n/). 
+  - *Scripts needed:* create_vw_data_output_nodc_dec2013 (SQL file to create NODC view excluding some datasets that shouldn't be public or were not designed for bird counts)
+- OBIS ([Ocean Biogreographic Information System](http://www.iobis.org/))  
+- BISON ([Biodiversity Information Serving Our Nation](http://bison.usgs.ornl.gov/#home))
+- AKN ([Avian Knowledge Network](http://www.avianknowledge.net/))  
+- NOAA [avian modeling effort](http://portal.midatlanticocean.org/static/data_manager/metadata/html/avian_metadata.html) 
   - The NOAA Biogeography branch uses all of the data in the catalog in a predictive distribution model. 
   This involves processing all of the seabird data into segments. See segmentation script. 
 
