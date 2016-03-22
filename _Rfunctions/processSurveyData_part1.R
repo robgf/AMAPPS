@@ -353,6 +353,7 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   #       -> click on the folder icon and switch 'save type as' to shapefile)
   # you will not be able to move on until this is completed (estimated time = 1 day)
   
+  rm(dir,dir.in) # will screw paths up in part 2 if not removed 
   save.image(paste(dir.out,"obstrackWorkspace.Rdata",sep="/"))
   write.csv(obstrack, file=paste(dir.out,"obstrack_part1.csv",sep="/"), row.names=FALSE)
 }
