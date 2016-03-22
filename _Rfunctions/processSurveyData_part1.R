@@ -2,6 +2,7 @@
 # processSurveyData_part1.R
 # Author: Jeffery Leirness
 # Date Created: 2015-03-20
+# Edited by Kaycee Coleman, March 2016
 #
 # Description: This program reads in the pilot and observer raw observation 
 # files and creates a header row. It then checks for general errors & 
