@@ -2,7 +2,6 @@
 # processSurveyData_part1.R
 # Author: Jeffery Leirness
 # Date Created: 2015-03-20
-# edited by: Kaycee Coleman, Feb. 2016
 #
 # Description: This program reads in the pilot and observer raw observation 
 # files and creates a header row. It then checks for general errors & 
@@ -150,6 +149,9 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   row.names(obstrack) <- NULL
   obstrack$ID <- as.numeric(row.names(obstrack))
   
+  # This file if for obvious track errors that should not be included in GIS file
+  # This will help cut down on manually deleting the points, however you need to visually
+  # inspect the data to find obvious errors
   if (file.exists(paste(dir.out,"postObstrackEdits.R",sep="/"))) {
     source(paste(dir.out,"postObstrackEdits.R",sep="/"))}
   
@@ -350,6 +352,6 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   #       -> click on the folder icon and switch 'save type as' to shapefile)
   # you will not be able to move on until this is completed (estimated time = 1 day)
   
-  save(paste(dir.out,"obstrackWorkspace.Rdata",sep="/"))
+  save.image(paste(dir.out,"obstrackWorkspace.Rdata",sep="/"))
   write.csv(obstrack, file=paste(dir.out,"obstrack_part1.csv",sep="/"), row.names=FALSE)
 }
