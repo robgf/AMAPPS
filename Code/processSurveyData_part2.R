@@ -21,7 +21,7 @@ library(sp) #SpatialLines from SpatialLinesDataFrame
 library(FNN) #nearest neighbor
 
 # Set dir
-dir <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/"
+dir <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder"
 setwd(dir)
 surveyFolder = "AMAPPS"
 dbpath <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/DataBase"
@@ -29,9 +29,9 @@ yearLabel = "AMAPPS_2013_09"
 survey = "2013 Fall AMAPPS"
 surveyNbr = 13
 #source(file.path(paste(dir,"DataProcessing/Code",sep=""),"surveyPrompt.R"))
-dir.out <- paste("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/DataProcessing/Surveys", surveyFolder, yearLabel, sep = "/") 
+dir.out <- paste(dir,"DataProcessing/Surveys", surveyFolder, yearLabel, sep = "/") 
 dir.in = paste(dir.out, "edited_shapefiles",sep="/")
-speciesPath <- paste(dir,"DataProcessing/",sep="")
+speciesPath <- paste(dir,"DataProcessing/",sep="/")
 
 # Link R functions
 source(file.path(dir, "_Rfunctions/sourceDir.R"))
@@ -203,7 +203,7 @@ track.final = rbind(track.final, deletedPoints[deletedPoints$offline==1,])
 
 # save deleted points as a .csv
 deletedPoints = deletedPoints[deletedPoints$offline == 0,]
-write.csv(deletedPoints, file =paste(dir.out,"/deletedShapefilePoints_", yearLabel, "_Final.csv", sep=""), row.names=FALSE)
+write.csv(deletedPoints, file =paste(dir.out,"/", yearLabel, "deletedShapefilePoints.csv", sep=""), row.names=FALSE)
 rm(deletedPoints)
 # ------------------------------------------------------------------------- #
 
@@ -226,7 +226,7 @@ sort(unique(track.final$type[tmp]))
 forNOAA = track.final[tmp,]
 forNOAA = forNOAA[,!names(forNOAA) %in% c("dataError","transLat", "transLong", "flag1", "bearing", "sbearing", "flag2", 
                                           "flag3", "onLand", "begend", "replicate", "keep")]
-write.csv(forNOAA, file =paste(dir.out,"/forNOAA_", yearLabel, ".csv", sep=""), row.names=FALSE)
+write.csv(forNOAA, file =paste(dir.out, "/", yearLabel, "forNOAA.csv", sep=""), row.names=FALSE)
 rm(forNOAA)
 # ------------------------------------------------------------------------- #
 
@@ -248,10 +248,8 @@ track.final$SurveyNbr = surveyNbr
 # ----------------------------------------------------------------------- #
 
 trackTbl = track.final[track.final$Species %in% c("WAYPNT","BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH"),]
-
- BEGTRAN
- ENDTRAN
-
+trackTbl$Species[trackTbl$Species=="BEGSEG"] = "BEGTRAN" 
+trackTbl$Species[trackTbl$Species=="ENDSEG"] = "ENDTRAN" 
 write.csv(trackTbl, file =paste(dir.out,"/temp_Tracks.csv", sep=""), row.names=FALSE)
 
 
@@ -270,29 +268,25 @@ nnSearch <- function(inCoords, refCoords, covariate, toPull) {
   return(matched)
 }
 
-# load shapefiles used for reference
 # coastline
-coastline <- read.csv(paste(dir,"DataProcessing/coastline.csv",sep=""))
+coastline <- read.csv(paste(dir,"/DataProcessing/coastline.csv",sep=""))
 nnCoords = nnSearch(track.final, coastline, coastline, c("Long","Lat"))
 track.final$nnLong = nnCoords$Long
 track.final$nnLat = nnCoords$Lat
 track.final$Dist2Coast_m = distVincentySphere(cbind(track.final$Long, track.final$Lat), cbind(track.final$nnLong,track.final$Lat))
 track.final$Dist2Coast_nm = track.final$Dist2Coast_m * 0.000539957
 track.final = track.final[,!colnames(track.final) %in% c("nnLong","nnLat")]
+rm(coastline, nnCoords)
 
-# depth
-nnCoords = nnSearch(track.final, , , c("Depth"))
-track.final$Depth = ""  
-
-# slope
-track.final$Slope = ""
-
-   
+# Ignoring depth and slope for now
+# these are calculated using Jeff's old "add2database.R" script which at the moment I am not running
+# they can be found in "CalbObsCovariates.py" ... 
+track.final$Depth = ""           
+track.final$Slope = ""   
 
 # ------------------------------------------------------------------------- #
 ### STEP 21: ADD BOATS, BALLOONS, AND MISC. OBS TO EXCEL FILES
 # ------------------------------------------------------------------------- #
-
 
 # ADD BOAT OBSERVATIONS TO Atlantic_Coast_Surveys_BoatObservations.csv DATA FILE
 boats = read.csv(file.path(dbpath, "Atlantic_Coast_Surveys_BoatObservations.csv"), stringsAsFactors = FALSE)
@@ -342,12 +336,8 @@ rm(obs.misc,obs.misc_to_add)
 ### STEP 22: AMAPPS database vs. NWASC database seperation
 # ------------------------------------------------------------------------- #
 
-# ------------------------------------------------------------------------- #
-# FOR ACS db
-# ------------------------------------------------------------------------- #
-
-  # ----------------------------------------------------------------------- #
-  # TRANSECT INFORMATION TABLE
+# ----------------------------------------------------------------------- #
+# TRANSECT INFORMATION TABLE FOR ATLANTIC COAST SURVEYS DATABASE
   # ----------------------------------------------------------------------- #
 
 # average condition is weighted by distance flown at each observation condition
@@ -375,7 +365,7 @@ df$WindArea=""
 df$MissingTrackFile=""
 df$ImputedDistFlown=""
 
-write.csv(df, file = paste(dir.out,"/Transect_Information.csv", sep=""), row.names=FALSE)
+write.csv(df, file = paste(dir.out, "/", yearLabel, "_Transect_Information.csv", sep=""), row.names=FALSE)
 rm(df)
 
   
@@ -394,17 +384,14 @@ sort(unique(track.final$Species[tmp]))
 track.final$keep[tmp] = 0
 
 # REMOVE OFFLINE OBSERVATIONS FROM track.final for Atlantic Coast Survey Access Database#
-track.final.ACS = subset(track.final, keep == 1)
+track.final.ACS = track.final[!track.final$Species %in% c("WAYPNT","BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH"),]
+track.final.ACS = subset(track.final.ACS, keep == 1)
 track.final.ACS$keep = NULL
 track.final.ACS$survey = NULL
 summary(track.final.ACS)
 
 # OBS TABLE
-!WAYPOINT
 write.csv(track.final.ACS, file = paste(dir.out,"/temp_Observations.csv", sep=""), row.names=FALSE)
-
-
-
 # ------------------------------------------------------------------------- #
 
 
@@ -413,7 +400,7 @@ write.csv(track.final.ACS, file = paste(dir.out,"/temp_Observations.csv", sep=""
 # ------------------------------------------------------------------------- #
 # This includes all observations (even marine)
 obsTrackFinalOutput(track.final, yearLabel, dir.out)
-write.csv(track.final, file =paste(dir.out,"/obstrack_", yearLabel, "_Final.csv", sep=""), row.names=FALSE)
+write.csv(track.final, file =paste(dir.out,"/", yearLabel, "Obstrack_Final.csv", sep=""), row.names=FALSE)
 # ------------------------------------------------------------------------- #
 
 
