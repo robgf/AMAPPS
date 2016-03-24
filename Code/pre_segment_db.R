@@ -78,7 +78,7 @@ preSegment = function(observations, transects, shapefile, est.correction = FALSE
     left_join(., transects[, c("dataset_id", "transect_id", "transect_width_nb")], by = c("dataset_id", "transect_id")) %>%
     rename(strip_width = transect_width_nb, beaufort = seastate_beaufort_nb)
   
-  # narrow tables to contain only unprocessed data
+  # narrow tables to contain only unprocessed data (those without spatial information)
   observations = observations %>% filter(!(transect_id %in% lines_raw$transect_id))
   transects = transects %>% filter(!(transect_id %in% lines_raw$transect_id))
   
