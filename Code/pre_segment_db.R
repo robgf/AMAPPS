@@ -9,7 +9,7 @@
 # Updated 03-22-2016 to include spatial transect information
 
 # load packages
-suppressMessages(library(ggplot2))
+suppressMessages(library(broom))
 suppressMessages(library(dplyr))
 suppressMessages(library(tidyr))
 suppressMessages(library(lubridate))
@@ -31,7 +31,7 @@ shape = readShapeSpatial("transect_lines")
 preSegment = function(observations, transects, shapefile, est.correction = FALSE) {
   
   # process transect shapefile
-  trans = fortify(shape)
+  trans = tidy(shapefile)
   lines_raw = trans %>% select(-piece, -group) %>% group_by(id) %>%
     mutate(Long = lead(long, default = last(long), order_by = order),
            Lat = lead(lat, default = last(lat), order_by = order)) %>%
