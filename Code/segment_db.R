@@ -54,7 +54,7 @@ segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurenc
     # final quality control to check if observations are within specified distance of segment midpoints  
     rowwise() %>% mutate(obs_dist = distVincentySphere(c(lon, lat), c(seg_mid_lon, seg_mid_lat)) / 1852) %>%
     select(-lat, -lon) %>% filter(obs_dist <= sqrt((seg_dist / 2) ^ 2 + dist.max ^ 2) | is.na(obs_dist) | (seg_extra > 0 & seg_extra != nseg)) %>%
-    select(-obs_dist, -nseg, -seg_extra) %>%
+    select(-obs_dist, -nseg, -seg_extra) %>% mutate(seg_dist = round(seg_dist, 3)) %>%
     # calculate segment-averaged Beaufort values
     ungroup() %>% group_by(dataset_id, transect_id, seg_num) %>%
     mutate(beaufort = replace(beaufort, n_distinct(beaufort) > 1, mean(unique(beaufort))),
