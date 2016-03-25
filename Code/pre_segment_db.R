@@ -127,7 +127,7 @@ preSegment = function(observations, transects, shapefile, seg.min = 0.5, est.cor
            end_tm = replace(end_tm, is.na(end_tm), time_from_midnight_stop)) %>%
     select(-time_from_midnight_start, -time_from_midnight_stop) %>%
     mutate(speed_interp = as.numeric(ifelse(is.na(traversal_speed_nb) & last(obs_start_tm) != first(obs_start_tm) &
-                                   !(identical(c(first(lon), first(lat)), c(last(lon), last(lat)))),
+                                   !identical(c(first(lon), first(lat)), c(last(lon), last(lat))),
                                    distVincentySphere(c(first(lon), first(lat)), c(last(lon), last(lat))) / 1852 /
                                    (as.numeric(last(obs_start_tm) - first(obs_start_tm)) / 60), traversal_speed_nb))) %>%
     select(-traversal_speed_nb) %>%
@@ -137,7 +137,7 @@ preSegment = function(observations, transects, shapefile, seg.min = 0.5, est.cor
     mutate(dist_interp = as.numeric(ifelse(is.na(trans_dist) | (trans_dist < max(dist_cum) & !is.na(max(dist_cum))),
                                            speed_interp * diff_tm_min / 60, trans_dist))) %>%
     select(-trans_dist) %>%
-    filter(!(identical(c(first(lon), first(lat)), c(last(lon), last(lat)))) | !is.na(dist_interp) & !is.na(heading_tx.y)) %>%
+    filter(!identical(c(first(lon), first(lat)), c(last(lon), last(lat))) | !is.na(dist_interp) & !is.na(heading_tx.y)) %>%
     mutate(in_trans = as.character(ifelse(start_tm > first(obs_start_tm) | end_tm < last(obs_start_tm), "Out", "In")))
  
 #####################
