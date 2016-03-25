@@ -7,7 +7,7 @@
 # Kyle Dettloff
 # 12-18-2015
 # Updated 03-22-2016 to include spatial transect information
-# Revised 03-24-2016
+# Revised 03-25-2016
 
 # load packages
 suppressMessages(library(broom))
@@ -29,7 +29,7 @@ setwd("Q:/Kyle_Working_Folder/ArcGIS")
 suppressMessages(library(maptools))
 shape = readShapeSpatial("transect_lines")
 
-preSegment = function(observations, transects, shapefile, seg.tol = 0.5, est.correction = FALSE) {
+preSegment = function(observations, transects, shapefile, seg.min = 0.5, est.correction = FALSE) {
   
   # process transect shapefile
   trans = tidy(shapefile)
@@ -94,8 +94,7 @@ preSegment = function(observations, transects, shapefile, seg.tol = 0.5, est.cor
     select(transect_id, dataset_id, obs_dt, obs_start_tm, start_dt, start_tm, end_dt, end_tm,
            transect_time_min_nb, transect_distance_nb, traversal_speed_nb, time_from_midnight_start, time_from_midnight_stop,
            lat, lon, heading_tx.y, spp_cd, obs_count_intrans_nb, obs_count_general_nb, transect_width_nb, seastate_beaufort_nb.x) %>%
-    group_by(dataset_id, transect_id) %>% arrange(obs_start_tm) %>%
-    filter(!(first(lat) == last(lat) & first(lon) == last(lon)) | !is.na(transect_distance_nb) & !is.na(heading_tx.y)) %>% ungroup() %>%
+    group_by(dataset_id, transect_id) %>% arrange(obs_start_tm) %>% ungroup() %>%
     mutate(obs_count_intrans_nb = replace(obs_count_intrans_nb, transect_id %in% empty_trans, 0),
            obs_count_general_nb = replace(obs_count_general_nb, transect_id %in% empty_trans, 0)) %>%
     mutate(obs_dt = ymd_hms(obs_dt), obs_start_tm = ymd_hms(obs_start_tm), start_tm = ymd_hms(start_tm),
@@ -133,10 +132,12 @@ preSegment = function(observations, transects, shapefile, seg.tol = 0.5, est.cor
                                    (as.numeric(last(obs_start_tm) - first(obs_start_tm)) / 60), traversal_speed_nb))) %>%
     select(-traversal_speed_nb) %>%
     mutate(speed_interp = replace(speed_interp, speed_interp > 200, NA)) %>%
-    mutate(dist_cum = distVincentySphere(c(first(lon), first(lat)), cbind(lon, lat)) / 1852) %>%
+    mutate(dist_cum = ifelse(identical(c(first(lon), first(lat)), c(last(lon), last(lat))), 0,
+                             distVincentySphere(c(first(lon), first(lat)), cbind(lon, lat)) / 1852)) %>%
     mutate(dist_interp = as.numeric(ifelse(is.na(trans_dist) | (trans_dist < max(dist_cum) & !is.na(max(dist_cum))),
                                            speed_interp * diff_tm_min / 60, trans_dist))) %>%
     select(-trans_dist) %>%
+    filter(!(identical(c(first(lon), first(lat)), c(last(lon), last(lat)))) | !is.na(dist_interp) & !is.na(heading_tx.y)) %>%
     mutate(in_trans = as.character(ifelse(start_tm > first(obs_start_tm) | end_tm < last(obs_start_tm), "Out", "In")))
  
 #####################
@@ -161,19 +162,16 @@ preSegment = function(observations, transects, shapefile, seg.tol = 0.5, est.cor
            end_tm_from_obsn = as.numeric(ifelse(first(end_tm) - last(obs_start_tm) >= 0, first(end_tm) - last(obs_start_tm), NA))) %>%
     select(-obs_start_tm, -start_tm, -end_tm) %>%
     mutate(dist_start_to_obs1 =
-             as.numeric(ifelse(first(lat) == last(lat) & first(lon) == last(lon),
-                               runif(1, 0, first(dist_interp)),
-                               ifelse(!is.na(diff_tm_min) & !is.na(start_tm_to_obs1) & start_tm_to_obs1 / diff_tm_min < 1,
-                                      dist_interp * start_tm_to_obs1 / diff_tm_min,
-                                      ifelse(!is.na(speed_interp) & !is.na(start_tm_to_obs1),
-                                             speed_interp / 60 * start_tm_to_obs1,
-                                             ifelse(first(dist_interp) - max(dist_cum) >= 0, runif(1, 0, first(dist_interp) - max(dist_cum)),
-                                                    NA)))))) %>% select(-start_tm_to_obs1) %>%
+             as.numeric(ifelse(!is.na(diff_tm_min) & !is.na(start_tm_to_obs1) & start_tm_to_obs1 / diff_tm_min < 1,
+                               dist_interp * start_tm_to_obs1 / diff_tm_min,
+                               ifelse(!is.na(speed_interp) & !is.na(start_tm_to_obs1),
+                                      speed_interp / 60 * start_tm_to_obs1,
+                                      ifelse(first(dist_interp) - max(dist_cum) >= 0, runif(1, 0, first(dist_interp) - max(dist_cum)),
+                                             NA))))) %>% select(-start_tm_to_obs1) %>%
     mutate(dist_obsn_to_end =
-             as.numeric(ifelse(first(lat) == last(lat) & first(lon) == last(lon), first(dist_interp) - dist_start_to_obs1,
-                               ifelse(!is.na(diff_tm_min) & !is.na(end_tm_from_obsn), dist_interp * end_tm_from_obsn / diff_tm_min,
-                                      ifelse(!is.na(speed_interp) & !is.na(end_tm_from_obsn), speed_interp / 60 * end_tm_from_obsn,
-                                             first(dist_interp) - max(dist_cum) - dist_start_to_obs1))))) %>%
+             as.numeric(ifelse(!is.na(diff_tm_min) & !is.na(end_tm_from_obsn), dist_interp * end_tm_from_obsn / diff_tm_min,
+                               ifelse(!is.na(speed_interp) & !is.na(end_tm_from_obsn), speed_interp / 60 * end_tm_from_obsn,
+                                      first(dist_interp) - max(dist_cum) - dist_start_to_obs1)))) %>%
     select(-diff_tm_min, -speed_interp, -end_tm_from_obsn) %>%
     mutate(heading = as.numeric(ifelse(!is.na(heading_tx.y), heading_tx.y, bearing(c(first(lon), first(lat)), cbind(lon, lat))))) %>%
     mutate(heading = replace(heading, heading == 180 & is.na(heading_tx.y), NA)) %>%
@@ -183,10 +181,10 @@ preSegment = function(observations, transects, shapefile, seg.tol = 0.5, est.cor
     select(-gps_interp, -heading_tx.y) %>%
     mutate(dist_cum = dist_cum + dist_start_to_obs1) %>%
     filter(max(dist_cum) + dist_obsn_to_end <= dist_interp) %>% select(-dist_interp) %>%
-    mutate(heading_start = ifelse(first(lat) == last(lat) & first(lon) == last(lon) & heading >= 180, heading - 180,
-                                  ifelse(first(lat) == last(lat) & first(lon) == last(lon) & heading < 180, heading + 180,
+    mutate(heading_start = ifelse(identical(c(first(lon), first(lat)), c(last(lon), last(lat))) & heading >= 180, heading - 180,
+                                  ifelse(identical(c(first(lon), first(lat)), c(last(lon), last(lat))) & heading < 180, heading + 180,
                                          bearing(c(nth(lon, 2), nth(lat, 2)), c(first(lon), first(lat))))),
-           heading_end = ifelse(first(lat) == last(lat) & first(lon) == last(lon), heading,
+           heading_end = ifelse(identical(c(first(lon), first(lat)), c(last(lon), last(lat))), heading,
                                 bearing(c(nth(lon, length(lon) - 1), nth(lat, length(lat) - 1)), c(last(lon), last(lat))))) %>%
     select(-heading) %>%
     mutate(coords_start = list(destPoint(c(first(lon), first(lat)), first(heading_start), first(dist_start_to_obs1) * 1852)),
@@ -198,7 +196,7 @@ preSegment = function(observations, transects, shapefile, seg.tol = 0.5, est.cor
     mutate(trans_bearing = mean(c(bearing(c(first(lon_start), first(lat_start)), c(first(lon_end), first(lat_end))),
            finalBearing(c(first(lon_start), first(lat_start)), c(first(lon_end), first(lat_end)))))) %>%
     mutate(trans_dist_eff = distVincentySphere(c(first(lon_start), first(lat_start)), c(first(lon_end), first(lat_end))) / 1852) %>%
-    filter(!is.na(trans_dist_eff), max(dist_cum) + first(dist_obsn_to_end) <= trans_dist_eff, trans_dist_eff >= seg.tol) %>%
+    filter(!is.na(trans_dist_eff), max(dist_cum) + first(dist_obsn_to_end) <= trans_dist_eff, trans_dist_eff >= seg.min) %>%
     select(-dist_obsn_to_end, -lat_end, -lon_end) %>%
     mutate(count = ifelse(is.na(obs_count_intrans_nb), obs_count_general_nb, obs_count_intrans_nb)) %>%
     select(-obs_count_general_nb, -obs_count_intrans_nb) %>%
