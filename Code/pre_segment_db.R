@@ -76,7 +76,7 @@ preSegment = function(observations, transects, shapefile, seg.min = 0.5, est.cor
     select(-obs_count_general_nb, -obs_count_intrans_nb) %>%
     mutate(count = ifelse(spp_cd == "NONE", 0, ifelse(is.na(count), 1, count))) %>%
     mutate(spp_cd = replace(spp_cd, count == 0, "NONE")) %>%
-    left_join(., transects[, c("dataset_id", "transect_id", "transect_width_nb")], by = c("dataset_id", "transect_id")) %>%
+    left_join(., select(transects, dataset_id, transect_id, transect_width_nb), by = c("dataset_id", "transect_id")) %>%
     rename(strip_width = transect_width_nb, beaufort = seastate_beaufort_nb)
   
   # narrow tables to contain only unprocessed data (those without spatial information)
