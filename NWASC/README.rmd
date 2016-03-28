@@ -35,3 +35,6 @@ After adding data, you should verify that the joins were successful.
 ### **6. Handle data requests**  
 Anyone can request the data. These requests will most likely be specific and require querying the database
 
+### **7. Other**  
+  a. The most recent relevant BOEM GIS data can be found [here](http://www.boem.gov/Renewable-Energy-GIS-Data/) (e.g. BOEM leases)  
+
