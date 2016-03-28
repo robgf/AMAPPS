@@ -71,7 +71,7 @@ preSegment = function(observations, transects, shapefile, seg.min = 0.5, est.cor
                                   finalBearing(c(lon_start, lat_start), c(lon_end, lat_end))))) %>%
     mutate(dist_cum = distVincentySphere(c(lon_start, lat_start), c(lon, lat)) / 1852) %>%
     ungroup() %>% select(-lon_end, -lat_end) %>%
-    filter(round(dist_cum, 3) <= round(trans_dist_eff, 3) | is.na(dist_cum), trans_dist_eff >= seg.tol) %>%
+    filter(round(dist_cum, 3) <= round(trans_dist_eff, 3) | is.na(dist_cum), trans_dist_eff >= seg.min) %>%
     mutate(count = ifelse(is.na(obs_count_intrans_nb), obs_count_general_nb, obs_count_intrans_nb)) %>%
     select(-obs_count_general_nb, -obs_count_intrans_nb) %>%
     mutate(count = ifelse(spp_cd == "NONE", 0, ifelse(is.na(count), 1, count))) %>%
