@@ -12,14 +12,14 @@
 # ------------------------------------------------------------------------- #
 
 
-# SET DIRECTORIES
+# SET DIRECTORIES/ PACKAGES
 # ------------------------------------------------------------------------- #
 yearLabel = "AMAPPS_2013_09" # CHANGE THIS!!!!!!!!!!!!
 dir = paste("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/DataProcessing/Surveys/AMAPPS/",
             yearLabel, sep="")
 dbpath = "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/DataBase"
 codepath = "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/DataProcessing/Code"
-
+library("RODBC")
 
 # OBSERVATIONS TABLE
 # ------------------------------------------------------------------------- #
