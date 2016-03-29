@@ -1,14 +1,13 @@
 # Function to segment "segmentable" data prepared from NWASC database
 # Returns dataframe of segmented data
 
+# dist.max argument sets maximum allowable distance between an observation and its corresponding transect line
 # Calculates species counts by default; set occurences = TRUE for number of sightings
+
 # Distances are in nautical miles
 
 # Kyle Dettloff
 # 12-18-2015
-
-set.seed(145)
-source("Q:/Kyle_Working_Folder/Segmentation/pre_segment_db.R")
 
 segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurences = FALSE) {
   # calculate number of segments for each transect
@@ -63,7 +62,7 @@ segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurenc
   # summarize species data by segment and convert to wide form
   seg_final = seg_final_long %>%
     mutate(spp_cd = replace(spp_cd, is.na(spp_cd), "NONE")) %>%
-    group_by(dataset_id, transect_id, seg_num, spp_cd, obs_dt, seg_mid_lat, seg_mid_lon, seg_dist, strip_width, beaufort)
+    group_by(dataset_id, transect_id, seg_num, spp_cd, obs_dt, seg_mid_lat, seg_mid_lon, seg_dist, strip_width, beaufort, survey_type, survey_method)
   if (occurences == FALSE) {
     # total species count
     seg_final = seg_final %>% summarise(count = sum(count)) %>%
@@ -77,9 +76,5 @@ segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurenc
 }
 
 ### run function
+source("Q:/Kyle_Working_Folder/Segmentation/pre_segment_db.R")
 segmented = segment(segmentable)
-
-# unload packages (optional)
-pkgs = names(sessionInfo()$otherPkgs)
-pkgs = paste('package:', pkgs, sep = "")
-invisible(lapply(pkgs, detach, character.only = TRUE, unload = TRUE, force = TRUE))
