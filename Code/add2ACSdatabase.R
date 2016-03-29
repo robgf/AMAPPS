@@ -18,12 +18,12 @@ yearLabel = "AMAPPS_2013_09" # CHANGE THIS!!!!!!!!!!!!
 dir = paste("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/DataProcessing/Surveys/AMAPPS/",
             yearLabel, sep="")
 dbpath = "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/DataBase"
-
+codepath = "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/DataProcessing/Code"
 
 
 # OBSERVATIONS TABLE
 # ------------------------------------------------------------------------- #
-obs = read.csv(file.path(dir, yearLabel, "_Observations.csv"), 
+obs = read.csv(file.path(dir, paste(yearLabel, "_Observations.csv"),sep=""), 
                stringsAsFactors = FALSE)
 
 # GET SPECIES_INFORMATION TABLE FROM ATLANTIC COAST SURVEYS DATABASE
@@ -46,7 +46,7 @@ tracks = read.csv(file.path(dir, paste(yearLabel,"_Tracks.csv"),sep=""), strings
 
 # TRANSECT INFORMATION TABLE
 # ------------------------------------------------------------------------- #
-ti = read.csv(file.path(dir, "DataProcessing/",yearLabel,"_Transect_Information.csv"), 
+ti = read.csv(file.path(dir, paste(yearLabel,"_Transect_Information.csv"),sep=""), 
               stringsAsFactors = FALSE)
 # ------------------------------------------------------------------------- #
 
@@ -105,8 +105,8 @@ odbcCloseAll()
 # ADD DATA TO ATLANTIC COAST SURVEYS GEODATABASE
 # ------------------------------------------------------------------------- #
 GetDatabase("Atlantic_Coast_Surveys")
-write.dbf(Database_Observations, file.path(dir, "DataProcessing/temp/Database_Observations.dbf"))
-write.dbf(Database_Tracks, file.path(dir, "DataProcessing/temp/Database_Tracks.dbf"))
+write.dbf(Database_Observations, file.path(dbpath, "temp/Database_Observations.dbf"))  
+write.dbf(Database_Tracks, file.path(dbpath, "temp/Database_Tracks.dbf"))
 Database_Transect_Information$StartDt = as.character(Database_Transect_Information$StartDt, format = "%m/%d/%Y")
 Database_Transect_Information$EndDt = as.character(Database_Transect_Information$EndDt, format = "%m/%d/%Y")
 Database_Transect_Information$GIS_ID2 = paste(Database_Transect_Information$SurveyNbr, 
@@ -114,16 +114,16 @@ Database_Transect_Information$GIS_ID2 = paste(Database_Transect_Information$Surv
                                               Database_Transect_Information$Replicate, 
                                               Database_Transect_Information$Crew, 
                                               Database_Transect_Information$Seat, sep = "_")
-write.dbf(Database_Transect_Information, file.path(dir, "DataProcessing/temp/Database_Transect_Information.dbf"))
+write.dbf(Database_Transect_Information, file.path(dbpath, "temp/Database_Transect_Information.dbf"))
 # ------------------------------------------------------------------------- #
 
 
 # RUN UpdateGeoDatabase.py SCRIPT IN ArcGIS
-RunArcGISpy(file.path(dir, "DataProcessing/UpdateGeoDatabase.py"))
+RunArcGISpy(file.path(codepath, "UpdateGeoDatabase.py"))
 # --------------------------------------- #
 
 
 # IF ALL LOOKS OKAY, DELETE TEMPORARY FILES
-file.del = list.files(file.path(dir, "DataProcessing/temp"))
+file.del = list.files(file.path(dbpath, "temp"))
 file.del = file.del[c(grep("temp_", file.del), grep("Database_", file.del))]
-unlink(file.path(dir, "DataProcessing/temp", file.del))
+unlink(file.path(dbpath, "temp", file.del))
