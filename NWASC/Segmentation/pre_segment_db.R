@@ -1,13 +1,15 @@
 # Operations to prepare data in NWASC database for segmentation
 # Creates and stores dataframe 'segmentable' to be passed to 'segment' function
 
+# seg.min argument defines minimum segment length
+
 # Optionally creates and stores table 'empty_cf' of estimated correction factors
 # for datasets where empty transects exist but their locations are unknown
 
 # Kyle Dettloff
 # 12-18-2015
 # Updated 03-22-2016 to include spatial transect information
-# Revised 03-25-2016
+# Revised 03-29-2016
 
 # load packages
 suppressMessages(library(broom))
@@ -21,15 +23,22 @@ suppressMessages(library(geosphere))
 suppressMessages(library(RODBC))
 conn = odbcConnectAccess2007("Q:/Kyle_Working_Folder/Segmentation/seabird_database.mdb")
 obs = sqlFetch(conn, "observations", as.is = TRUE)
-track = sqlFetch(conn, "transects", as.is = TRUE)
+tran = sqlFetch(conn, "transects", as.is = TRUE)
+dataset = sqlFetch(conn, "dataset_list", as.is = TRUE)
 close(conn)
+rm(conn)
+detach(package:RODBC)
 
 # read in transect shapefile
 setwd("Q:/Kyle_Working_Folder/ArcGIS")
 suppressMessages(library(maptools))
 shape = readShapeSpatial("transect_lines")
+detach(package:maptools)
 
-preSegment = function(observations, transects, shapefile, seg.min = 0.5, est.correction = FALSE) {
+preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5, est.correction = FALSE) {
+  
+  # get survey type and survey method information
+  survey_vars = dataset %>% select(dataset_id, survey_type_cd, survey_method_cd)
   
   # process transect shapefile
   trans = tidy(shapefile)
@@ -46,8 +55,10 @@ preSegment = function(observations, transects, shapefile, seg.min = 0.5, est.cor
     select(-long, -lat) %>% distinct() %>% ungroup() %>%
     mutate(transect_id = shape@data$transect_i, dataset_id = shape@data$dataset_id,
            start_dt = as.character(shape@data$start_dt), start_tm = as.character(shape@data$start_tm),
-           end_dt = as.character(shape@data$end_dt), end_tm = as.character(shape@data$end_tm))
-  lines = lines_raw %>% filter(error < 0.025) %>% select(-error, -id)
+           end_dt = as.character(shape@data$end_dt), end_tm = as.character(shape@data$end_tm)) %>%
+    left_join(., survey_vars, by = "dataset_id")
+  lines = lines_raw %>% filter(survey_type_cd %in% c("a", "b"), survey_method_cd %in% c("cts", "dts"), error < 0.025) %>%
+    select(-error, -id)
   # join observations with transects from shapefile
   empty_sp = setdiff(lines$transect_id, observations$transect_id)
   observations_sp = observations %>% select(transect_id, dataset_id, obs_dt, obs_start_tm, spp_cd,
@@ -76,12 +87,14 @@ preSegment = function(observations, transects, shapefile, seg.min = 0.5, est.cor
     select(-obs_count_general_nb, -obs_count_intrans_nb) %>%
     mutate(count = ifelse(spp_cd == "NONE", 0, ifelse(is.na(count), 1, count))) %>%
     mutate(spp_cd = replace(spp_cd, count == 0, "NONE")) %>%
+    mutate(survey_type_cd = ifelse(survey_type_cd == "a", "aerial", ifelse(survey_type_cd == "b", "boat", NA))) %>%
     left_join(., select(transects, dataset_id, transect_id, transect_width_nb), by = c("dataset_id", "transect_id")) %>%
-    rename(strip_width = transect_width_nb, beaufort = seastate_beaufort_nb)
+    rename(strip_width = transect_width_nb, beaufort = seastate_beaufort_nb, survey_type = survey_type_cd, survey_method = survey_method_cd)
   
   # narrow tables to contain only unprocessed data (those without spatial information)
   observations = observations %>% filter(!(transect_id %in% lines_raw$transect_id))
-  transects = transects %>% filter(!(transect_id %in% lines_raw$transect_id))
+  transects = transects %>% filter(!(transect_id %in% lines_raw$transect_id)) %>%
+    left_join(., survey_vars, by = "dataset_id")
   
   # find transects with no observations
   empty_trans = setdiff(transects$transect_id, observations$transect_id)
@@ -89,11 +102,13 @@ preSegment = function(observations, transects, shapefile, seg.min = 0.5, est.cor
   # remove transects with all observations at a single point (if no transect specific information is available)
   # convert separate date and time columns into single datetime variables
   tmp = full_join(observations, transects, by = c("transect_id", "dataset_id")) %>%
-    filter(!is.na(transect_id), !(is.na(start_tm) & is.na(end_tm) & is.na(transect_time_min_nb) & is.na(transect_distance_nb) &
-                                  is.na(time_from_midnight_start) & is.na(time_from_midnight_stop))) %>%
+    filter(!is.na(transect_id), survey_type_cd %in% c("a", "b"), survey_method_cd %in% c("cts", "dts"),
+           !(is.na(start_tm) & is.na(end_tm) & is.na(transect_time_min_nb) & is.na(transect_distance_nb) &
+               is.na(time_from_midnight_start) & is.na(time_from_midnight_stop))) %>%
     select(transect_id, dataset_id, obs_dt, obs_start_tm, start_dt, start_tm, end_dt, end_tm,
            transect_time_min_nb, transect_distance_nb, traversal_speed_nb, time_from_midnight_start, time_from_midnight_stop,
-           lat, lon, heading_tx.y, spp_cd, obs_count_intrans_nb, obs_count_general_nb, transect_width_nb, seastate_beaufort_nb.x) %>%
+           lat, lon, heading_tx.y, spp_cd, obs_count_intrans_nb, obs_count_general_nb, transect_width_nb, seastate_beaufort_nb.x,
+           survey_type_cd, survey_method_cd) %>%
     group_by(dataset_id, transect_id) %>% arrange(obs_start_tm) %>% ungroup() %>%
     mutate(obs_count_intrans_nb = replace(obs_count_intrans_nb, transect_id %in% empty_trans, 0),
            obs_count_general_nb = replace(obs_count_general_nb, transect_id %in% empty_trans, 0)) %>%
@@ -114,12 +129,11 @@ preSegment = function(observations, transects, shapefile, seg.min = 0.5, est.cor
     mutate(traversal_speed_nb = ifelse(Vectorize(isTRUE)(traversal_speed_nb < 0), NA, traversal_speed_nb)) %>%
     mutate(trans_dist = ifelse(is.na(transect_distance_nb) & !is.na(traversal_speed_nb),
                                traversal_speed_nb * diff_tm_min / 60, transect_distance_nb)) %>%
-    mutate(survey_type = ifelse(diff_tm_min > 0 | trans_dist > 0, "cts", "dts")) %>%
   # create new column containing interpolated transect distances and speeds calculated from time between observations
   # calculate cumulative distance between observations
   # flag cases where observations occur outside of transect bounds
-    filter(survey_type == "cts") %>%
-    select(-transect_time_min_nb, -transect_distance_nb, -survey_type) %>%
+    filter(diff_tm_min > 0 | trans_dist > 0) %>%
+    select(-transect_time_min_nb, -transect_distance_nb) %>%
     mutate(time_from_midnight_start = obs_dt + seconds(time_from_midnight_start),
            time_from_midnight_stop = obs_dt + seconds(time_from_midnight_stop)) %>%
     group_by(dataset_id, transect_id) %>%
@@ -202,11 +216,14 @@ preSegment = function(observations, transects, shapefile, seg.min = 0.5, est.cor
     select(-obs_count_general_nb, -obs_count_intrans_nb) %>%
     mutate(count = ifelse(spp_cd == "NONE", 0, ifelse(is.na(count), 1, count))) %>%
     mutate(spp_cd = replace(spp_cd, count == 0, "NONE")) %>%
-    rename(strip_width = transect_width_nb, beaufort = seastate_beaufort_nb.x)
+    mutate(survey_type_cd = ifelse(survey_type_cd == "a", "aerial", ifelse(survey_type_cd == "b", "boat", NA))) %>%
+    rename(strip_width = transect_width_nb, beaufort = seastate_beaufort_nb.x, survey_type = survey_type_cd, survey_method = survey_method_cd)
   
   # combine all records (those with and without transect shapefiles)
   segmentable <<- bind_rows(pre_segmentable, observations_sp) %>% group_by(dataset_id, transect_id)
 }
 
 ### run function
-preSegment(obs, track, shape)
+preSegment(obs, tran, dataset, shape)
+# remove large objects to avoid memory issues
+rm(obs, tran, dataset, shape)
