@@ -12,9 +12,18 @@
 # ------------------------------------------------------------------------- #
 
 
+# SET DIRECTORIES
+# ------------------------------------------------------------------------- #
+yearLabel = "AMAPPS_2013_09" # CHANGE THIS!!!!!!!!!!!!
+dir = paste("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/DataProcessing/Surveys/AMAPPS/",
+            yearLabel, sep="")
+dbpath = "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/DataBase"
+
+
+
 # OBSERVATIONS TABLE
 # ------------------------------------------------------------------------- #
-obs = read.csv(file.path(dir, "DataProcessing/temp_Observations.csv"), 
+obs = read.csv(file.path(dir, yearLabel, "_Observations.csv"), 
                stringsAsFactors = FALSE)
 
 # GET SPECIES_INFORMATION TABLE FROM ATLANTIC COAST SURVEYS DATABASE
@@ -25,33 +34,20 @@ odbcCloseAll()
 # CHECK TO MAKE SURE THERE ARE NO NON-SURVEY SPECIES IN OBSERVATIONS FILE
 sort(unique(obs$Species))[which(!(sort(unique(obs$Species)) %in% sort(unique(Database_Species_Information$Species))))]
 
-obs = obs[order(obs$SurveyNbr, obs$Transect, obs$Replicate, obs$Crew, obs$Seat, obs$Obs, 
-                obs$Year, obs$Month, obs$Day, obs$Sec), ]
 # ------------------------------------------------------------------------- #
 
 
 # TRACKS TABLE
 # ------------------------------------------------------------------------- #
-tracks = read.csv(file.path(dir, "DataProcessing/temp_Tracks.csv"), stringsAsFactors = FALSE)
-tracks$begend = 0
-tracks$begend[grepl("BEG", tracks$Type)] = -1
-tracks$begend[grepl("END", tracks$Type)] = 1
-tracks$coch = 0
-tracks$coch[tracks$Type == "COCH" & tracks$Condition == 0] = 1
-tracks = tracks[order(tracks$SurveyNbr, tracks$Transect, tracks$Replicate, tracks$Crew, 
-                      tracks$Seat, tracks$Obs, tracks$Year, tracks$Month, tracks$Day, 
-                      tracks$Sec, tracks$begend, tracks$coch), ]
-tracks$MissingTrackFile = NULL
-tracks$begend = NULL
-tracks$coch = NULL
+tracks = read.csv(file.path(dir, paste(yearLabel,"_Tracks.csv"),sep=""), stringsAsFactors = FALSE)
+
 # ------------------------------------------------------------------------- #
 
 
 # TRANSECT INFORMATION TABLE
 # ------------------------------------------------------------------------- #
-ti = read.csv(file.path(dir, "DataProcessing/temp_Transect_Information.csv"), 
+ti = read.csv(file.path(dir, "DataProcessing/",yearLabel,"_Transect_Information.csv"), 
               stringsAsFactors = FALSE)
-ti = ti[order(ti$SurveyNbr, ti$Transect, ti$Replicate, ti$Crew, ti$Seat, ti$Obs), ]
 # ------------------------------------------------------------------------- #
 
 
@@ -100,46 +96,10 @@ odbcCloseAll()
 # ------------------------------------------------------------------------- #
 
 
-
-# ADD DISTANCE FLOWN BY OBSERVATION CONDITION TO Atlantic_Coast_Surveys_DistanceFlownByCondition.csv DATA FILE
-# ------------------------------------------------------------------------- #
-#dist = read.csv(file.path(dbpath, "Atlantic_Coast_Surveys_DistanceFlownByCondition.csv"), 
-#                    stringsAsFactors = FALSE)
-#dist.add = read.csv(file.path(dir, "DataProcessing/temp_DistanceFlownByCondition.csv"), 
-#                    stringsAsFactors = FALSE)
-#dist = rbind(dist, dist.add)
-#dist = dist[order(dist$SurveyNbr, dist$Transect, dist$Replicate, dist$Crew, dist$Seat, dist$Obs), ]
-#write.csv(dist, file.path(dbpath, "Atlantic_Coast_Surveys_DistanceFlownByCondition.csv"), 
-#          row.names = FALSE, na = "")
-# ------------------------------------------------------------------------- #
-
-
-# ADD DATA TO ACWSD SEA DUCK DATABASE
-# ------------------------------------------------------------------------- #
-# GET SPECIES_INFORMATION TABLE FROM ACWSD SEA DUCK DATABASE
-# database = odbcConnectAccess2007(file.path(dbpath, "ACWSD_SeaDuck.accdb"))
-# Database_Species_Information = sqlFetch(database, "Species_Information", as.is = TRUE)
-# odbcCloseAll()
-# 
-# sort(unique(obs$Species))[which(!(sort(unique(obs$Species)) %in% sort(unique(Database_Species_Information$Species))))]
-# seaduck = Database_Species_Information$Species
-# obs = subset(obs, Species %in% seaduck)
-# 
-# database = odbcConnectAccess2007(file.path(dbpath, "ACWSD_SeaDuck.accdb"))
-# sqlSave(channel = database, dat = obs, tablename = "Observations", append = TRUE, 
-#         rownames = FALSE, colnames = FALSE)
-# sqlSave(channel = database, dat = tracks, tablename = "Tracks", append = TRUE, 
-#         rownames = FALSE, colnames = FALSE)
-# sqlSave(channel = database, dat = ti, tablename = "Transect_Information", append = TRUE, 
-#         rownames = FALSE, colnames = FALSE)
-# odbcCloseAll()
-# ------------------------------------------------------------------------- #
-
-
 # IF ALL LOOKS OKAY, DELETE TEMPORARY FILES
-file.del = list.files(file.path(dir, "DataProcessing"))
-file.del = file.del[grep("temp_", file.del)]
-unlink(file.path(dir, "DataProcessing", file.del))
+#file.del = list.files(file.path(dir, "DataProcessing"))
+#file.del = file.del[grep("temp_", file.del)]
+#unlink(file.path(dir, "DataProcessing", file.del))
 
 
 # ADD DATA TO ATLANTIC COAST SURVEYS GEODATABASE
