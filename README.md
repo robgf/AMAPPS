@@ -127,6 +127,25 @@ d) save each crew/day shapefile in an edited_shapefiles folder
         - Click on the folder icon and  
         - Switch 'save type as' to shapefile  
 
+**Outputs:**  
+a) Part1  
+- temporary files to show you errors that need fixing (missing files, errors in the data, etc.)
+- shapefiles in temp_shapefiles folder 
+- obstrack R workspace  
+- obstack part1 file  
+
+b) GIS editing  
+- edited shapefiles in edited_shapefiles folder  
+
+c) Part2  
+- Transect information file  
+- Observation file  
+- Track file  
+- Offline observations file  
+- Send to NOAA file (marine mammals, fish, etc.)  
+- Deleted points file (from compairing temp. and edited shapefiles)  
+- Obstrack final file (processed/ cleaned data including all the track and observation information - this goes to NWASC)  
+
 
 4) Entering the data in the Access "Atlantic_Coast_Surveys" database 
 --------------------------------------------------------
@@ -147,26 +166,5 @@ d) save each crew/day shapefile in an edited_shapefiles folder
 - R script
 - SQL script
 
-
-6) Archiving the data 
---------------------------------------------------------
-**Process:**  
-[id4]: http://www.nodc.noaa.gov/cgi-bin/OAS/prd/accession/0115356
-- Once the data has been entered into the NWASC database, the data are sent to the NOAA National Oceanographic Data Center (NODC) to be archived. A past submission can be seen [here][id4] (accessions_id: 0115356). Datasets that are already in the NODC can be found in the DataSets\_in_\NODC.xlsx file.
-
-**Scripts needed:**
-- create_vw_data_output_nodc_dec2013 (SQL file to create NODC view excluding some datasets that shouldn't be public or were not designed for bird counts)
-
-[id5]:https://www.nodc.noaa.gov/s2n/
-[id6]:http://www.nodc.noaa.gov/archive/arc0070/0115356/1.1/data/0-data/seabird_data_archive_NODC_30Dec2013.csv
-[id7]:http://www.nodc.noaa.gov/archive/arc0070/0115356/1.1/data/0-data/seabird_data_structure_NODC_30Dec2013.csv
-[id8]:http://www.nodc.noaa.gov/archive/arc0070/0115356/1.1/data/0-data/Atlantic%20Offshore%20Seabird%20Dataset%20Catalog_NODC%20Metadata_FGDC.xml
-
-a) All data-object-tables from the database need to be extracted and combined in one flat 'csv' file, [see old][id6]  
-b) Prepare a file with column descriptions, [see old][id7]  
-c) Prepare a FGDC record metadata file, [see old][id8]  
-d) Report needs to be in 'pdf' format.  
-  
-The data should be submitted using the submission [website][id5]. 
-
+**If you are also managing the NWASC, see NWASC folder to continue**
 
