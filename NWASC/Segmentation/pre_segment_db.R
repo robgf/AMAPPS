@@ -33,7 +33,6 @@ detach(package:RODBC)
 setwd("Q:/Kyle_Working_Folder/ArcGIS")
 suppressMessages(library(maptools))
 shape = readShapeSpatial("transect_lines")
-detach(package:maptools)
 
 preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5, est.correction = FALSE) {
   
