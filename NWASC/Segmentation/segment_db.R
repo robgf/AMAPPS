@@ -8,10 +8,11 @@
 
 # Kyle Dettloff
 # 12-18-2015
+# Updated 03-30-2016 to optionally remove segments over land
 
-segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurences = FALSE) {
+segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurences = FALSE, remove.over.land = TRUE) {
   # calculate number of segments for each transect
-  seg = data %>% mutate(nseg = ifelse(trans_dist_eff <= seg.length, 1,
+  seg = segmentable %>% mutate(nseg = ifelse(trans_dist_eff <= seg.length, 1,
                                       ifelse(trans_dist_eff / seg.length - floor(trans_dist_eff / seg.length) >= seg.tol,
                                              floor(trans_dist_eff / seg.length) + 1, floor(trans_dist_eff / seg.length)))) %>%
     # randomly assign extra distance
@@ -49,9 +50,22 @@ segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurenc
     mutate(coords_mid = list(destPoint(c(first(lon_start), first(lat_start)), first(trans_bearing), first(seg_dist_mid) * 1852))) %>%
     select(-seg_dist_mid, -trans_bearing, -lat_start, -lon_start) %>%
     mutate(seg_mid_lat = unlist(lapply(coords_mid, `[[`, 2)), seg_mid_lon = unlist(lapply(coords_mid, `[[`, 1))) %>%
-    select(-coords_mid) %>%
+    select(-coords_mid)
+  
+  # remove segments with midpoints that occur over land
+  if(remove.over.land == TRUE) {
+    suppressMessages(require(maps))
+    NE = c("maine", "new hampshire", "rhode island", "massachusetts", "new york", "new jersey", "delaware", "north carolina", 
+           "south carolina", "georgia", "florida", "maryland", "virginia", "pennsylvania", "connecticut", "vermont", "west virginia")
+    states = map("state", regions = NE, fill = TRUE, plot = FALSE)
+    states.sp = map2SpatialPolygons(states, IDs = states$names, proj4string = CRS("+proj=longlat"))
+    seg.sp = SpatialPoints(cbind(seg_final_long$seg_mid_lon, seg_final_long$seg_mid_lat), proj4string = CRS(proj4string(states.sp)))
+    over.land = !is.na(over(seg.sp, states.sp))
+    seg_final_long = seg_final_long %>% ungroup() %>% mutate(over_land = over.land) %>% filter(over_land == FALSE) %>% select(-over_land)
+  }
+  
     # final quality control to check if observations are within specified distance of segment midpoints  
-    rowwise() %>% mutate(obs_dist = distVincentySphere(c(lon, lat), c(seg_mid_lon, seg_mid_lat)) / 1852) %>%
+  seg_final_long = seg_final_long %>% rowwise() %>% mutate(obs_dist = distVincentySphere(c(lon, lat), c(seg_mid_lon, seg_mid_lat)) / 1852) %>%
     select(-lat, -lon) %>%
     filter(obs_dist <= sqrt((seg_dist / 2) ^ 2 + dist.max ^ 2) | is.na(obs_dist) | (seg_extra > 0 & seg_extra != nseg)) %>%
     select(-obs_dist, -nseg, -seg_extra) %>% mutate(seg_dist = round(seg_dist, 3)) %>%
