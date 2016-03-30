@@ -87,10 +87,12 @@ colnames(shapefileDataframe)[colnames(shapefileDataframe)=="coords.x2"] <- "lat"
 # remove duplicates that might have occured in this process
 shapefileDataframe = shapefileDataframe[!duplicated(shapefileDataframe), ]
 
-# compare old with new  
+# compare old workspace with edited shapefiles to see what was deleted   
 deletedPoints = rbind(shapefileDataframe, obstrack)
 rownames(deletedPoints) = NULL #remove row.names
-deletedPoints = deletedPoints[-(which(duplicated(deletedPoints[,1:11]) | duplicated(deletedPoints[,1:11], fromLast=TRUE))),]
+ind = paste(deletedPoints$key,deletedPoints$sec, deletedPoints$type, sep="_")
+deletedPoints = deletedPoints[!(duplicated(ind) | duplicated(ind, fromLast=TRUE)),]
+rm(ind)
 # not using all rows for duplicates since some have NA or empty which come up as different rather than duplicate
 
 # visually inspect that no files were misslabeled, and that edits look about right...
@@ -178,10 +180,20 @@ summary(track.final)
 # ------------------------------------------------------------------------- #
 ### STEP 18: ADD REPLICATE COLUMN IF TRANSECT WAS FLOWN TWICE
 # ------------------------------------------------------------------------- #
-# Create replicate column for if a transect was flown more than once in a survey
+# Create replicate column for if a transect was flown more than one day in a survey
 track.final$replicate = 1
-track.final$replicate[duplicated(substr(unique(paste(track.final$transect,track.final$day,sep="_")),1,6))] = 2
-# need to check that this works
+track.final$comment= as.character(track.final$comment)
+ind = unique(paste(track.final$transect,track.final$day,sep="_"))
+if (any(duplicated(substr(ind,1,6)))) {
+  track.final$replicate[track.final$transect==substr(ind[duplicated(substr(ind,1,6))],1,6)&
+                          track.final$day==substr(ind[duplicated(substr(ind,1,6))],8,9)]=2
+  track.final$comment[track.final$transect==substr(ind[duplicated(substr(ind,1,6))],1,6)&
+                        track.final$day==substr(ind[duplicated(substr(ind,1,6))],8,9)] = paste(track.final$comment[track.final$transect==substr(ind[duplicated(substr(ind,1,6))],1,6)&
+                                                                                                                     track.final$day==substr(ind[duplicated(substr(ind,1,6))],8,9)],"; Transect flown more than one day ", sep="")
+}
+rm(ind)
+#
+###### this code snippet needs work since a replicate could occur on the same day #########
 # ------------------------------------------------------------------------- #
 
 
@@ -203,7 +215,7 @@ track.final = rbind(track.final, deletedPoints[deletedPoints$offline==1,])
 
 # save deleted points as a .csv
 deletedPoints = deletedPoints[deletedPoints$offline == 0,]
-write.csv(deletedPoints, file =paste(dir.out,"/", yearLabel, "deletedShapefilePoints.csv", sep=""), row.names=FALSE)
+write.csv(deletedPoints, file =paste(dir.out,"/", yearLabel, "_DeletedShapefilePoints.csv", sep=""), row.names=FALSE)
 rm(deletedPoints)
 # ------------------------------------------------------------------------- #
 
@@ -226,7 +238,7 @@ sort(unique(track.final$type[tmp]))
 forNOAA = track.final[tmp,]
 forNOAA = forNOAA[,!names(forNOAA) %in% c("dataError","transLat", "transLong", "flag1", "bearing", "sbearing", "flag2", 
                                           "flag3", "onLand", "begend", "replicate", "keep")]
-write.csv(forNOAA, file =paste(dir.out, "/", yearLabel, "forNOAA.csv", sep=""), row.names=FALSE)
+write.csv(forNOAA, file =paste(dir.out, "/", yearLabel, "_Send2NOAA.csv", sep=""), row.names=FALSE)
 rm(forNOAA)
 # ------------------------------------------------------------------------- #
 
@@ -244,13 +256,24 @@ track.final$SurveyNbr = surveyNbr
 
 
 # ----------------------------------------------------------------------- #
-# TRACK INFORMATION TABLE
+# TRACK TABLE
 # ----------------------------------------------------------------------- #
 
 trackTbl = track.final[track.final$Species %in% c("WAYPNT","BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH"),]
 trackTbl$Species[trackTbl$Species=="BEGSEG"] = "BEGTRAN" 
 trackTbl$Species[trackTbl$Species=="ENDSEG"] = "ENDTRAN" 
-write.csv(trackTbl, file =paste(dir.out,"/temp_Tracks.csv", sep=""), row.names=FALSE)
+trackTbl$begend = 0
+trackTbl$begend[grepl("BEG", trackTbl$Type)] = -1
+trackTbl$begend[grepl("END", trackTbl$Type)] = 1
+trackTbl$coch = 0
+trackTbl$coch[trackTbl$Type == "COCH" & trackTbl$Condition == 0] = 1
+trackTbl = trackTbl[order(trackTbl$SurveyNbr, trackTbl$Transect, trackTbl$Replicate, trackTbl$Crew, 
+                      trackTbl$Seat, trackTbl$Obs, trackTbl$Year, trackTbl$Month, trackTbl$Day, 
+                      trackTbl$Sec, trackTbl$begend, trackTbl$coch), ]
+trackTbl$MissingTrackFile = NULL
+trackTbl$begend = NULL
+trackTbl$coch = NULL
+write.csv(trackTbl, file =paste(dir.out,"/", yearLabel, "_Tracks.csv", sep=""), row.names=FALSE)
 
 
 # ------------------------------------------------------------------------- #
@@ -321,7 +344,7 @@ obs.misc_to_add = subset(track.final, keep == 0, select = c(SurveyNbr, Crew, Sea
 obs.misc_to_add = obs.misc_to_add[order(obs.misc_to_add$SurveyNbr, obs.misc_to_add$Crew, obs.misc_to_add$Seat, 
                                         obs.misc_to_add$Obs, obs.misc_to_add$Year, obs.misc_to_add$Month, 
                                         obs.misc_to_add$Day, obs.misc_to_add$Sec), ]
-write.csv(obs.misc_to_add, file.path(dir.out, paste("OfflineObs", yearLabel, "_Final.csv", sep = "")), row.names = FALSE, na = "")
+write.csv(obs.misc_to_add, file.path(dir.out, paste(yearLabel, "OfflineObs_Final.csv", sep = "_")), row.names = FALSE, na = "")
 
 obs.misc = read.csv(file.path(dbpath, "Atlantic_Coast_Surveys_MiscObservations.csv"), stringsAsFactors = FALSE)
 obs.misc = rbind(obs.misc, obs.misc_to_add)
@@ -365,6 +388,8 @@ df$WindArea=""
 df$MissingTrackFile=""
 df$ImputedDistFlown=""
 
+df = df[order(df$SurveyNbr, df$Transect, df$Replicate, df$Crew, df$Seat, df$Obs), ]
+
 write.csv(df, file = paste(dir.out, "/", yearLabel, "_Transect_Information.csv", sep=""), row.names=FALSE)
 rm(df)
 
@@ -390,8 +415,14 @@ track.final.ACS$keep = NULL
 track.final.ACS$survey = NULL
 summary(track.final.ACS)
 
+track.final.ACS = track.final.ACS[order(track.final.ACS$SurveyNbr, track.final.ACS$Transect, 
+                                        track.final.ACS$Replicate, track.final.ACS$Crew, 
+                                        track.final.ACS$Seat, track.final.ACS$Obs, 
+                                        track.final.ACS$Year, track.final.ACS$Month, 
+                                        track.final.ACS$Day, track.final.ACS$Sec), ]
+
 # OBS TABLE
-write.csv(track.final.ACS, file = paste(dir.out,"/temp_Observations.csv", sep=""), row.names=FALSE)
+write.csv(track.final.ACS, file = paste(dir.out,"/", yearLabel,"_Observations.csv", sep=""), row.names=FALSE)
 # ------------------------------------------------------------------------- #
 
 
@@ -400,7 +431,7 @@ write.csv(track.final.ACS, file = paste(dir.out,"/temp_Observations.csv", sep=""
 # ------------------------------------------------------------------------- #
 # This includes all observations (even marine)
 obsTrackFinalOutput(track.final, yearLabel, dir.out)
-write.csv(track.final, file =paste(dir.out,"/", yearLabel, "Obstrack_Final.csv", sep=""), row.names=FALSE)
+write.csv(track.final, file =paste(dir.out,"/", yearLabel, "_Obstrack_Final.csv", sep=""), row.names=FALSE)
 # ------------------------------------------------------------------------- #
 
 
