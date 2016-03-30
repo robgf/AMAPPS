@@ -52,7 +52,8 @@ segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurenc
     select(-coords_mid) %>%
     # final quality control to check if observations are within specified distance of segment midpoints  
     rowwise() %>% mutate(obs_dist = distVincentySphere(c(lon, lat), c(seg_mid_lon, seg_mid_lat)) / 1852) %>%
-    select(-lat, -lon) %>% filter(obs_dist <= sqrt((seg_dist / 2) ^ 2 + dist.max ^ 2) | is.na(obs_dist) | (seg_extra > 0 & seg_extra != nseg)) %>%
+    select(-lat, -lon) %>%
+    filter(obs_dist <= sqrt((seg_dist / 2) ^ 2 + dist.max ^ 2) | is.na(obs_dist) | (seg_extra > 0 & seg_extra != nseg)) %>%
     select(-obs_dist, -nseg, -seg_extra) %>% mutate(seg_dist = round(seg_dist, 3)) %>%
     # calculate segment-averaged Beaufort values
     ungroup() %>% group_by(dataset_id, transect_id, seg_num) %>%
@@ -62,7 +63,8 @@ segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurenc
   # summarize species data by segment and convert to wide form
   seg_final = seg_final_long %>%
     mutate(spp_cd = replace(spp_cd, is.na(spp_cd), "NONE")) %>%
-    group_by(dataset_id, transect_id, seg_num, spp_cd, obs_dt, seg_mid_lat, seg_mid_lon, seg_dist, strip_width, beaufort, survey_type, survey_method)
+    group_by(dataset_id, transect_id, seg_num, spp_cd, obs_dt, seg_mid_lat, seg_mid_lon,
+             seg_dist, strip_width, beaufort, survey_type, survey_method)
   if (occurences == FALSE) {
     # total species count
     seg_final = seg_final %>% summarise(count = sum(count)) %>%
