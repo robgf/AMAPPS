@@ -225,5 +225,5 @@ preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5
 
 ### run function
 preSegment(obs, tran, dataset, shape)
-# remove large objects to avoid memory issues
+# remove large objects to free memory
 rm(obs, tran, dataset, shape)
