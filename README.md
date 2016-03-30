@@ -144,7 +144,10 @@ c) Part2
 - Offline observations file  
 - Send to NOAA file (marine mammals, fish, etc.)  
 - Deleted points file (from compairing temp. and edited shapefiles)  
-- Obstrack final file (processed/ cleaned data including all the track and observation information - this goes to NWASC)  
+- Obstrack final file (processed/ cleaned data including all the track and observation information, even offline observations - this goes to NWASC)  
+- Missing Observations file (make sure you check this to make sure there isn't data missing that you can fix)
+- Missing Tracks file (make sure you check this to make sure there isn't data missing that you can fix)
+- Crew Summary
 
 
 4) Entering the data in the Access "Atlantic_Coast_Surveys" database 
