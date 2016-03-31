@@ -30,7 +30,7 @@ rm(conn)
 detach(package:RODBC)
 
 # read in transect shapefile
-setwd("Q:/Kyle_Working_Folder/ArcGIS")
+setwd("Q:/Kyle_Working_Folder/ArcGIS/Transects")
 suppressMessages(library(maptools))
 shape = readShapeSpatial("transect_lines")
 
