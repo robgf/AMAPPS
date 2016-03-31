@@ -78,7 +78,7 @@ segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurenc
   seg_final = seg_final_long %>%
     mutate(spp_cd = replace(spp_cd, is.na(spp_cd), "NONE")) %>%
     group_by(dataset_id, transect_id, seg_num, spp_cd, obs_dt, seg_mid_lat, seg_mid_lon,
-             seg_dist, strip_width, beaufort, survey_type, survey_method)
+             seg_dist, transect_width_m, beaufort, survey_type, survey_method)
   if (occurences == FALSE) {
     # total species count
     seg_final = seg_final %>% summarise(count = sum(count)) %>%
