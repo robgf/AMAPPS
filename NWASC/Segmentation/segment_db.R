@@ -12,7 +12,7 @@
 
 segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurences = FALSE, remove.over.land = TRUE) {
   # calculate number of segments for each transect
-  seg = segmentable %>% mutate(nseg = ifelse(trans_dist_eff <= seg.length, 1,
+  seg = data %>% mutate(nseg = ifelse(trans_dist_eff <= seg.length, 1,
                                       ifelse(trans_dist_eff / seg.length - floor(trans_dist_eff / seg.length) >= seg.tol,
                                              floor(trans_dist_eff / seg.length) + 1, floor(trans_dist_eff / seg.length)))) %>%
     # randomly assign extra distance
@@ -25,7 +25,7 @@ segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurenc
     # calculate segment distances and number of empty segments
     mutate(tot_empty = nseg - n_distinct(seg_num))
   # create dataframe of empty segments
-  seg_empty = seg %>% select(strip_width, lat_start, lon_start, trans_bearing, trans_dist_eff, nseg, seg_extra, tot_empty) %>%
+  seg_empty = seg %>% select(-obs_dt, -lat, -lon, -spp_cd, -beaufort, -count, -seg_num) %>%
     distinct() %>% ungroup() %>% filter(tot_empty > 0) %>% slice(rep(row_number(), tot_empty)) %>% select(-tot_empty)
   # merge empty segments with observations and assign segment numbers
   seg_final_long = bind_rows(seg, seg_empty) %>% select(-tot_empty) %>% group_by(dataset_id, transect_id) %>%
