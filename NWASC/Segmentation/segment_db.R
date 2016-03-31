@@ -82,11 +82,11 @@ segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurenc
   if (occurences == FALSE) {
     # total species count
     seg_final = seg_final %>% summarise(count = sum(count)) %>%
-      spread(spp_cd, count, fill = 0) %>% select(-NONE) %>% ungroup()
+      spread(spp_cd, count, fill = 0) %>% select(-NONE) %>% ungroup() %>% data.frame()
     } else if (occurences == TRUE) {
       # number of species occurences
       seg_final = seg_final %>% select(-count) %>% summarise(noccur = n()) %>%
-        spread(spp_cd, noccur, fill = 0) %>% select(-NONE) %>% ungroup()
+        spread(spp_cd, noccur, fill = 0) %>% select(-NONE) %>% ungroup() %>% data.frame()
     }
   seg_final
 }
