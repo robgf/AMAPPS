@@ -26,17 +26,6 @@ commonErrors <- function(data) {
     data$seat[data$seat=="ff"] = seat[data$seat=="ff"]
   }
   
-  # IF THERE WAS AN ERROR AUTO-FILLING TRANSECT WHEN IT WAS EMPTY OR A TYPO IN TRANSECT
-  if(any(data$transect[grepl("BEG", data$type)] != data$count[grepl("BEG", data$type)] |
-         data$transect[grepl("BEG", data$type)] != data$count[grepl("BEG", data$type)]) {
-    data$dataChange[data$transect[grepl("BEG", data$type)] != data$count[grepl("BEG", data$type)]:
-                    data$transect[grepl("BEG", data$type)] != data$count[grepl("BEG", data$type)]=
-                    paste(dataChange[data$transect[grepl("BEG", data$type)] != data$count[grepl("BEG", data$type)]],"; changed transect to match count", sep="")
-    data$transect[data$transect[grepl("BEG", data$type)] != data$count[grepl("BEG", data$type)]:
-                    data$transect[grepl("BEG", data$type)] != data$count[grepl("BEG", data$type)]=
-                    data$count[data$transect[grepl("BEG", data$type)] != data$count[grepl("BEG", data$type)]
-  }
-    
-  return(data)
+ return(data)
 }
 
