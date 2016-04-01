@@ -155,6 +155,15 @@ shapefileDataframe$dataChange[shapefileDataframe$flag1==1] = paste(shapefileData
                                                                    sep="")
 shapefileDataframe$transect[shapefileDataframe$flag1==1] = as.character(trans$latidext[d[,5]])
 rm(trans, d)
+
+#REPORT BACK WHAT WAS CHANGED SO THAT IT CAN BE CHECKED
+checkChange = select(shapefileDataframe,transect,dataChange,flag1) %>% filter(flag1==1) %>% group_by(transect) %>% select(-flag1) %>% filter(row_number()==1)
+checkChange
+
+# MAKE SURE THAT SINCE YOU CHANGED THE TRANSECT THAT THERE ISN'T ONE OBS LEFT ON THE TRANSECT IT WAS CHANGED FROM
+# NEED TO CODE THIS+=============================
+# MAKE SURE 2 OBS ONCE CHANGED
+select(shapefileDataframe,transect,obs) %>% filter(transect==checkChange$transect) %>% group_by(transect,obs) %>% filter(row_number()==1) %>% arrange(transect)
 # ------------------------------------------------------------------------- #
 
 
