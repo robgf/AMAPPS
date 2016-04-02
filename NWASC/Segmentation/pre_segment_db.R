@@ -9,7 +9,7 @@
 # Kyle Dettloff
 # 12-18-2015
 # Updated 03-22-2016 to include spatial transect information
-# Revised 03-29-2016
+# Revised 04-01-2016
 
 # load packages
 suppressMessages(library(broom))
@@ -77,8 +77,7 @@ preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5
     mutate(obs_count_intrans_nb = replace(obs_count_intrans_nb, transect_id %in% empty_sp, 0),
            obs_count_general_nb = replace(obs_count_general_nb, transect_id %in% empty_sp, 0)) %>%
     rowwise() %>%
-    mutate(trans_bearing = mean(c(bearing(c(lon_start, lat_start), c(lon_end, lat_end)),
-                                  finalBearing(c(lon_start, lat_start), c(lon_end, lat_end))))) %>%
+    mutate(trans_bearing = bearing(c(lon_start, lat_start), c(lon_end, lat_end), sphere = TRUE)) %>%
     mutate(dist_cum = distVincentySphere(c(lon_start, lat_start), c(lon, lat)) / 1852) %>%
     ungroup() %>% select(-lon_end, -lat_end) %>%
     filter(round(dist_cum, 3) <= round(trans_dist_eff, 3) | is.na(dist_cum), trans_dist_eff >= seg.min) %>%
@@ -87,6 +86,7 @@ preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5
     mutate(count = ifelse(spp_cd == "NONE", 0, ifelse(is.na(count), 1, count))) %>%
     mutate(spp_cd = replace(spp_cd, count == 0, "NONE")) %>%
     mutate(survey_type_cd = ifelse(survey_type_cd == "a", "aerial", ifelse(survey_type_cd == "b", "boat", NA))) %>%
+    mutate(shape_avail = "Yes") %>%
     rename(transect_width_m = survey_width_m, beaufort = seastate_beaufort_nb, survey_type = survey_type_cd, survey_method = survey_method_cd)
   
   # narrow tables to contain only unprocessed data (those without spatial information)
@@ -108,6 +108,9 @@ preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5
            lat, lon, heading_tx.y, spp_cd, obs_count_intrans_nb, obs_count_general_nb, survey_width_m, seastate_beaufort_nb.x,
            survey_type_cd, survey_method_cd) %>%
     group_by(dataset_id, transect_id) %>% arrange(obs_start_tm) %>% ungroup() %>%
+    # convert headings to be consistent with geosphere package
+    mutate(heading_tx.y = as.numeric(heading_tx.y), heading_tx.y = ifelse(heading_tx.y > 360, heading_tx.y / 10, heading_tx.y),
+           heading_tx.y = ifelse(heading_tx.y > 180, heading_tx.y - 360, heading_tx.y)) %>%
     mutate(obs_count_intrans_nb = replace(obs_count_intrans_nb, transect_id %in% empty_trans, 0),
            obs_count_general_nb = replace(obs_count_general_nb, transect_id %in% empty_trans, 0)) %>%
     mutate(obs_dt = ymd_hms(obs_dt), obs_start_tm = ymd_hms(obs_start_tm), start_tm = ymd_hms(start_tm),
@@ -149,7 +152,7 @@ preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5
     mutate(dist_interp = as.numeric(ifelse(is.na(trans_dist) | (trans_dist < max(dist_cum) & !is.na(max(dist_cum))),
                                            speed_interp * diff_tm_min / 60, trans_dist))) %>%
     select(-trans_dist) %>%
-    filter(!identical(c(first(lon), first(lat)), c(last(lon), last(lat))) | !is.na(dist_interp) & !is.na(heading_tx.y)) %>%
+    filter(n_distinct(lon, lat) > 2 | !is.na(dist_interp) & !is.na(heading_tx.y)) %>%
     mutate(in_trans = as.character(ifelse(start_tm > first(obs_start_tm) | end_tm < last(obs_start_tm), "Out", "In")))
  
 #####################
@@ -165,11 +168,11 @@ preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5
 #####################
   
   # approximate lat/lon of transect endpoints using best available ancillary information, estimate total transect distance
-  # if all observations occur at a single point, randomly assign them to a location on transect
+  # if all observations occur at a single point, randomly assign a location on transect
   # discard impossible observations based on interpolated variables
   # create a single count column with in-transect data whenever available, general counts otherwise
   # this dataframe now contains all data that is "segmentable" in long form
-  pre_segmentable = tmp %>% filter(in_trans != "Out" | is.na(in_trans)) %>% select(-in_trans) %>%
+  pre_segmentable = tmp %>% filter(in_trans == "In" | is.na(in_trans)) %>% select(-in_trans) %>%
     mutate(start_tm_to_obs1 = as.numeric(ifelse(first(obs_start_tm) - first(start_tm) >= 0, first(obs_start_tm) - first(start_tm), NA)),
            end_tm_from_obsn = as.numeric(ifelse(first(end_tm) - last(obs_start_tm) >= 0, first(end_tm) - last(obs_start_tm), NA))) %>%
     select(-obs_start_tm, -start_tm, -end_tm) %>%
@@ -185,19 +188,23 @@ preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5
                                ifelse(!is.na(speed_interp) & !is.na(end_tm_from_obsn), speed_interp / 60 * end_tm_from_obsn,
                                       first(dist_interp) - max(dist_cum) - dist_start_to_obs1)))) %>%
     select(-diff_tm_min, -speed_interp, -end_tm_from_obsn) %>%
-    mutate(heading = as.numeric(ifelse(!is.na(heading_tx.y), heading_tx.y, bearing(c(first(lon), first(lat)), cbind(lon, lat))))) %>%
-    mutate(heading = replace(heading, heading == 180 & is.na(heading_tx.y), NA)) %>%
-    mutate(gps_interp = as.character(ifelse((max(heading, na.rm = TRUE) - min(heading, na.rm = TRUE)) < 15 |
-                                            (max(heading, na.rm = TRUE) - min(heading, na.rm = TRUE)) > 345, "Yes", "No"))) %>%
-    filter(gps_interp != "No" | is.na(gps_interp)) %>%
-    select(-gps_interp, -heading_tx.y) %>%
+    mutate(lat_first = first(lat), lon_first = first(lon)) %>%
+    mutate(heading = as.numeric(ifelse(!is.na(heading_tx.y), heading_tx.y, ifelse(row_number() == 1, NA,
+                                       bearing(c(first(lon), first(lat)), cbind(lon, lat), sphere = TRUE))))) %>%
+    rowwise() %>% mutate(heading = replace(heading, is.na(heading_tx.y) & !is.na(heading) & identical(c(lon_first, lat_first), c(lon, lat)), NA)) %>%
+    select(-lat_first, -lon_first) %>% ungroup() %>% group_by(dataset_id, transect_id) %>%
+    mutate(gps_diff = max(heading, na.rm = TRUE) - min(heading, na.rm = TRUE)) %>%
+    filter(gps_diff < 10 | gps_diff > 360 - 10 | is.na(gps_diff)) %>%
+    select(-gps_diff, -heading_tx.y) %>%
     mutate(dist_cum = dist_cum + dist_start_to_obs1) %>%
     filter(max(dist_cum) + dist_obsn_to_end <= dist_interp) %>% select(-dist_interp) %>%
-    mutate(heading_start = ifelse(identical(c(first(lon), first(lat)), c(last(lon), last(lat))) & heading >= 180, heading - 180,
-                                  ifelse(identical(c(first(lon), first(lat)), c(last(lon), last(lat))) & heading < 180, heading + 180,
-                                         bearing(c(nth(lon, 2), nth(lat, 2)), c(first(lon), first(lat))))),
-           heading_end = ifelse(identical(c(first(lon), first(lat)), c(last(lon), last(lat))), heading,
-                                bearing(c(nth(lon, length(lon) - 1), nth(lat, length(lat) - 1)), c(last(lon), last(lat))))) %>%
+    mutate(heading_start = as.numeric(ifelse(n_distinct(lon, lat) < 3 & heading >= 180, heading - 180,
+                                             ifelse(n_distinct(lon, lat) < 3 & heading < 180, heading + 180,
+                                                    bearing(c(nth(lon, 2), nth(lat, 2)), c(first(lon), first(lat)), sphere = TRUE)))),
+           heading_end = as.numeric(ifelse(n_distinct(lon, lat) < 3 , heading,
+                                           bearing(c(nth(lon, length(lon) - 1), nth(lat, length(lat) - 1)), c(last(lon), last(lat)),
+                                                   sphere = TRUE)))) %>%
+    filter(!is.na(heading_start), !is.na(heading_end)) %>%
     select(-heading) %>%
     mutate(coords_start = list(destPoint(c(first(lon), first(lat)), first(heading_start), first(dist_start_to_obs1) * 1852)),
            coords_end = list(destPoint(c(last(lon), last(lat)), first(heading_end), first(dist_obsn_to_end) * 1852))) %>%
@@ -205,8 +212,8 @@ preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5
     mutate(lat_start = unlist(lapply(coords_start, `[[`, 2)), lon_start = unlist(lapply(coords_start, `[[`, 1)),
            lat_end = unlist(lapply(coords_end, `[[`, 2)), lon_end = unlist(lapply(coords_end, `[[`, 1))) %>%
     select(-coords_start, -coords_end) %>%
-    mutate(trans_bearing = mean(c(bearing(c(first(lon_start), first(lat_start)), c(first(lon_end), first(lat_end))),
-           finalBearing(c(first(lon_start), first(lat_start)), c(first(lon_end), first(lat_end)))))) %>%
+    filter(!is.na(lon_start), !is.na(lat_start), !is.na(lon_end), !is.na(lat_end)) %>%
+    mutate(trans_bearing = mean(bearing(c(first(lon_start), first(lat_start)), c(first(lon_end), first(lat_end)), sphere = TRUE))) %>%
     mutate(trans_dist_eff = distVincentySphere(c(first(lon_start), first(lat_start)), c(first(lon_end), first(lat_end))) / 1852) %>%
     filter(!is.na(trans_dist_eff), max(dist_cum) + first(dist_obsn_to_end) <= trans_dist_eff, trans_dist_eff >= seg.min) %>%
     select(-dist_obsn_to_end, -lat_end, -lon_end) %>%
@@ -215,6 +222,7 @@ preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5
     mutate(count = ifelse(spp_cd == "NONE", 0, ifelse(is.na(count), 1, count))) %>%
     mutate(spp_cd = replace(spp_cd, count == 0, "NONE")) %>%
     mutate(survey_type_cd = ifelse(survey_type_cd == "a", "aerial", ifelse(survey_type_cd == "b", "boat", NA))) %>%
+    mutate(shape_avail = "No") %>%
     rename(transect_width_m = survey_width_m, beaufort = seastate_beaufort_nb.x, survey_type = survey_type_cd, survey_method = survey_method_cd)
   
   # combine all records (those with and without transect shapefiles)
