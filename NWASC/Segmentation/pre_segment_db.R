@@ -9,7 +9,7 @@
 # Kyle Dettloff
 # 12-18-2015
 # Updated 03-22-2016 to include spatial transect information
-# Revised 04-01-2016
+# Revised 04-02-2016
 
 # load packages
 suppressMessages(library(broom))
@@ -191,21 +191,24 @@ preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5
     mutate(lat_first = first(lat), lon_first = first(lon)) %>%
     mutate(heading = as.numeric(ifelse(!is.na(heading_tx.y), heading_tx.y, ifelse(row_number() == 1, NA,
                                        bearing(c(first(lon), first(lat)), cbind(lon, lat), sphere = TRUE))))) %>%
-    rowwise() %>% mutate(heading = replace(heading, is.na(heading_tx.y) & !is.na(heading) & identical(c(lon_first, lat_first), c(lon, lat)), NA)) %>%
+    rowwise() %>%
+    mutate(heading = replace(heading, is.na(heading_tx.y) & !is.na(heading) & identical(c(lon_first, lat_first), c(lon, lat)), NA)) %>%
     select(-lat_first, -lon_first) %>% ungroup() %>% group_by(dataset_id, transect_id) %>%
     mutate(gps_diff = max(heading, na.rm = TRUE) - min(heading, na.rm = TRUE)) %>%
     filter(gps_diff < 10 | gps_diff > 360 - 10 | is.na(gps_diff)) %>%
     select(-gps_diff, -heading_tx.y) %>%
     mutate(dist_cum = dist_cum + dist_start_to_obs1) %>%
     filter(max(dist_cum) + dist_obsn_to_end <= dist_interp) %>% select(-dist_interp) %>%
+    group_by(dataset_id, transect_id, lat, lon) %>% mutate(num = n()) %>% group_by(dataset_id, transect_id) %>%
     mutate(heading_start = as.numeric(ifelse(n_distinct(lon, lat) < 3 & heading >= 180, heading - 180,
                                              ifelse(n_distinct(lon, lat) < 3 & heading < 180, heading + 180,
-                                                    bearing(c(nth(lon, 2), nth(lat, 2)), c(first(lon), first(lat)), sphere = TRUE)))),
+                                                    bearing(c(nth(lon, first(num) + 1), nth(lat, first(num) + 1)),
+                                                            c(first(lon), first(lat)), sphere = TRUE)))),
            heading_end = as.numeric(ifelse(n_distinct(lon, lat) < 3 , heading,
-                                           bearing(c(nth(lon, length(lon) - 1), nth(lat, length(lat) - 1)), c(last(lon), last(lat)),
-                                                   sphere = TRUE)))) %>%
+                                           bearing(c(nth(lon, length(lon) - last(num)), nth(lat, length(lat) - last(num))),
+                                                   c(last(lon), last(lat)), sphere = TRUE)))) %>%
+    select(-heading, -num) %>%
     filter(!is.na(heading_start), !is.na(heading_end)) %>%
-    select(-heading) %>%
     mutate(coords_start = list(destPoint(c(first(lon), first(lat)), first(heading_start), first(dist_start_to_obs1) * 1852)),
            coords_end = list(destPoint(c(last(lon), last(lat)), first(heading_end), first(dist_obsn_to_end) * 1852))) %>%
     select(-dist_start_to_obs1, -heading_start, -heading_end) %>%
