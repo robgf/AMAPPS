@@ -33,7 +33,12 @@ After adding data, you should verify that the joins were successful.
   This involves processing all of the seabird data into segments. See segmentation script. 
 
 ### **6. Handle data requests**  
-Anyone can request the data. These requests will most likely be specific and require querying the database
+Anyone can request the data. These requests will most likely be specific and require querying the database  
+- These can be found in the "files sent" folder in the "seabird_database" folder  
+- They should include:  
+  - a description of the request   
+  - the code used to query the data   
+  - the exported file that is sent to the requester  
 
 ### **7. Other**  
 - The most recent relevant BOEM GIS data can be found [here](http://www.boem.gov/Renewable-Energy-GIS-Data/) (e.g. BOEM leases)  
