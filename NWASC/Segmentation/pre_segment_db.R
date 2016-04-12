@@ -66,9 +66,9 @@ preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5
     full_join(., lines, by = c("transect_id", "dataset_id")) %>%
     mutate(obs_dt = ymd_hms(obs_dt), obs_start_tm = ymd_hms(obs_start_tm), start_tm = hms(start_tm), end_tm = hms(end_tm),
            start_dt = ymd(start_dt), end_dt = ymd(end_dt)) %>%
-    mutate(obs_start_tm = update(obs_start_tm, year = year(obs_dt), month = month(obs_dt), day = day(obs_dt)),
-           start_tm = update(start_dt, hour = hour(start_tm), minute = minute(start_tm), second = second(start_tm)),
-           end_tm = update(end_dt, hour = hour(end_tm), minute = minute(end_tm), second = second(end_tm))) %>%
+    mutate(obs_start_tm = as.POSIXct(update(obs_start_tm, year = year(obs_dt), month = month(obs_dt), day = day(obs_dt))),
+           start_tm = as.POSIXct(update(start_dt, hour = hour(start_tm), minute = minute(start_tm), second = second(start_tm))),
+           end_tm = as.POSIXct(update(end_dt, hour = hour(end_tm), minute = minute(end_tm), second = second(end_tm)))) %>%
     select(-start_dt, -end_dt) %>%
     group_by(dataset_id, transect_id) %>%
     mutate(in_trans = as.character(ifelse(start_tm > first(obs_start_tm) | end_tm < last(obs_start_tm), "Out", "In"))) %>%
