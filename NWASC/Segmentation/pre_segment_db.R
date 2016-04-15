@@ -41,23 +41,23 @@ preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5
   
   # process transect shapefile
   trans = tidy(shapefile)
-  lines_raw = trans %>% select(-piece, -group) %>% group_by(id) %>%
+  lines_raw = trans %>% select(-c(piece, group)) %>% group_by(id) %>%
     mutate(Long = lead(long, default = last(long), order_by = order),
            Lat = lead(lat, default = last(lat), order_by = order)) %>%
     rowwise() %>% mutate(distance = distVincentySphere(c(long, lat), c(Long, Lat)) / 1852) %>%
-    ungroup() %>% select(-Long, -Lat) %>% group_by(id) %>%
+    ungroup() %>% select(-c(Long, Lat)) %>% group_by(id) %>%
     mutate(total_dist = sum(distance),
            trans_dist_eff = distVincentySphere(c(first(long), first(lat)), c(last(long), last(lat))) / 1852,
            error = (total_dist - trans_dist_eff) / total_dist) %>%
     select(long, lat, trans_dist_eff, error) %>%
     mutate(lon_start = first(long), lat_start = first(lat), lon_end = last(long), lat_end = last(lat)) %>%
-    select(-long, -lat) %>% distinct() %>% ungroup() %>%
+    select(-c(long, lat)) %>% distinct() %>% ungroup() %>%
     mutate(transect_id = shape@data$transect_i, dataset_id = shape@data$dataset_id,
            start_dt = as.character(shape@data$start_dt), start_tm = as.character(shape@data$start_tm),
            end_dt = as.character(shape@data$end_dt), end_tm = as.character(shape@data$end_tm)) %>%
     left_join(., survey_vars, by = "dataset_id")
   lines = lines_raw %>% filter(survey_type_cd %in% c("a", "b"), survey_method_cd %in% c("cts", "dts"), error < 0.025) %>%
-    select(-error, -id)
+    select(-c(error, id))
   # join observations with transects from shapefile
   empty_sp = setdiff(lines$transect_id, observations$transect_id)
   observations_sp = observations %>% select(transect_id, dataset_id, obs_dt, obs_start_tm, spp_cd,
@@ -69,20 +69,20 @@ preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5
     mutate(obs_start_tm = as.POSIXct(update(obs_start_tm, year = year(obs_dt), month = month(obs_dt), day = day(obs_dt))),
            start_tm = as.POSIXct(update(start_dt, hour = hour(start_tm), minute = minute(start_tm), second = second(start_tm))),
            end_tm = as.POSIXct(update(end_dt, hour = hour(end_tm), minute = minute(end_tm), second = second(end_tm)))) %>%
-    select(-start_dt, -end_dt) %>%
+    select(-c(start_dt, end_dt)) %>%
     group_by(dataset_id, transect_id) %>%
     mutate(in_trans = as.character(ifelse(start_tm > first(obs_start_tm) | end_tm < last(obs_start_tm), "Out", "In"))) %>%
     filter(in_trans != "Out" | is.na(in_trans)) %>%
-    select(-in_trans, -obs_start_tm, -start_tm, -end_tm) %>%
+    select(-c(in_trans, obs_start_tm, start_tm, end_tm)) %>%
     mutate(obs_count_intrans_nb = replace(obs_count_intrans_nb, transect_id %in% empty_sp, 0),
            obs_count_general_nb = replace(obs_count_general_nb, transect_id %in% empty_sp, 0)) %>%
     rowwise() %>%
     mutate(trans_bearing = bearing(c(lon_start, lat_start), c(lon_end, lat_end), sphere = TRUE)) %>%
     mutate(dist_cum = distVincentySphere(c(lon_start, lat_start), c(lon, lat)) / 1852) %>%
-    ungroup() %>% select(-lon_end, -lat_end) %>%
+    ungroup() %>% select(-c(lon_end, lat_end)) %>%
     filter(round(dist_cum, 3) <= round(trans_dist_eff, 3) | is.na(dist_cum), trans_dist_eff >= seg.min) %>%
     mutate(count = ifelse(is.na(obs_count_intrans_nb), obs_count_general_nb, obs_count_intrans_nb)) %>%
-    select(-obs_count_general_nb, -obs_count_intrans_nb) %>%
+    select(-c(obs_count_general_nb, obs_count_intrans_nb)) %>%
     mutate(count = ifelse(spp_cd == "NONE", 0, ifelse(is.na(count), 1, count))) %>%
     mutate(spp_cd = replace(spp_cd, count == 0, "NONE")) %>%
     mutate(survey_type_cd = ifelse(survey_type_cd == "a", "aerial", ifelse(survey_type_cd == "b", "boat", NA))) %>%
