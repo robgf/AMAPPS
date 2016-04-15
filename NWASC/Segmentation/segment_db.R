@@ -30,7 +30,8 @@ segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurenc
   # merge empty segments with observations and assign segment numbers
   seg_final_long = bind_rows(seg, seg_empty) %>% select(-tot_empty) %>% group_by(dataset_id, transect_id) %>%
     mutate(seg_num = replace(seg_num, is.na(seg_num), setdiff(1:first(nseg), seg_num)),
-           count = replace(count, is.na(count), 0)) %>%
+           count = replace(count, is.na(count), 0),
+           spp_cd = replace(spp_cd, is.na(spp_cd), "NONE")) %>%
     # calculate segment distances
     mutate(seg_dist = ifelse(nseg == 1, trans_dist_eff,
                              ifelse(seg_num != seg_extra & seg_num < nseg, seg.length,
@@ -76,7 +77,6 @@ segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurenc
   
   # summarize species data by segment and convert to wide form
   seg_final = seg_final_long %>%
-    mutate(spp_cd = replace(spp_cd, is.na(spp_cd), "NONE")) %>%
     group_by(dataset_id, transect_id, seg_num, spp_cd, obs_dt, seg_mid_lat, seg_mid_lon,
              seg_dist, transect_width_m, beaufort, survey_type, survey_method, shape_avail)
   if (occurences == FALSE) {
