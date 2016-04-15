@@ -25,7 +25,7 @@ segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurenc
     # calculate segment distances and number of empty segments
     mutate(tot_empty = nseg - n_distinct(seg_num))
   # create dataframe of empty segments
-  seg_empty = seg %>% select(-obs_dt, -lat, -lon, -spp_cd, -beaufort, -count, -seg_num) %>%
+  seg_empty = seg %>% select(-c(obs_dt, lat, lon, spp_cd, beaufort, count, seg_num)) %>%
     distinct() %>% ungroup() %>% filter(tot_empty > 0) %>% slice(rep(row_number(), tot_empty)) %>% select(-tot_empty)
   # merge empty segments with observations and assign segment numbers
   seg_final_long = bind_rows(seg, seg_empty) %>% select(-tot_empty) %>% group_by(dataset_id, transect_id) %>%
@@ -48,7 +48,7 @@ segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurenc
     select(-seg_dist_cum) %>%
     # calculate coordinates of segment midpoints  
     mutate(coords_mid = list(destPoint(c(first(lon_start), first(lat_start)), first(trans_bearing), first(seg_dist_mid) * 1852))) %>%
-    select(-seg_dist_mid, -trans_bearing, -lat_start, -lon_start) %>%
+    select(-c(seg_dist_mid, trans_bearing, lat_start, lon_start)) %>%
     mutate(seg_mid_lat = unlist(lapply(coords_mid, `[[`, 2)), seg_mid_lon = unlist(lapply(coords_mid, `[[`, 1))) %>%
     select(-coords_mid)
   
@@ -66,9 +66,9 @@ segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurenc
   
     # final quality control to check if observations are within specified distance of segment midpoints  
   seg_final_long = seg_final_long %>% rowwise() %>% mutate(obs_dist = distVincentySphere(c(lon, lat), c(seg_mid_lon, seg_mid_lat)) / 1852) %>%
-    select(-lat, -lon) %>%
+    select(-c(lat, lon)) %>%
     filter(obs_dist <= sqrt((seg_dist / 2) ^ 2 + dist.max ^ 2) | is.na(obs_dist) | (seg_extra > 0 & seg_extra != nseg)) %>%
-    select(-obs_dist, -nseg, -seg_extra) %>% mutate(seg_dist = round(seg_dist, 3)) %>%
+    select(-c(obs_dist, nseg, seg_extra)) %>% mutate(seg_dist = round(seg_dist, 3)) %>%
     # calculate segment-averaged Beaufort values
     ungroup() %>% group_by(dataset_id, transect_id, seg_num) %>%
     mutate(beaufort = replace(beaufort, n_distinct(beaufort) > 1, mean(unique(beaufort))),
