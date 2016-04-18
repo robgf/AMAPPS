@@ -53,8 +53,8 @@ segmentAC = function(data, seg.length = 2.5, seg.tol = 0.5, occurences = FALSE) 
          Slope = replace(Slope, n_distinct(Slope) > 1, mean(unique(Slope), na.rm = TRUE)))
   # summarize species data by segment and convert to wide form
   seg_final = seg_final_long %>%
-    group_by(SurveyNbr, Transect, Replicate, Crew, Year, Month, Species,
-             Condition, Dist2Coast_nm, Depth, Slope, seg_dist, seg_mid_lat, seg_mid_lon)
+    group_by(SurveyNbr, Transect, Replicate, Crew, Year, Month, Species, Condition,
+             Dist2Coast_nm, Depth, Slope, seg_num, seg_dist, seg_mid_lat, seg_mid_lon)
   if (occurences == FALSE) {
     # total species count
     seg_final = seg_final %>% summarise(FlockSize = sum(FlockSize)) %>%
