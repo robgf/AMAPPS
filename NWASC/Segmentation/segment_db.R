@@ -18,10 +18,10 @@ segment = function(data, seg.length = 2.5, seg.tol = 0.5, dist.max = 1, occurenc
     # randomly assign extra distance
     mutate(seg_extra = ifelse(nseg > 1 & trans_dist_eff > nseg * seg.length, ceiling(runif(1, 0, nseg)), 0)) %>%
     # assign segment numbers to observations  
-    mutate(seg_num = as.numeric(ifelse(dist_cum <= seg.length | nseg == 1, 1,
+    mutate(seg_num = as.numeric(ifelse(dist_cum <= seg.length | nseg == 1 | is.na(dist_cum) & nseg > 1, 1,
                                        ifelse(dist_cum <= seg.length * nseg, ceiling(dist_cum / seg.length),
                                               seg_extra)))) %>%
-    select(-dist_cum) %>% filter(!is.na(seg_num)) %>%
+    select(-dist_cum) %>%
     # calculate segment distances and number of empty segments
     mutate(tot_empty = nseg - n_distinct(seg_num))
   # create dataframe of empty segments
