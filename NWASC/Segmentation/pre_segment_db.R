@@ -52,9 +52,9 @@ preSegment = function(observations, transects, dataset, shapefile, seg.min = 0.5
     select(long, lat, trans_dist_eff, error) %>%
     mutate(lon_start = first(long), lat_start = first(lat), lon_end = last(long), lat_end = last(lat)) %>%
     select(-c(long, lat)) %>% distinct() %>% ungroup() %>%
-    mutate(transect_id = shape@data$transect_i, dataset_id = shape@data$dataset_id,
-           start_dt = as.character(shape@data$start_dt), start_tm = as.character(shape@data$start_tm),
-           end_dt = as.character(shape@data$end_dt), end_tm = as.character(shape@data$end_tm)) %>%
+    mutate(transect_id = shapefile@data$transect_i, dataset_id = shapefile@data$dataset_id,
+           start_dt = as.character(shapefile@data$start_dt), start_tm = as.character(shapefile@data$start_tm),
+           end_dt = as.character(shapefile@data$end_dt), end_tm = as.character(shapefile@data$end_tm)) %>%
     left_join(., survey_vars, by = "dataset_id")
   lines = lines_raw %>% filter(survey_type_cd %in% c("a", "b"), survey_method_cd %in% c("cts", "dts"), error < 0.025) %>%
     select(-c(error, id))
