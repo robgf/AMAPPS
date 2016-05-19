@@ -2,7 +2,7 @@
 # processSurveyData_part1.R
 # Author: Jeffery Leirness
 # Date Created: 2015-03-20
-# Edited by Kaycee Coleman, March 2016
+# Edited by: Kaycee Coleman, 2016
 #
 # Description: This program reads in the pilot and observer raw observation 
 # files and creates a header row. It then checks for general errors & 
@@ -217,19 +217,42 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   stopCluster(cl)
   d <- matrix(d, ncol = 5, byrow = TRUE) # distance(m), long, lat, code
   print(Sys.time()-strt)
-  
-  # RELABEL TRANSECT-S ACCORDING TO MASTER TRANSECT FILE
+     
+  # RELABEL TRANSECTS ACCORDING TO MASTER TRANSECT FILE
   # TRANSECTS GREATER THAN 2 KM FROM MASTER TRANSECT FILE ARE FLAGGED
   obstrack$transLat <- trans$latid[d[,5]] 
   obstrack$transLong <- trans$label[d[,5]]
   obstrack$flag1 <- ifelse(d[, 1] > 2000, 1, 0)
+  
+  # RECORD CHANGE
+  obstrack$dataChange = as.character(obstrack$dataChange)
+  if(any(obstrack$transect != as.character(trans$latidext[d[,5]]))) {
+    obstrack$dataChange[obstrack$transect != as.character(trans$latidext[d[,5]])] = 
+      paste(obstrack$dataChange[obstrack$transect != as.character(trans$latidext[d[,5]])],
+      "; Changed TRANSECT from ", obstrack$transect[obstrack$transect != as.character(trans$latidext[d[,5]])], sep="")}
+  obstrack$transect[obstrack$flag1==1] = as.character(trans$latidext[d[,5]])
   rm(d)
-                                 
+ 
+  # REPORT BACK WHAT WAS CHANGED 
+  checkChange = select(obstrack,transect,dataChange,flag1) %>% 
+    filter(flag1==1) %>% group_by(transect) %>% select(-flag1) %>% 
+    filter(row_number()==1) %>% 
+    mutate(oldTransect= sapply(strsplit(dataChange, "Changed TRANSECT from "),tail,1))  %>% select(-dataChange)
+  checkChange
+  
+  # MAKE SURE THERE ARE STILL 2 OBSERVERS ONCE THE TRANSECT HAS BEEN CORRECTED
+  numObs = select(obstrack,transect,obs) %>% 
+    filter(transect %in% checkChange$transect | transect %in% checkChange$oldTransect) %>% 
+    group_by(transect,obs) %>% filter(row_number()==1) %>% group_by(transect) %>%
+    summarise(numberObs = length(transect)) %>% arrange(transect)
+  numObs
+  if(any(numObs$numberObs==1)) {paste("Transect",numObs$transect[numObs$numberObs==1],"only has one obsever... this needs to be checked")}
+  rm(checkChange,numObs)
   # ---------------------------------------------------------------------------- #
   
   
   # ---------------------------------------------------------------------------- #
-  # STEP 10: FLAG POINTS FOR FURTHER INVESTIGATION
+  # STEP 10: FLAG POINTS FOR FURTHER INVESTIGATION FOR OTHER ERRORS
   # ---------------------------------------------------------------------------- #
   obstrack <- obstrack[order(obstrack$ID), ]
   obstrack$key <- paste(obstrack$crew, obstrack$seat, obstrack$year, obstrack$month, 
@@ -353,7 +376,7 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   #       -> click on the folder icon and switch 'save type as' to shapefile)
   # you will not be able to move on until this is completed (estimated time = 1 day)
   
-  rm(dir,dir.in) # will screw paths up in part 2 if not removed 
+  rm(dir,dir.in)
   save.image(paste(dir.out,"obstrackWorkspace.Rdata",sep="/"))
   write.csv(obstrack, file=paste(dir.out,"obstrack_part1.csv",sep="/"), row.names=FALSE)
 }
