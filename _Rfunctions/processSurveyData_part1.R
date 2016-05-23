@@ -151,6 +151,7 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   obstrack$ID <- as.numeric(row.names(obstrack))
   
   # This file if for obvious track errors that should not be included in GIS file
+  # or transects where no observations occurred but only one observer recoreded the BEG and END
   # This will help cut down on manually deleting the points, however you need to visually
   # inspect the data to find obvious errors
   if (file.exists(paste(dir.out,"postObstrackEdits.R",sep="/"))) {
@@ -186,7 +187,6 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   
   # CALCULATE DISTANCE FROM EACH POINT TO MASTER TRANSECT FILE
   # THIS PROCESS EMPLOYS PARALLEL COMPUTING TO DECREASE PROCESSING TIME
-  
   strt<-Sys.time(); 
   cl <- makeCluster(as.numeric(detectCores()))
   clusterExport(cl, "trans", envir = environment())
@@ -229,25 +229,28 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   if(any(obstrack$transect != as.character(trans$latidext[d[,5]]))) {
     obstrack$dataChange[obstrack$transect != as.character(trans$latidext[d[,5]])] = 
       paste(obstrack$dataChange[obstrack$transect != as.character(trans$latidext[d[,5]])],
-      "; Changed TRANSECT from ", obstrack$transect[obstrack$transect != as.character(trans$latidext[d[,5]])], sep="")}
-  obstrack$transect[obstrack$flag1==1] = as.character(trans$latidext[d[,5]])
+      "; Changed TRANSECT from ", obstrack$transect[obstrack$transect != as.character(trans$latidext[d[,5]])], sep="")
+    obstrack$transect[obstrack$transect != as.character(trans$latidext[d[,5]])] = as.character(trans$latidext[d[obstrack$transect != as.character(trans$latidext[d[,5]]),5]])}
   rm(d)
  
   # REPORT BACK WHAT WAS CHANGED 
   checkChange = select(obstrack,transect,dataChange,flag1) %>% 
-    filter(flag1==1) %>% group_by(transect) %>% select(-flag1) %>% 
-    filter(row_number()==1) %>% 
+    filter(flag1==1) %>% select(-flag1) %>% 
+    filter(grepl("TRANSECT",dataChange)) %>%
     mutate(oldTransect= sapply(strsplit(dataChange, "Changed TRANSECT from "),tail,1))  %>% select(-dataChange)
-  checkChange
   
-  # MAKE SURE THERE ARE STILL 2 OBSERVERS ONCE THE TRANSECT HAS BEEN CORRECTED
+  ifelse(!is.na(checkChange[1,1]),
+    list(checkChange),"No Transects were changed in this check")
+  
+  # MAKE SURE THERE ARE STILL 2 OBSERVERS ONCE THE TRANSECT HAS BEEN CORRECTED (AND IN GENERAL)
   numObs = select(obstrack,transect,obs) %>% 
-    filter(transect %in% checkChange$transect | transect %in% checkChange$oldTransect) %>% 
     group_by(transect,obs) %>% filter(row_number()==1) %>% group_by(transect) %>%
     summarise(numberObs = length(transect)) %>% arrange(transect)
-  numObs
-  if(any(numObs$numberObs==1)) {paste("Transect",numObs$transect[numObs$numberObs==1],"only has one obsever... this needs to be checked")}
-  rm(checkChange,numObs)
+  if(any(numObs$numberObs==1)) {
+      paste("Transect",numObs$transect[numObs$numberObs==1],"only has one obsever... this needs to be checked")}
+  rm(checkChange, numObs)
+  # If there is only one observer and you solve how/why this occurred it is recommended to add edits to the 
+  # postObstrackEdits.R and rerun from that step foward (if the error was not due to an earlier step)
   # ---------------------------------------------------------------------------- #
   
   
