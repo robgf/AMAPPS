@@ -205,11 +205,11 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   d <- matrix(d, ncol = 5, byrow = TRUE) # distance(m), long, lat, code
   print(Sys.time()-strt)
      
-  # POINTS GREATER THAN 3nm FROM DEFINED TRANSECT ON MASTER TRANSECT FILE ARE FLAGGED
+  # POINTS GREATER THAN 2km FROM DEFINED TRANSECT ON MASTER TRANSECT FILE ARE FLAGGED
   # THESE ARE MOST LIKELY TYPOS OR MISIDENTIFIED TRANSECTS
   obstrack$transLat <- trans$latid[d[,5]] 
   obstrack$transLong <- trans$label[d[,5]]
-  obstrack$flag1 <- ifelse(d[, 1] > 5556, 1, 0)
+  obstrack$flag1 <- ifelse(d[, 1] > 2000, 1, 0)
   
   # FOR THOSE FLAGGED TRANSECTS, FIND WHICH LINE THEY ARE CLOSET TO AND CHANGE THAT TRANSECT CODE
   strt<-Sys.time(); 
@@ -247,16 +247,18 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
     obstrack$dataChange[obstrack$flag1==1] <-  paste(obstrack$dataChange[obstrack$flag1==1],
                                                      "; Changed TRANSECT from ", 
                                                      obstrack$transect[obstrack$flag1==1], sep="")
-    obstrack$transect[obstrack$flag1==1] <- trans$latidext[d[,5]]
+    obstrack$transect[obstrack$flag1==1] <- as.character(trans$latidext[d[,5]])
   }
-  rm(d)
+  rm(a,b,d)
  
   # REPORT BACK WHAT WAS CHANGED 
   checkChange = select(obstrack,transect,dataChange,flag1) %>% 
     filter(flag1==1) %>% select(-flag1) %>% 
     filter(grepl("TRANSECT",dataChange)) %>%
-    mutate(oldTransect= sapply(strsplit(dataChange, "Changed TRANSECT from "),tail,1))  %>% select(-dataChange)
-  
+    mutate(oldTransect = sapply(strsplit(dataChange, "Changed TRANSECT from "),tail,1)) %>% 
+    select(-dataChange)  %>%
+    filter(oldTransect != transect)
+    
   ifelse(!is.na(checkChange[1,1]),
     list(checkChange),"No Transects were changed in this check")
   
