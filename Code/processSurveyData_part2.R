@@ -95,7 +95,7 @@ deletedPoints = deletedPoints[!(duplicated(ind) | duplicated(ind, fromLast=TRUE)
 rm(ind)
 # not using all rows for duplicates since some have NA or empty which come up as different rather than duplicate
 
-# visually inspect that no files were misslabeled, and that edits look about right...
+# visually inspect that no files were deleted, and that edits look about right...
 plot(shapefileDataframe$long,shapefileDataframe$lat)
 points(deletedPoints$long,deletedPoints$lat,col="red")
 ifelse(any(deletedPoints$type != "WAYPNT" & 
@@ -108,67 +108,7 @@ ifelse(any(deletedPoints$type != "WAYPNT" &
 
 
 # ------------------------------------------------------------------------- #
-### STEP 15: FIX MISLABELED TRANSECTS
-# ------------------------------------------------------------------------- #
-
-# flag1 is the distance error flag for points > 2km from the transect line
-# after edits, offline points are deleted but there are some that are just mislabeled
-# These need to be fixed to the proper transect line code
-
-# had issues when switching this to  "all_atlantic_flylines_wNE_extend" shapefile
-trans <- readOGR(dsn = file.path(paste(dbpath, "GIS", sep="")), layer = "amapps_transects_new2014")
-if (proj4string(trans) != "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0") {
-  trans <- spTransform(trans, CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
-}
-trans$latidext = as.character(trans$latidext)
-
-strt<-Sys.time(); 
-cl <- makeCluster(as.numeric(detectCores()))
-clusterExport(cl, "trans", envir = environment())
-invisible(clusterEvalQ(cl, c(library(geosphere),
-                             subFunc <- function(lat, lon, code) {
-                               b = which(trans$latidext == paste(substr(code,1,5),"0", sep="") | 
-                                           trans$latidext == paste(substr(code,1,5),"1", sep="") |
-                                           trans$latidext == paste(substr(code,1,5),"2", sep="") |
-                                           trans$latidext == paste(as.numeric(substr(code,1,4))+5, "00", sep="") |
-                                           trans$latidext == paste(as.numeric(substr(code,1,4))-5, "00", sep="") |
-                                           trans$latidext == paste(as.numeric(substr(code,1,4))+5, "01", sep="") |
-                                           trans$latidext == paste(as.numeric(substr(code,1,4))-5, "01", sep="") |
-                                           trans$latidext == paste(as.numeric(substr(code,1,4))+5, "02", sep="") |
-                                           trans$latidext == paste(as.numeric(substr(code,1,4))-5, "02", sep=""))
-                               subTrans = trans[b,]
-                               ab = dist2Line(p = cbind(as.numeric(lon),as.numeric(lat)), 
-                                              line = subTrans, distfun = distVincentyEllipsoid)
-                               out = c(ab, b[ab[4]])
-                               return(out)
-                             })))
-
-d <- parRapply(cl, shapefileDataframe[shapefileDataframe$flag1==1,], function(x) subFunc(x[35],x[34],x[11]))
-stopCluster(cl)
-d <- matrix(d, ncol = 5, byrow = TRUE) # distance(m), long, lat, code
-print(Sys.time()-strt)
-
-shapefileDataframe$dataChange = as.character(shapefileDataframe$dataChange)
-shapefileDataframe$dataChange[shapefileDataframe$flag1==1] = paste(shapefileDataframe$dataChange[shapefileDataframe$flag1==1],
-                                                                   "; Changed TRANSECT from ", 
-                                                                   shapefileDataframe$transect[shapefileDataframe$flag1==1],
-                                                                   sep="")
-shapefileDataframe$transect[shapefileDataframe$flag1==1] = as.character(trans$latidext[d[,5]])
-rm(trans, d)
-
-#REPORT BACK WHAT WAS CHANGED SO THAT IT CAN BE CHECKED
-checkChange = select(shapefileDataframe,transect,dataChange,flag1) %>% filter(flag1==1) %>% group_by(transect) %>% select(-flag1) %>% filter(row_number()==1)
-checkChange
-
-# MAKE SURE THAT SINCE YOU CHANGED THE TRANSECT THAT THERE ISN'T ONE OBS LEFT ON THE TRANSECT IT WAS CHANGED FROM
-# NEED TO CODE THIS+=============================
-# MAKE SURE 2 OBS ONCE CHANGED
-select(shapefileDataframe,transect,obs) %>% filter(transect==checkChange$transect) %>% group_by(transect,obs) %>% filter(row_number()==1) %>% arrange(transect)
-# ------------------------------------------------------------------------- #
-
-
-# ------------------------------------------------------------------------- #
-### STEP 16: ADD NECESSARY BEG/END ROWS TO GIS EDITED TRACK FILES
+### STEP 15: ADD NECESSARY BEG/END ROWS TO GIS EDITED TRACK FILES
 # this takes a while...
 # ------------------------------------------------------------------------- #
 track.final = addBegEnd_GISeditObsTrack(shapefileDataframe)
@@ -176,7 +116,7 @@ track.final = addBegEnd_GISeditObsTrack(shapefileDataframe)
 
 
 # ------------------------------------------------------------------------- #
-### STEP 17: VERIFY CONDITION CODE ERRORS ARE STILL FIXED AFTER GIS EDITS
+### STEP 16: VERIFY CONDITION CODE ERRORS ARE STILL FIXED AFTER GIS EDITS
 # ------------------------------------------------------------------------- #
 obs = subset(track.final, !type %in% c("", " "))
 conditionCodeErrorChecks(obs, yearLabel)
@@ -187,7 +127,7 @@ summary(track.final)
 
 
 # ------------------------------------------------------------------------- #
-### STEP 18: ADD REPLICATE COLUMN IF TRANSECT WAS FLOWN TWICE
+### STEP 17: ADD REPLICATE COLUMN IF TRANSECT WAS FLOWN TWICE
 # ------------------------------------------------------------------------- #
 # Create replicate column for if a transect was flown more than one day in a survey
 track.final$replicate = 1
@@ -207,7 +147,7 @@ rm(ind)
 
 
 # ------------------------------------------------------------------------- #
-### STEP 19: SAVE DELETED POINTS CSVs and DEFINE POINTS TO KEEP
+### STEP 18: SAVE DELETED POINTS CSVs and DEFINE POINTS TO KEEP
 # ------------------------------------------------------------------------- #
 
 # Define points to keep #
@@ -230,7 +170,7 @@ rm(deletedPoints)
 
 
 # ------------------------------------------------------------------------- #
-### STEP 20: SAVE MARINE MAMMALS/ FISH DATA TO SEND TO NOAA AMAPPS
+### STEP 19: SAVE MARINE MAMMALS/ FISH DATA TO SEND TO NOAA AMAPPS
 # ID: 2 (mammals), 3 (reptiles), 4 (fish) in NWASC_codes table
 # ------------------------------------------------------------------------- #
 
@@ -317,7 +257,7 @@ track.final$Depth = ""
 track.final$Slope = ""   
 
 # ------------------------------------------------------------------------- #
-### STEP 21: ADD BOATS, BALLOONS, AND MISC. OBS TO EXCEL FILES
+### STEP 20: ADD BOATS, BALLOONS, AND MISC. OBS TO EXCEL FILES
 # ------------------------------------------------------------------------- #
 
 # ADD BOAT OBSERVATIONS TO Atlantic_Coast_Surveys_BoatObservations.csv DATA FILE
@@ -365,7 +305,7 @@ rm(obs.misc,obs.misc_to_add)
 
 
 # ------------------------------------------------------------------------- #
-### STEP 22: AMAPPS database vs. NWASC database seperation
+### STEP 21: AMAPPS database vs. NWASC database seperation
 # ------------------------------------------------------------------------- #
 
 # ----------------------------------------------------------------------- #
@@ -436,7 +376,7 @@ write.csv(track.final.ACS, file = paste(dir.out,"/", yearLabel,"_Observations.cs
 
 
 # ------------------------------------------------------------------------- #
-### STEP 23: OUTPUT FINAL EDITED TRACK FILE 
+### STEP 22: OUTPUT FINAL EDITED TRACK FILE 
 # ------------------------------------------------------------------------- #
 # This includes all observations (even marine)
 obsTrackFinalOutput(track.final, yearLabel, dir.out)
@@ -447,6 +387,8 @@ write.csv(track.final, file =paste(dir.out,"/", yearLabel, "_Obstrack_Final.csv"
 # ------------------------------------------------------------------------- #
 # NEXT STEP...
 # TO IMPORT DATA INTO THE ACS DATABASE USE add2ACSDatabase.R
+# THIS DATABASE IS IN TRANSITION
+# A NEW SQL SERVER DATABASE HAS BEEN CREATED AND IS BEING TESTED
 # ------------------------------------------------------------------------- #
 
 
