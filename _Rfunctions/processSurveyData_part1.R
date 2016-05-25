@@ -192,24 +192,11 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   clusterExport(cl, "trans", envir = environment())
   invisible(clusterEvalQ(cl, c(library(geosphere),
                                subFunc <- function(lat, lon, code) {
-                                 a = NA
-                                 b = NA
-                                 if (any(trans$latidext == code)) {
-                                   a = which(trans$latidext == code)
-                                   subTrans = trans[a,]} else {
-                                     b = which(trans$latidext == paste(substr(code,1,5),"0", sep="") | 
-                                                 trans$latidext == paste(substr(code,1,5),"1", sep="") |
-                                                 trans$latidext == paste(substr(code,1,5),"2", sep="") |
-                                                 trans$latidext == paste(as.numeric(substr(code,1,4))+5, "00", sep="") |
-                                                 trans$latidext == paste(as.numeric(substr(code,1,4))-5, "00", sep="") |
-                                                 trans$latidext == paste(as.numeric(substr(code,1,4))+5, "01", sep="") |
-                                                 trans$latidext == paste(as.numeric(substr(code,1,4))-5, "01", sep="") |
-                                                 trans$latidext == paste(as.numeric(substr(code,1,4))+5, "02", sep="") |
-                                                 trans$latidext == paste(as.numeric(substr(code,1,4))-5, "02", sep=""))
-                                     subTrans = trans[b,]}
+                                 a = which(trans$latidext == code)
+                                 subTrans = trans[a,]
                                  ab = dist2Line(p = cbind(as.numeric(lon),as.numeric(lat)), 
                                                 line = subTrans, distfun = distVincentyEllipsoid)
-                                 out = c(ab, ifelse(any(is.na(b)),a,b[ab[4]]))
+                                 out = c(ab, a)
                                  return(out)
                                })))
     
@@ -218,19 +205,50 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   d <- matrix(d, ncol = 5, byrow = TRUE) # distance(m), long, lat, code
   print(Sys.time()-strt)
      
-  # RELABEL TRANSECTS ACCORDING TO MASTER TRANSECT FILE
-  # TRANSECTS GREATER THAN 2 KM FROM MASTER TRANSECT FILE ARE FLAGGED
+  # POINTS GREATER THAN 3nm FROM DEFINED TRANSECT ON MASTER TRANSECT FILE ARE FLAGGED
+  # THESE ARE MOST LIKELY TYPOS OR MISIDENTIFIED TRANSECTS
   obstrack$transLat <- trans$latid[d[,5]] 
   obstrack$transLong <- trans$label[d[,5]]
-  obstrack$flag1 <- ifelse(d[, 1] > 2000, 1, 0)
+  obstrack$flag1 <- ifelse(d[, 1] > 5556, 1, 0)
   
+  # FOR THOSE FLAGGED TRANSECTS, FIND WHICH LINE THEY ARE CLOSET TO AND CHANGE THAT TRANSECT CODE
+  strt<-Sys.time(); 
+  cl <- makeCluster(as.numeric(detectCores()))
+  clusterExport(cl, "trans", envir = environment())
+  invisible(clusterEvalQ(cl, c(library(geosphere),
+                               subFunc <- function(lat, lon, code) {
+                                 b = which(trans$latidext == paste(substr(code,1,5),"0", sep="") | 
+                                                 trans$latidext == paste(substr(code,1,5),"1", sep="") |
+                                                 trans$latidext == paste(substr(code,1,5),"2", sep="") |
+                                                 trans$latidext == paste(as.numeric(substr(code,1,4))+5, "00", sep="") |
+                                                 trans$latidext == paste(as.numeric(substr(code,1,4))-5, "00", sep="") |
+                                                 trans$latidext == paste(as.numeric(substr(code,1,4))+5, "01", sep="") |
+                                                 trans$latidext == paste(as.numeric(substr(code,1,4))-5, "01", sep="") |
+                                                 trans$latidext == paste(as.numeric(substr(code,1,4))+5, "02", sep="") |
+                                                 trans$latidext == paste(as.numeric(substr(code,1,4))-5, "02", sep=""))
+                                     subTrans = trans[b,]
+                                 ab = dist2Line(p = cbind(as.numeric(lon),as.numeric(lat)), 
+                                                line = subTrans, distfun = distVincentyEllipsoid)
+                                 out = c(ab, b[ab[4]]) #b[ab[4]] grabs which transect was the closest one returned
+                                 return(out)})))
+  
+  d <- parRapply(cl, obstrack[obstrack$flag1==1,], function(x) subFunc(x[1],x[2],x[13]))
+  stopCluster(cl)
+  d <- matrix(d, ncol = 5, byrow = TRUE) # distance(m), long, lat, code
+  print(Sys.time()-strt)
+  
+  # FIND CLOSEST LINE FOR FLAGGED TRANSECT POINT AND 
+  # RELABEL TRANSECTS ACCORDING TO MASTER TRANSECT FILE
   # RECORD CHANGE
   obstrack$dataChange = as.character(obstrack$dataChange)
-  if(any(obstrack$transect != as.character(trans$latidext[d[,5]]))) {
-    obstrack$dataChange[obstrack$transect != as.character(trans$latidext[d[,5]])] = 
-      paste(obstrack$dataChange[obstrack$transect != as.character(trans$latidext[d[,5]])],
-      "; Changed TRANSECT from ", obstrack$transect[obstrack$transect != as.character(trans$latidext[d[,5]])], sep="")
-    obstrack$transect[obstrack$transect != as.character(trans$latidext[d[,5]])] = as.character(trans$latidext[d[obstrack$transect != as.character(trans$latidext[d[,5]]),5]])}
+  if(any(obstrack$transect[obstrack$flag1==1] != as.character(trans$latidext[d[,5]]))) {
+    obstrack$transLat[obstrack$flag1==1] <- trans$latid[d[,5]] 
+    obstrack$transLong[obstrack$flag1==1] <- trans$label[d[,5]]
+    obstrack$dataChange[obstrack$flag1==1] <-  paste(obstrack$dataChange[obstrack$flag1==1],
+                                                     "; Changed TRANSECT from ", 
+                                                     obstrack$transect[obstrack$flag1==1], sep="")
+    obstrack$transect[obstrack$flag1==1] <- trans$latidext[d[,5]]
+  }
   rm(d)
  
   # REPORT BACK WHAT WAS CHANGED 
