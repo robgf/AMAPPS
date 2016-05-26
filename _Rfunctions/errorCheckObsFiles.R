@@ -121,7 +121,7 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
   #spplist <- sqlFetch(code, "codes")$spp_cd
   #odbcClose(code)
   spp <- read.xlsx(paste(speciesPath,"NWASC_codes.xlsx", sep=""), sheetName = "codes")
-  ssplist <- spp$spp_cd
+  spplist <- spp$spp_cd
   tmp <- !dat$type %in% c("BEGSEG", "ENDSEG", "BEGCNT", "ENDCNT", "COCH") & 
     !dat$type %in% c("BOAT", "GILL", "SHIP", "TRAW", "BALN") & !dat$type %in% spplist
   message("Found ", sum(tmp), " entries with non-matching AOU codes")
