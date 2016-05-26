@@ -1,0 +1,172 @@
+# Function to segment continuous survey data in NWASC database
+# Returns wide-form dataframe with segmented data
+
+# Requires observation table with lat/long for each sighting, transect table with single row for each transect id,
+# and spatial lines shapefile containing survey effort
+
+# Calculates species counts by default; set occurences = TRUE for number of sightings
+# maxDist argument sets maximum allowable distance (meters) between an observation and its nearest segment line
+
+# Distances are in nautical miles
+
+# Kyle Dettloff
+# 05-26-2016
+
+segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 0.5, maxDist = NA, occurences = FALSE) {
+
+  # -------- segment track data ---------------------------------------------------------------------------------------------------
+  seg = tracks %>% select(-transect_id) %>% rename(transect_id = new_transect_id) %>%
+    distinct(long, lat, piece, transect_id) %>% group_by(transect_id, piece) %>%
+    mutate(long_i = lag(long, default = first(long), order_by = order),
+           lat_i = lag(lat, default = first(lat), order_by = order)) %>%
+    rowwise %>% mutate(dist = distVincentySphere(c(long_i, lat_i), c(long, lat)) / 1852) %>%
+    select(-c(long_i, lat_i, order)) %>% ungroup %>% group_by(transect_id, piece) %>%
+    # calculate cumulative distance traveled between waypoints
+    mutate(dist_cuml = cumsum(dist), dist_total = max(dist_cuml)) %>% select(-dist) %>%
+    # calculate number of segments for each transect
+    mutate(nseg = ifelse(dist_total <= seg.length, 1,
+                         ifelse(dist_total / seg.length - floor(dist_total / seg.length) >= seg.tol,
+                                floor(dist_total / seg.length) + 1, floor(dist_total / seg.length))),
+           # calculate length of odd segment
+           dist_odd = ifelse(nseg == 1, 0, ifelse(dist_total - seg.length * floor(dist_total / seg.length) < seg.length * seg.tol,
+                                                  dist_total - seg.length * floor(dist_total / seg.length) + seg.length,
+                                                  dist_total - seg.length * floor(dist_total / seg.length))),
+           # randomly determine which segment will be assigned odd length
+           seg_odd = ifelse(dist_odd == 0, 0, ceiling(runif(1, 0, nseg))),
+           # number segments with waypoints
+           seg_num = ifelse(nseg == 1 | dist_cuml == 0, 1,
+                            ifelse(dist_cuml <= seg.length * (seg_odd - 1), ceiling(dist_cuml / seg.length),
+                                   ifelse(dist_cuml > seg.length * (seg_odd - 1) + dist_odd,
+                                          ceiling(1 + (dist_cuml - dist_odd) / seg.length), seg_odd))),
+           # determine number of segments without waypoints
+           tot_empty = as.integer(nseg - n_distinct(seg_num)))
+  
+  # create rows for segments without waypoints  
+  seg_empty = seg %>% select(piece, dataset_id, transect_id, dist_total, nseg, dist_odd, seg_odd, tot_empty) %>%
+    distinct %>% ungroup %>% filter(tot_empty > 0) %>% slice(rep(row_number(), tot_empty)) %>% select(-tot_empty) %>%
+    mutate(empty_seg = 1)
+  
+  # combine segments with and without waypoints
+  seg_all = seg %>% select(-tot_empty) %>% bind_rows(., seg_empty) %>% group_by(transect_id, piece) %>%
+    # number segments without waypoints
+    mutate(seg_num = replace(seg_num, is.na(seg_num), setdiff(1:first(nseg), seg_num)),
+           # calculate segment lengths
+           seg_dist = ifelse(nseg == 1, dist_total, ifelse(seg_num == seg_odd, dist_odd, seg.length)),
+           # calculate cumulative segment distance
+           seg_dist_cuml = ifelse(seg_num >= seg_odd, seg.length * (seg_num - 1) + dist_odd, seg.length * seg_num)) %>%
+    select(-c(dist_total, dist_odd, seg_odd)) %>%
+    ungroup %>% arrange(dataset_id, transect_id, piece, seg_num, dist_cuml) %>%
+    group_by(transect_id, piece) %>% mutate(dist_cuml = na.locf(dist_cuml)) %>%
+    group_by(transect_id, piece, seg_num) %>%
+    mutate(seg_brk = as.integer(ifelse(row_number() == n() & seg_num != nseg, 1, 0))) %>%
+    select(-nseg) %>% group_by(transect_id, piece) %>%
+    mutate(long = na.locf(long), lat = na.locf(lat),
+           long_lead = na.locf(lead(long), na.rm = FALSE, fromLast = TRUE),
+           lat_lead = na.locf(lead(lat), na.rm = FALSE, fromLast = TRUE)) %>%
+    rowwise %>%
+    # calculate heading between last waypoint and segment endpoint
+    mutate(heading = as.numeric(ifelse(seg_brk == 0, NA, bearing(c(long, lat), c(long_lead, lat_lead), sphere = TRUE)))) %>%
+    select(-c(seg_brk, long_lead, lat_lead)) %>% ungroup %>%
+    group_by(transect_id, piece, dist_cuml) %>% mutate(heading = last(heading)) %>%
+    group_by(transect_id, piece, seg_num) %>%
+    # calculate distance between last waypoint and segment endpoint
+    mutate(dist_shy = as.numeric(ifelse(is.na(heading), NA, seg_dist_cuml - dist_cuml))) %>%
+    rowwise %>%
+    # calculate coordinates of segment endpoints
+    mutate(coords_end = ifelse(is.na(heading), list(NA), list(destPoint(c(long, lat), heading, dist_shy * 1852, r = 6378137)))) %>%
+    select(-c(heading, dist_shy)) %>% ungroup
+  
+  # create rows for segment endpoints
+  end_pts = seg_all %>% select(-empty_seg) %>% filter(!is.na(coords_end)) %>%
+    mutate(long = unlist(lapply(coords_end, `[[`, 1)), lat = unlist(lapply(coords_end, `[[`, 2)), dist_cuml = seg_dist_cuml) %>%
+    select(-c(coords_end, seg_dist_cuml))
+  # create rows for segment start points and combine with segment endpoints
+  seg_ends = end_pts %>% select(-seg_dist) %>% mutate(seg_num = seg_num + 1) %>% bind_rows(end_pts, .)
+  
+  # combine segment start points and endpoints with other waypoints
+  seg_all_new = seg_all %>% filter(is.na(empty_seg)) %>% select(-c(empty_seg, seg_dist_cuml, coords_end)) %>%
+    bind_rows(., seg_ends) %>% arrange(dataset_id, transect_id, piece, seg_num, dist_cuml) %>% select(-dist_cuml) %>%
+    group_by(transect_id, piece, seg_num) %>% mutate(seg_dist = first(seg_dist[!is.na(seg_dist)]),
+                                                     id = paste(transect_id, piece, seg_num, sep = "-")) %>%
+    filter(seg_dist > 0) %>% ungroup %>% select(-piece)
+  
+  # -------- calculate segment midpoints ------------------------------------------------------------------------------------------
+  # create dataframe suitable to become spatial lines object 
+  listLines = function(df) {
+    df %>% select(long, lat) %>% as.data.frame %>% Line %>% list
+  }
+  
+  linelist = seg_all_new %>% group_by(transect_id, id) %>% do(coords = listLines(.))
+  # create spatial lines dataframe from segment waypoints and assign ID to each segment
+  lineframe = mapply(x = linelist$coords, ids = linelist$id, function(x, ids) Lines(x, ids)) %>% SpatialLines %>%
+    SpatialLinesDataFrame(., as.data.frame(select(linelist, transect_id)), match.ID = FALSE)
+  
+  # obtain geographic centroids
+  centroids = gCentroid(lineframe, byid = TRUE) %>% as.data.frame %>% rename(mid_long = x, mid_lat = y) %>% add_rownames("id")
+  
+  # merge segment midpoints with transect information
+  seg_mids = seg_all_new %>% select(-c(long, lat)) %>% distinct %>% group_by(transect_id) %>% mutate(seg_num = seq.int(n())) %>%
+    ungroup %>% left_join(., centroids, by = "id") %>% select(-id) %>%
+    left_join(., select(transects, transect_id, start_dt, survey_type_cd), by = "transect_id")
+  
+  # -------- assign segments to points --------------------------------------------------------------------------------------------
+  # function modified from maptools::snapPointsToLines
+  assignPointsToLines = function(points, lines, maxDist = NA) {
+    
+    # remove observations farther than maxDist from segment
+    if (!is.na(maxDist)) {
+      w = gWithinDistance(points, lines, dist = maxDist, byid = TRUE)
+      validPoints = apply(w, 2, any)
+      validLines = apply(w, 1, any)
+      points = points[validPoints, ]
+      lines = lines[validLines, ]
+    }
+    
+    d = gDistance(points, lines, byid = TRUE) # distance matrix of each point to each segment
+    nearest_line_index = apply(d, 2, which.min) # position of each nearest segment in lines object
+    
+    # recover lines' IDs (IDs and index differ if maxDist is given)
+    if (!is.na(maxDist)) seg_num = as.numeric(rownames(d)[nearest_line_index]) + 1
+    else seg_num = nearest_line_index
+    
+    # create data frame and sp points
+    df = cbind(points@data, seg_num)
+    SpatialPointsDataFrame(coords = coordinates(points), data = df)
+  }
+  
+  # wrapper function to restrict point to line pairing by transect ID
+  obs2Lines = function(df, lineframe) {
+    points = df %>% as.data.frame
+    coordinates(points) = c("long", "lat")
+    lines = lineframe[lineframe@data$transect_id == df$transect_id[1], ]
+    
+    assignPointsToLines(points, lines, maxDist) %>% as.data.frame
+  }
+  
+  # for each transect, find nearest segment to each point
+  seg_obs = observations %>% group_by(transect_id) %>% do(obs2Lines(., lineframe)) %>% ungroup
+  
+  # join segment midpoints and observations
+  segmented = full_join(seg_mids, seg_obs, by = c("transect_id", "seg_num")) %>%
+    mutate(spp_cd = replace(spp_cd, is.na(spp_cd), "NONE"))
+  
+  # -------- summarize species data by segment and convert to wide form -----------------------------------------------------------
+  seg_final = segmented %>%
+    group_by(dataset_id, transect_id, seg_num, seg_dist, mid_lat, mid_long, start_dt, spp_cd, survey_type_cd)
+  
+  if (occurences == FALSE) {
+    # total species count
+    seg_final = seg_final %>% summarise(count = sum(count)) %>%
+      spread(spp_cd, count, fill = 0) %>% select(-NONE) %>% ungroup
+  }
+    else if (occurences == TRUE) {
+    # number of species occurences
+    seg_final = seg_final %>% select(-count) %>% summarise(noccur = n()) %>%
+      spread(spp_cd, noccur, fill = 0) %>% select(-NONE) %>% ungroup
+  }
+
+}
+
+### example run ###
+source("Q:/Kyle_Working_Folder/Segmentation/pre_seg_new.R")
+seg.dat = segment(obs.pre, shp.pre, cts.dat)
