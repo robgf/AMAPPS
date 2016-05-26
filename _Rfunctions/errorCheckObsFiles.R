@@ -41,8 +41,9 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
   seat <- substr(matrix(unlist(strsplit(basename(dat$file), "_")), nrow = nrow(dat), byrow = TRUE)[, 1], 
                  nchar(matrix(unlist(strsplit(basename(dat$file), "_")), nrow = nrow(dat), byrow = TRUE)[, 1]) - 1, 
                  nchar(matrix(unlist(strsplit(basename(dat$file), "_")), nrow = nrow(dat), byrow = TRUE)[, 1]))
-  tmp <- !dat$seat %in% c("lf", "rf", "lr", "rr") | (dat$seat != seat & !grepl("SEAT", dat$dataChange))
+  tmp <- !dat$seat %in% c("lf", "rf", "lr", "rr") #| (dat$seat != seat & !grepl("SEAT", dat$dataChange))
   message("Found ", sum(tmp), " errors in SEAT column.")
+  if(sum(tmp)>0){dat[tmp]}
   dat$dataError[tmp] <- paste(dat$dataError[tmp], "; Incorrectly coded SEAT", sep = "")
   
   # TRANSECT COLUMN SHOULD ONLY CONTAIN NUMBERS
@@ -57,11 +58,13 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
     !grepl("added row for condition analysis", dat$dataChange) & 
     !(dat$condition == "0" & grepl("CONDITION", dat$dataChange))
   message("Found ", sum(tmp), " incorrectly coded in CONDITION values.")
+  if(sum(tmp)>0){dat[tmp,]}
   dat$dataError[tmp] <- paste(dat$dataError[tmp], "; Incorrectly coded CONDITION", 
                               sep = "")
   tmp <- dat$type == "COCH" & dat$condition %in% c("1", "2", "3", "4", "5") & 
     dat$condition != dat$count
   message("Found ", sum(tmp), " additional errors in CONDITION column.")
+  if(sum(tmp)>0){dat[tmp,]}
   dat$dataError[tmp] <- paste(dat$dataError[tmp], "; CONDITION != COUNT", sep = "")
   
   # OFFLINE COLUMN SHOULD ONLY BE "0" OR "1"
@@ -89,6 +92,7 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
   # IF OFFLINE NOT 0 OR 1, FLAG AS ERROR
   tmp <- !dat$offline %in% c("0", "1")
   message("Found ", sum(tmp), " errors in OFFLINE column.")
+  if(sum(tmp)>0){dat[tmp,]}
   dat$dataError[tmp] <- paste(dat$dataError[tmp], "; Incorrectly coded OFFLINE", sep = "")
   # change from NA to 0 
   dat$dataChange[is.na(dat$offline)][!is.na(dat$transect[is.na(dat$offline)])] = "changed OFFLINE from NA"
@@ -113,12 +117,14 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
   dat$offline[tmp] <- "0"
   
   # COMPARE TYPE VALUES TO DATABASE SPECIES LIST
-  code <- odbcConnectExcel2007(xls.file = paste(speciesPath, "NWASC_codes.xlsx", sep=""))
-  spplist <- sqlFetch(code, "codes")$spp_cd
-  odbcClose(code)
+  #code <- odbcConnectExcel2007(xls.file = paste(speciesPath, "NWASC_codes.xlsx", sep=""))
+  #spplist <- sqlFetch(code, "codes")$spp_cd
+  #odbcClose(code)
+  spplist <- read.xlsx(paste(speciesPath,"NWASC_codes.xlsx", sep=""), sheetName = "codes")
   tmp <- !dat$type %in% c("BEGSEG", "ENDSEG", "BEGCNT", "ENDCNT", "COCH") & 
     !dat$type %in% c("BOAT", "GILL", "SHIP", "TRAW", "BALN") & !dat$type %in% spplist
   message("Found ", sum(tmp), " entries with non-matching AOU codes")
+  if(sum(tmp)>0){dat[tmp,]}
   if (sum(tmp) > 0) {
     tab <- data.frame(table(dat$type[tmp]))
     names(tab) <- c("alpha_code", "freq")
@@ -145,6 +151,7 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
     (dat$count == "0" & !(dat$type %in% c("BEGSEG", "ENDSEG", "BEGCNT", "ENDCNT", "COCH"))) & 
     !is.na(dat$count)
   message("Found ", sum(tmp), " errors in COUNT column.")
+  if(sum(tmp)>0){dat[tmp,]}
   dat$dataError[tmp] <- paste(dat$dataError[tmp], "; Incorrectly coded COUNT", sep = "")
   
   # FOR BEG/END/COCH POINTS, BAND COLUMN SHOULD BE 0 AND BEHAVIOR COLUMN SHOULD BE MISSING
