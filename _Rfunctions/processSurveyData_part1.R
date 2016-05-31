@@ -328,10 +328,18 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   }
   obstrack$onLand <- ifelse(is.na(onland), 0, 1)
   # ---------------------------------------------------------------------------- #
-  
+
   
   # ---------------------------------------------------------------------------- #
-  # STEP 12: OUTPUT DATA & CREATE MAP DOCUMENT FOR INTERACTIVE EDITS IN ArcGIS
+  # STEP 12: OUTPUT DATA 
+  # ---------------------------------------------------------------------------- #
+  save.image(paste(dir.out,"obstrack_part1.Rdata",sep="/"))
+  write.csv(obstrack, file=paste(dir.out,"obstrack_part1.csv",sep="/"), row.names=FALSE)
+  # ---------------------------------------------------------------------------- #
+
+  
+  # ---------------------------------------------------------------------------- #
+  # STEP 13: CREATE MAP DOCUMENT FOR INTERACTIVE EDITS IN ArcGIS
   # ---------------------------------------------------------------------------- #
   obstrack$key <- paste(obstrack$crew, obstrack$seat, obstrack$year, obstrack$month, obstrack$day, sep = "_")
   obstrack$begend <- ifelse(obstrack$type %in% c("BEGCNT", "ENDCNT"), 1, 0)
@@ -386,7 +394,7 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   sink()
   
   # ------------------------------------------------------------------------- #
-  ### STEP 13: MANUALLY EDIT IN ARCMAP
+  ### STEP 14: MANUALLY EDIT IN ARCMAP
   # ------------------------------------------------------------------------- #
   # create folder to store edited shapefiles
   if (!file.exists(file.path(dir.out, "edited_shapefiles"))) {
@@ -400,6 +408,4 @@ processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
   # you will not be able to move on until this is completed (estimated time = 1 day)
   
   rm(dir,dir.in)
-  save.image(paste(dir.out,"obstrackWorkspace.Rdata",sep="/"))
-  write.csv(obstrack, file=paste(dir.out,"obstrack_part1.csv",sep="/"), row.names=FALSE)
 }
