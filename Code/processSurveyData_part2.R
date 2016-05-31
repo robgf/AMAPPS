@@ -42,7 +42,7 @@ sourceDir(file.path(dir, "_Rfunctions"))
 
 # Upload obstack 
 #obstrack = read.csv(paste(dir.out, "obstrack_part1.csv",sep="/"))
-load(paste(dir.out,"obstrackWorkspace.Rdata",sep="/")) # use obstrack_part1.csv if workspace corrupt
+load(paste(dir.out,"obstrack_part1.Rdata",sep="/")) # use obstrack_part1.csv if workspace corrupt
 # ------------------------------------------------------------------------- #
 
 
@@ -381,6 +381,7 @@ write.csv(track.final.ACS, file = paste(dir.out,"/", yearLabel,"_Observations.cs
 # This includes all observations (even marine)
 obsTrackFinalOutput(track.final, yearLabel, dir.out)
 write.csv(track.final, file =paste(dir.out,"/", yearLabel, "_Obstrack_Final.csv", sep=""), row.names=FALSE)
+save.image(paste(dir.out,"obstrack_final.Rdata",sep="/"))
 # ------------------------------------------------------------------------- #
 
 
