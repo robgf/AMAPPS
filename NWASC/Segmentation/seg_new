@@ -85,7 +85,7 @@ segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 
   # combine segment start points and endpoints with other waypoints
   seg_all_new = seg_all %>% filter(is.na(empty_seg)) %>% select(-c(empty_seg, seg_dist_cuml, coords_end)) %>%
     bind_rows(., seg_ends) %>% arrange(dataset_id, transect_id, piece, seg_num, dist_cuml) %>% select(-dist_cuml) %>%
-    group_by(transect_id, piece, seg_num) %>% mutate(seg_dist = first(seg_dist[!is.na(seg_dist)]),
+    group_by(transect_id, piece, seg_num) %>% mutate(seg_dist = round(first(seg_dist[!is.na(seg_dist)]), 3),
                                                      id = paste(transect_id, piece, seg_num, sep = "-")) %>%
     filter(seg_dist > 0) %>% ungroup %>% select(-piece)
   
