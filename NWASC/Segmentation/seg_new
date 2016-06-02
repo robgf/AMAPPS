@@ -53,7 +53,8 @@ segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 
            # calculate segment lengths
            seg_dist = ifelse(nseg == 1, dist_total, ifelse(seg_num == seg_odd, dist_odd, seg.length)),
            # calculate cumulative segment distance
-           seg_dist_cuml = ifelse(seg_num >= seg_odd, seg.length * (seg_num - 1) + dist_odd, seg.length * seg_num)) %>%
+           seg_dist_cuml = ifelse(nseg == 1, seg_dist,
+                                  ifelse(seg_num >= seg_odd, seg.length * (seg_num - 1) + dist_odd, seg.length * seg_num))) %>%
     select(-c(dist_total, dist_odd, seg_odd)) %>%
     ungroup %>% arrange(dataset_id, transect_id, piece, seg_num, dist_cuml) %>%
     group_by(transect_id, piece) %>% mutate(dist_cuml = na.locf(dist_cuml)) %>%
