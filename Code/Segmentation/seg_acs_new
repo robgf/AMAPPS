@@ -5,6 +5,7 @@
 
 # Calculates species counts by default; set occurences = TRUE for number of sightings
 # maxDist argument sets maximum allowable distance (meters) between an observation and its nearest segment line
+# Segment midpoints fall on track line by default; set centroids = TRUE to use geographic centroid
 # seg.min sets minimum allowable segment length
 
 # Distances are in nautical miles
@@ -24,7 +25,7 @@ options(dplyr.show_progress = FALSE)
 # read in observation and track tables
 load("Q:/Kyle_Working_Folder/Segmentation/Atlantic_Coast_Surveys/Data/AMAPPS.RData")
 
-segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol, maxDist = NA, occurences = FALSE) {
+segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol, centroids = FALSE, maxDist = NA, occurences = FALSE) {
 
   # -------- segment track data ---------------------------------------------------------------------------------------------------
   seg = tracks %>% select(-c(Crew, Seat)) %>% filter(Type %in% c("BEGTRAN", "BEGCNT", "WAYPNT", "ENDCNT", "ENDTRAN")) %>%
@@ -116,13 +117,20 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   lineframe = mapply(x = linelist$coords, ids = linelist$id, function(x, ids) Lines(x, ids)) %>% SpatialLines %>%
     SpatialLinesDataFrame(., as.data.frame(select(linelist, transect_id)), match.ID = FALSE)
   
-  # obtain geographic centroids
-  centroids = gCentroid(lineframe, byid = TRUE) %>% as.data.frame %>% rename(mid_long = x, mid_lat = y) %>% add_rownames("id")
+  if (centroids == TRUE) {
+    # obtain geographic centroids
+    midpoints = gCentroid(lineframe, byid = TRUE) %>% as.data.frame %>% rename(mid_long = x, mid_lat = y) %>% add_rownames("id")
+  }
+  else if (centroids == FALSE) {
+    # obtain segment midpoints
+    midpoints = getSpatialLinesMidPoints(lineframe) %>% as.data.frame %>% rename(mid_long = coords.x1, mid_lat = coords.x2) %>%
+      add_rownames("id") %>% mutate(id = as.character(as.integer(id) - 1))
+  }
   
   # merge segment midpoints with transect information
   seg_mids = seg_all_new %>% select(-c(Long, Lat, GpsError, Type, Condition)) %>% distinct %>%
     group_by(SurveyNbr, Transect, Replicate, Obs) %>% mutate(seg_num = seq.int(n())) %>% ungroup %>%
-    left_join(., centroids, by = "id") %>% select(-c(id, transect_id, Day))
+    left_join(., midpoints, by = "id") %>% select(-c(id, transect_id, Day))
   
   # -------- assign segments to points --------------------------------------------------------------------------------------------
   # function modified from maptools::snapPointsToLines
