@@ -53,7 +53,7 @@ preSegment = function(observations, tracks, transects) {
     group_by(dataset_id, transect_i) %>% slice(n()) %>% ungroup %>% filter(diff == 1) %>% select(-c(diff, long, lat)) %>%
     mutate(group = paste(dataset_id, transect_i + 1, sep = ".")) %>% select(group)
   
-  shp.pre = shp_tidy_data %>% mutate(new_transect_id = ifelse(group %in% id_transects$group, NA, transect_i),
+  shp_tidy_data_new = shp_tidy_data %>% mutate(new_transect_id = ifelse(group %in% id_transects$group, NA, transect_i),
                                                piece = ifelse(group %in% id_transects$group, NA, piece),
                                                order = ifelse(group %in% id_transects$group, NA, order)) %>%
     select(-group) %>% group_by(dataset_id) %>% mutate(new_transect_id = na.locf(new_transect_id)) %>%
@@ -82,7 +82,7 @@ preSegment = function(observations, tracks, transects) {
     select(-time_from_midnight)
   
   # assign updated transect IDs to observations and narrow observations to those on effort using time
-  new_obs_transect_id = shp.pre %>% select(transect_id, new_transect_id) %>% distinct
+  new_obs_transect_id = shp_tidy_data_new %>% select(transect_id, new_transect_id) %>% distinct
   obs.dat.new = left_join(obs.time, cts.time, by = "transect_id") %>%
     mutate(off_eff = as.integer(ifelse(obs_start_tm < start_tm | obs_start_tm > end_tm, 1, 0))) %>%
     filter(off_eff == 0 | is.na(off_eff)) %>% select(-off_eff) %>%
@@ -92,14 +92,14 @@ preSegment = function(observations, tracks, transects) {
     filter(transect_id %in% transects$transect_id, spp_cd != "NONE", count >= 0, !is.na(st_astext))
   
   # find transect IDs with missing coordinates
-  obs_missing = obs.dat %>% filter(is.na(st_astext)) %>% select(transect_id) %>% distinct
+  obs_missing = observations %>% filter(is.na(st_astext)) %>% select(transect_id) %>% distinct
   
   # create dataframe to become spatial points object
   obs.pre <<- do.call(rbind, lapply(obs.dat.new$st_astext, readWKT)) %>% as.data.frame %>%
     bind_cols(., select(obs.dat.new, -st_astext)) %>% rename(long = x, lat = y)
   
   # -------- create dataframe to become spatial lines object ----------------------------------------------------------------------
-  shp.pre <<- shp.pre %>% select(-transect_id) %>% rename(transect_id = new_transect_id) %>%
+  shp.pre <<- shp_tidy_data_new %>% select(-transect_id) %>% rename(transect_id = new_transect_id) %>%
     filter(!(transect_id %in% obs_missing$transect_id))
 
 }
