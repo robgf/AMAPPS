@@ -194,4 +194,4 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
 }
 
 ### example run ###
-seg.amapps = segmentAMAPPS(observatons, tracks)
+seg.amapps = segmentAMAPPS(observations, tracks)
