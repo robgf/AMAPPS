@@ -109,7 +109,7 @@ segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 
   }
     else if (centroids == FALSE) {
     # obtain segment midpoints
-    midpoints = getSpatialLinesMidPoints(lineframe) %>% as.data.frame %>% rename(mid_long = coords.x1, mid_lat = coords.x2) %>%
+    midpoints = getSpatialLinesMidPoints(lineframe) %>% as.data.frame %>% rename(mid_long = Long, mid_lat = Lat) %>%
       add_rownames("id") %>% mutate(id = as.character(as.integer(id) - 1))
   }
   
