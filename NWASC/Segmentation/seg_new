@@ -167,12 +167,12 @@ segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 
   if (occurences == FALSE) {
     # total species count
     seg_final = seg_final %>% summarise(count = sum(count)) %>%
-      spread(spp_cd, count, fill = 0) %>% select(-matches("NONE"), everything()) %>% ungroup
+      spread(spp_cd, count, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
   }
     else if (occurences == TRUE) {
     # number of species occurences
     seg_final = seg_final %>% select(-count) %>% summarise(noccur = n()) %>%
-      spread(spp_cd, noccur, fill = 0) %>% select(-matches("NONE"), everything()) %>% ungroup
+      spread(spp_cd, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
   }
 
 }
