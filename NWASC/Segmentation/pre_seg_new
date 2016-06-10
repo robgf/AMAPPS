@@ -2,7 +2,7 @@
 # Creates objects 'obs.pre' and 'shp.pre' to be used in segmentation function
 
 # Kyle Dettloff
-# 05-31-2016
+# 06-10-2016
 
 suppressMessages(library(broom))
 suppressMessages(library(maptools))
@@ -17,17 +17,14 @@ options(dplyr.show_progress = FALSE)
 
 # read in cts and observation tables
 load("Q:/Kyle_Working_Folder/Segmentation/From_Arliss/database_extract_cts_obs.RData")
-
 # read in transect shapefile
-setwd("Q:/Kyle_Working_Folder/NWASC_data/transect_shp_files")
-shp = readShapeLines("line")
+shp = readShapeLines("Q:/Kyle_Working_Folder/NWASC_data/transect_shp_files/line")
 
 preSegment = function(observations, tracks, transects) {
 
   # -------- prepare transect shapefile for segmentation --------------------------------------------------------------------------
   shp_tidy = tidy(tracks)
-  shp_data = tracks@data[, c("transect_i", "dataset_id")]
-  shp_data$id = seq.int(nrow(shp_data)) - 1
+  shp_data = tracks@data %>% select(transect_i, dataset_id) %>% add_rownames("id") %>% mutate(id = as.integer(id))
   
   # remove duplicate waypoints
   shp_tidy = shp_tidy %>% select(-order) %>% distinct %>% group_by(id) %>% mutate(order = seq.int(n())) %>% ungroup
