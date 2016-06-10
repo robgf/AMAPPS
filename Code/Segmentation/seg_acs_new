@@ -11,7 +11,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# 06-08-2016
+# 06-10-2016
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -124,7 +124,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   else if (centroids == FALSE) {
     # obtain segment midpoints
     midpoints = getSpatialLinesMidPoints(lineframe) %>% as.data.frame %>% rename(mid_long = Long, mid_lat = Lat) %>%
-      add_rownames("id") %>% mutate(id = as.character(as.integer(id) - 1))
+      mutate(id = sapply(slot(lineframe, "lines"), function(x) slot(x, "ID")))
   }
   
   # merge segment midpoints with transect information
@@ -192,12 +192,12 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
     if (occurences == FALSE) {
       # total species count
       seg_final = seg_final %>% summarise(FlockSize = sum(FlockSize)) %>%
-        spread(Species, FlockSize, fill = 0) %>% select(-NONE) %>% ungroup
+        spread(Species, FlockSize, fill = 0) %>% select(-matches("NONE"), everything()) %>% ungroup
     }
       else if (occurences == TRUE) {
       # number of species occurences
       seg_final = seg_final %>% select(-FlockSize) %>% summarise(noccur = n()) %>%
-        spread(Species, noccur, fill = 0) %>% select(-NONE) %>% ungroup
+        spread(Species, noccur, fill = 0) %>% select(-matches("NONE"), everything()) %>% ungroup
     }
 }
 
