@@ -5,14 +5,14 @@
 # and spatial lines shapefile containing survey effort
 
 # Calculates species counts by default; set occurences = TRUE for number of sightings
-# maxDist argument sets maximum allowable distance (meters) between an observation and its nearest segment line
+# maxDist argument sets maximum allowable distance (approx. meters) between an observation and its nearest segment line
 # Segment midpoints fall on track line by default; set centroids = TRUE to use geographic centroid
 # seg.min sets minimum allowable segment length
 
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# 06-10-2016
+# 06-14-2016
 
 segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol, centroids = FALSE, maxDist = NA, occurences = FALSE) {
 
@@ -138,18 +138,22 @@ segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 
     if (!is.na(maxDist)) seg_num = as.numeric(rownames(d)[nearest_line_index]) + 1
     else seg_num = nearest_line_index
     
-    # create data frame and sp points
-    df = cbind(points@data, seg_num)
-    SpatialPointsDataFrame(coords = coordinates(points), data = df)
+    # create data frame
+    cbind(points@data, seg_num)
   }
   
   # wrapper function to restrict point to line pairing by transect ID
   obs2Lines = function(df, lineframe) {
     points = df %>% as.data.frame
     coordinates(points) = c("long", "lat")
-    lines = lineframe[lineframe@data$transect_id == df$transect_id[1], ]
+    proj4string(points) = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
+    points = spTransform(points, CRS("+proj=utm +ellps=WGS84"))
     
-    assignPointsToLines(points, lines, maxDist) %>% as.data.frame
+    lines = lineframe[lineframe@data$transect_id == df$transect_id[1], ]
+    proj4string(lines) = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
+    lines = spTransform(lines, CRS("+proj=utm +ellps=WGS84"))
+    
+    assignPointsToLines(points, lines, maxDist)
   }
   
   # for each transect, find nearest segment to each point
