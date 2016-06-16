@@ -14,7 +14,8 @@
 # Kyle Dettloff
 # 06-16-2016
 
-segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol, centroids = FALSE, maxDist = NA, occurences = FALSE) {
+segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol,
+                   centroids = FALSE, maxDist = NA, occurences = FALSE) {
 
   # -------- segment track data ---------------------------------------------------------------------------------------------------
   seg = tracks %>% distinct(long, lat, piece, transect_id) %>% group_by(transect_id, piece) %>%
