@@ -4,7 +4,7 @@
 # Requires observation table with lat/long for each sighting, transect table with single row for each transect id,
 # and spatial lines shapefile containing survey effort
 
-# Calculates species counts by default; set occurences = TRUE for number of sightings
+# Calculates species counts by default; set occurences = TRUE for number of flock sightings
 # maxDist argument sets maximum allowable distance (approx. meters) between an observation and its nearest segment line
 # Segment midpoints fall on track line by default; set centroids = TRUE to use geographic centroid
 # seg.min sets minimum allowable segment length
