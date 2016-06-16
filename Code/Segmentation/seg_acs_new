@@ -25,7 +25,8 @@ options(dplyr.show_progress = FALSE)
 # read in observation and track tables
 load("Q:/Kyle_Working_Folder/Segmentation/Atlantic_Coast_Surveys/Data/AMAPPS.RData")
 
-segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol, centroids = FALSE, maxDist = NA, occurences = FALSE) {
+segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol,
+                         centroids = FALSE, maxDist = NA, occurences = FALSE) {
 
   # -------- segment track data ---------------------------------------------------------------------------------------------------
   seg = tracks %>% select(-c(Crew, Seat)) %>% filter(Type %in% c("BEGTRAN", "BEGCNT", "WAYPNT", "ENDCNT", "ENDTRAN")) %>%
