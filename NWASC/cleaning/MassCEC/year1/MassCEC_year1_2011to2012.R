@@ -125,9 +125,9 @@ obs = do.call(rbind.data.frame, obs)
 # ---------------------------------------------------------------------------- #
 
 # plot check
-p = obs %>% group_by(survey_num) %>% do(print(plots=ggplot(data=.)+
-     aes(x=lon,y=lat)+geom_point()+ggtitle(.$survey_num)))
-invisible(lapply(p$plots, print))
+#p = obs %>% group_by(survey_num) %>% do(print(plots=ggplot(data=.)+
+#     aes(x=lon,y=lat)+geom_point()+ggtitle(.$survey_num)))
+#invisible(lapply(p$plots, print))
 
 # ---------------------------------------------------------------------------- #
 # STEP 12: OUTPUT DATA 
@@ -152,12 +152,12 @@ write.csv(offline.only, file=paste(dir.out,"/", yearLabel,"_offline.csv", sep=""
 sink(file.path(dir.out, "dataProcessingSummary.txt"))
 cat("Survey data folder:", dir.in, "\n\n")
 cat("Error fix R file used:", errfix.file, "\n\n")
-cat("\nObservation files read:\n")
+cat("\n\nFiles used:\n")
+print(sapply(strsplit(as.character(files), "/"), tail, 1))
+cat("\nData points read:\n")
 print(length(obs$year))
-cat("\n\nNumber of observations read by crew and seat:\n")
-print(out.obstab1)
 cat("\n\nNumber of observations read by observer and seat:\n")
-print(out.obstab2)
+print(table(obs$observer, obs$seat))
 cat("Data processing completed on", date(), "\n")
 sink()
 
