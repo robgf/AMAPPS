@@ -144,14 +144,18 @@ segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 
   
   # wrapper function to restrict point to line pairing by transect ID
   obs2Lines = function(df, lineframe) {
+    
+    # define projection
+    projHOM = "+proj=omerc +lonc=-75 +lat_0=35 +alpha=40 +k_0=0.9996 +ellps=GRS80 +datum=NAD83"
+    
     points = df %>% as.data.frame
     coordinates(points) = c("long", "lat")
-    proj4string(points) = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-    points = spTransform(points, CRS("+proj=utm +ellps=WGS84"))
+    proj4string(points) = CRS("+proj=longlat")
+    points = spTransform(points, CRS(projHOM))
     
     lines = lineframe[lineframe@data$transect_id == df$transect_id[1], ]
-    proj4string(lines) = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-    lines = spTransform(lines, CRS("+proj=utm +ellps=WGS84"))
+    proj4string(lines) = CRS("+proj=longlat")
+    lines = spTransform(lines, CRS(projHOM))
     
     assignPointsToLines(points, lines, maxDist)
   }
@@ -181,7 +185,7 @@ segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 
   
   # add descriptive dataset IDs
   seg_final = transects %>% select(dataset_id, source_dataset_id) %>% distinct %>%
-    left_join(seg_final, .) %>% select(source_dataset_id, everything(), -dataset_id)
+    left_join(seg_final, ., by = "dataset_id") %>% select(source_dataset_id, everything(), -dataset_id)
 
 }
 
