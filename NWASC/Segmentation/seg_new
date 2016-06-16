@@ -12,7 +12,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# 06-14-2016
+# 06-16-2016
 
 segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol, centroids = FALSE, maxDist = NA, occurences = FALSE) {
 
@@ -177,7 +177,11 @@ segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 
     # number of species occurences
     seg_final = seg_final %>% select(-count) %>% summarise(noccur = n()) %>%
       spread(spp_cd, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
-  }
+    }
+  
+  # add descriptive dataset IDs
+  seg_final = transects %>% select(dataset_id, source_dataset_id) %>% distinct %>%
+    left_join(seg_final, .) %>% select(source_dataset_id, everything(), -dataset_id)
 
 }
 
