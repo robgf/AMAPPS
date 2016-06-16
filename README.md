@@ -6,7 +6,7 @@ This repository contains the scripts to QA/QC the USFWS Atlantic Marine Assessme
 Read Me for AMAPPS data management
 ========================================================
 Written by: Kaycee Coleman   
-Creadted: Nov. 2015     
+Created: Nov. 2015     
 
 For USFWS MB personel, all documentation is housed in M:/seabird_database folder and for now all working code is in the fs1/SeaDuck/NewCodeFromJeff_20150720 folder. This repository and QA/QC scripts are a work in progress, not a finished product  
 
