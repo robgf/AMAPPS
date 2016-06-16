@@ -11,7 +11,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# 06-14-2016
+# 06-16-2016
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -158,16 +158,18 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   
   # wrapper function to restrict point to line pairing by transect ID
   obs2Lines = function(df, lineframe) {
+    
+    # define projection
+    projHOM = "+proj=omerc +lonc=-75 +lat_0=35 +alpha=40 +k_0=0.9996 +ellps=GRS80 +datum=NAD83"
+    
     points = df %>% as.data.frame
-    coordinates(points) = c("Long", "Lat")
-    proj4string(points) = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-    points = spTransform(points, CRS("+proj=utm +ellps=WGS84"))
+    coordinates(points) = c("long", "lat")
+    proj4string(points) = CRS("+proj=longlat")
+    points = spTransform(points, CRS(projHOM))
     
     lines = lineframe[lineframe@data$transect_id == df$transect_id[1], ]
-    proj4string(lines) = CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-    lines = spTransform(lines, CRS("+proj=utm +ellps=WGS84"))
-    
-    assignPointsToLines(points, lines, maxDist)
+    proj4string(lines) = CRS("+proj=longlat")
+    lines = spTransform(lines, CRS(projHOM))
   }
   
   # prepare observation table
