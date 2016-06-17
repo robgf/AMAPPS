@@ -11,7 +11,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# 06-16-2016
+# 06-17-2016
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -29,8 +29,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
                          centroids = FALSE, maxDist = NA, occurences = FALSE) {
 
   # -------- segment track data ---------------------------------------------------------------------------------------------------
-  seg = tracks %>% select(-c(Crew, Seat)) %>% filter(Type %in% c("BEGTRAN", "BEGCNT", "WAYPNT", "ENDCNT", "ENDTRAN")) %>%
-    arrange(SurveyNbr, Transect, Replicate, Obs, Year, Month, Day, Sec) %>%
+  seg = tracks %>% select(-c(Crew, Seat)) %>% arrange(SurveyNbr, Transect, Replicate, Obs, Year, Month, Day, Sec) %>%
     mutate(Piece = ifelse(Type %in% c("BEGTRAN", "BEGCNT"), 1, 0)) %>%
     group_by(SurveyNbr, Transect, Replicate, Obs) %>% mutate(Piece = cumsum(Piece)) %>%
     distinct(Long, Lat, Piece, Replicate, Obs, Transect, SurveyNbr) %>%
