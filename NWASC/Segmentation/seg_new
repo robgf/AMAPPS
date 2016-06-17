@@ -12,7 +12,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# 06-16-2016
+# 06-17-2016
 
 segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol,
                    centroids = FALSE, maxDist = NA, occurences = FALSE) {
@@ -68,7 +68,7 @@ segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 
            lat_lead = na.locf(lead(lat), na.rm = FALSE, fromLast = TRUE)) %>%
     rowwise %>%
     # calculate heading between last waypoint and segment endpoint
-    mutate(heading = as.numeric(ifelse(seg_brk == 0, NA, bearing(c(long, lat), c(long_lead, lat_lead), sphere = TRUE)))) %>%
+    mutate(heading = as.numeric(ifelse(seg_brk == 0, NA, bearing(c(long, lat), c(long_lead, lat_lead), f = 0)))) %>%
     select(-c(seg_brk, long_lead, lat_lead)) %>% ungroup %>%
     group_by(transect_id, piece, dist_cuml) %>% mutate(heading = last(heading)) %>%
     group_by(transect_id, piece, seg_num) %>%
