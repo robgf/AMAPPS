@@ -177,7 +177,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   # prepare observation table
   obs_transect_id = lineframe@data$transect_id
   obs = observations %>%
-    select(c(SurveyNbr, Transect, Replicate, Obs, Year, Month, Day, Species, FlockSize, Long, Lat)) %>%
+    select(SurveyNbr, Transect, Replicate, Obs, Year, Month, Species, FlockSize, Long, Lat) %>%
     # narrow observations to birds
     filter(!(Species %in% c("GRST", "KRST", "LEST", "LOST", "CNRA", "GWSH", "HASH", "MARA",
                             "BODO", "DOLP", "FIWH", "GRSE", "HUWH", "MIWH", "PIWH", "PORP",
@@ -187,7 +187,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
     filter(transect_id %in% obs_transect_id)
   # for each transect, find nearest segment to each point
   seg_obs = obs %>% group_by(transect_id) %>% do(obs2Lines(., lineframe)) %>% ungroup %>%
-    select(-c(transect_id, Long, Lat, Day))
+    select(-transect_id)
   
   # join segment midpoints and observations
   segmented = full_join(seg_mids, seg_obs, by = c("SurveyNbr", "Transect", "Replicate", "Obs", "Year", "Month", "seg_num")) %>%
