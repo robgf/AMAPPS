@@ -170,6 +170,8 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
     lines = lineframe[lineframe@data$transect_id == df$transect_id[1], ]
     proj4string(lines) = CRS("+proj=longlat")
     lines = spTransform(lines, CRS(projHOM))
+    
+    assignPointsToLines(points, lines, maxDist)
   }
   
   # prepare observation table
