@@ -77,7 +77,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
            lat_lead = na.locf(lead(Lat), na.rm = FALSE, fromLast = TRUE)) %>%
     rowwise %>%
     # calculate heading between last waypoint and segment endpoint
-    mutate(heading = as.numeric(ifelse(seg_brk == 0, NA, bearing(c(Long, Lat), c(long_lead, lat_lead), sphere = TRUE)))) %>%
+    mutate(heading = as.numeric(ifelse(seg_brk == 0, NA, bearing(c(Long, Lat), c(long_lead, lat_lead), f = 0)))) %>%
     select(-c(seg_brk, long_lead, lat_lead)) %>% ungroup %>%
     group_by(SurveyNbr, Transect, Replicate, Obs, Piece, dist_cuml) %>% mutate(heading = last(heading)) %>%
     group_by(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num) %>%
@@ -163,7 +163,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
     projHOM = "+proj=omerc +lonc=-75 +lat_0=35 +alpha=40 +k_0=0.9996 +ellps=GRS80 +datum=NAD83"
     
     points = df %>% as.data.frame
-    coordinates(points) = c("long", "lat")
+    coordinates(points) = c("Long", "Lat")
     proj4string(points) = CRS("+proj=longlat")
     points = spTransform(points, CRS(projHOM))
     
