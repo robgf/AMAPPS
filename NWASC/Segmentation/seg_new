@@ -76,7 +76,7 @@ segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 
     mutate(dist_shy = as.numeric(ifelse(is.na(heading), NA, seg_dist_cuml - dist_cuml))) %>%
     rowwise %>%
     # calculate coordinates of segment endpoints
-    mutate(coords_end = ifelse(is.na(heading), list(NA), list(destPoint(c(long, lat), heading, dist_shy * 1852, r = 6378137)))) %>%
+    mutate(coords_end = ifelse(is.na(heading), list(NA), list(destPoint(c(long, lat), heading, dist_shy * 1852, f = 0)))) %>%
     select(-c(heading, dist_shy)) %>% ungroup
   
   # create rows for segment endpoints
