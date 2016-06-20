@@ -2,7 +2,7 @@
 # Creates objects 'obs.pre' and 'shp.pre' to be used in segmentation function
 
 # Kyle Dettloff
-# 06-10-2016
+# 06-20-2016
 
 suppressMessages(library(broom))
 suppressMessages(library(maptools))
@@ -23,6 +23,8 @@ shp = readShapeLines("Q:/Kyle_Working_Folder/NWASC_data/transect_shp_files/line"
 preSegment = function(observations, tracks, transects) {
 
   # -------- prepare transect shapefile for segmentation --------------------------------------------------------------------------
+  # narrow all spatial line geometries to only cts transects
+  tracks = tracks[tracks@data$transect_i %in% transects$transect_id, ]
   shp_tidy = tidy(tracks)
   shp_data = tracks@data %>% select(transect_i, dataset_id) %>% add_rownames("id") %>% mutate(id = as.integer(id))
   
@@ -39,7 +41,7 @@ preSegment = function(observations, tracks, transects) {
   shp_tidy_data = shp_tidy %>% mutate(id = as.integer(id),
                                       piece = as.integer(ifelse(group %in% id_groups$group, NA, piece))) %>%
     select(-group) %>% group_by(id) %>% mutate(piece = as.integer(factor(na.locf(piece)))) %>% ungroup %>%
-    left_join(., shp_data, by = "id") %>% select(-id) %>% filter(dataset_id %in% transects$dataset_id) %>%
+    left_join(., shp_data, by = "id") %>% select(-id) %>%
     mutate(group = paste(dataset_id, transect_i, sep = ".")) %>% arrange(dataset_id, transect_i, piece, order)
   
   # merge continuous segments defined as seqential transects
