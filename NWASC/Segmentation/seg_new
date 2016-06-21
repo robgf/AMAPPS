@@ -192,4 +192,4 @@ segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol
 
 ### example run ###
 source("Q:/Kyle_Working_Folder/Segmentation/pre_seg_new.R")
-seg.dat = segmentCTS(obs.pre, shp.pre, cts.dat)
+seg.dat.cts = segmentCTS(obs.pre, shp.pre, cts.dat)
