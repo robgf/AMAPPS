@@ -87,11 +87,12 @@ preSegment = function(observations, tracks, transects) {
     mutate(off_eff = as.integer(ifelse(obs_start_tm < start_tm | obs_start_tm > end_tm, 1, 0))) %>%
     filter(off_eff == 0 | is.na(off_eff)) %>% select(-off_eff) %>%
     left_join(., new_obs_transect_id, by = "transect_id") %>% rename(count = obs_count_intrans_nb) %>%
+    # assign count of one when species code present but count field missing
     mutate(transect_id = new_transect_id, count = ifelse(is.na(count) & !is.na(spp_cd), 1, count)) %>%
     select(transect_id, spp_cd, count, st_astext) %>%
     filter(spp_cd != "NONE", count >= 0, !is.na(st_astext))
   
-  # check for transect IDs with missing coordinates to be removed
+  # check for transect IDs with missing observation coordinates
   obs_missing = observations %>% filter(is.na(st_astext)) %>% select(transect_id) %>% distinct
   
   # create dataframe to become spatial points object
@@ -100,6 +101,7 @@ preSegment = function(observations, tracks, transects) {
   
   # -------- create dataframe to become spatial lines object ----------------------------------------------------------------------
   shp.pre <<- shp_tidy_data_new %>% select(-transect_id) %>% rename(transect_id = new_transect_id) %>%
+    # remove transect IDs with missing observation coordinates
     filter(!(transect_id %in% obs_missing$transect_id))
 
 }
