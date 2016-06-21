@@ -108,3 +108,7 @@ seg_final = dts_final %>%
 
 ### example run ###
 seg.dat.dts = segmentDTS(obs.dat, dts.dat)
+
+### example: combine segmented cts and dts data ###
+seg.dat.all = bind_rows(seg.dat.cts, seg.dat.dts) %>%
+  mutate_each(funs(replace(., is.na(.), 0)), -c(source_dataset_id:survey_method_cd))
