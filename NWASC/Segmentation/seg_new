@@ -117,7 +117,7 @@ segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol
   # merge segment midpoints with transect information
   seg_mids = seg_all_new %>% select(-c(long, lat)) %>% distinct %>% group_by(transect_id) %>% mutate(seg_num = seq.int(n())) %>%
     ungroup %>% left_join(., midpoints, by = "id") %>% select(-id) %>%
-    left_join(., select(transects, transect_id, start_dt, transect_width_nb, survey_type_cd), by = "transect_id")
+    left_join(., select(transects, transect_id, start_dt, transect_width_nb, survey_type_cd, survey_method_cd), by = "transect_id")
   
   # -------- assign segments to points --------------------------------------------------------------------------------------------
   # function modified from maptools::snapPointsToLines
@@ -171,7 +171,7 @@ segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol
   
   # -------- summarize species data by segment and convert to wide form -----------------------------------------------------------
   seg_final = segmented %>%
-    group_by(dataset_id, transect_id, seg_num, start_dt, seg_dist, transect_width_nb, mid_long, mid_lat, spp_cd, survey_type_cd)
+    group_by(dataset_id, transect_id, seg_num, start_dt, seg_dist, transect_width_nb, mid_long, mid_lat, survey_type_cd, survey_method_cd, spp_cd)
   
   if (occurences == FALSE) {
     # total species count
