@@ -12,10 +12,10 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# 06-17-2016
+# 06-21-2016
 
-segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol,
-                   centroids = FALSE, maxDist = NA, occurences = FALSE) {
+segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol,
+                      centroids = FALSE, maxDist = NA, occurences = FALSE) {
 
   # -------- segment track data ---------------------------------------------------------------------------------------------------
   seg = tracks %>% distinct(long, lat, piece, transect_id) %>% group_by(transect_id, piece) %>%
@@ -117,7 +117,7 @@ segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 
   # merge segment midpoints with transect information
   seg_mids = seg_all_new %>% select(-c(long, lat)) %>% distinct %>% group_by(transect_id) %>% mutate(seg_num = seq.int(n())) %>%
     ungroup %>% left_join(., midpoints, by = "id") %>% select(-id) %>%
-    left_join(., select(transects, transect_id, start_dt, survey_type_cd), by = "transect_id")
+    left_join(., select(transects, transect_id, start_dt, transect_width_nb, survey_type_cd), by = "transect_id")
   
   # -------- assign segments to points --------------------------------------------------------------------------------------------
   # function modified from maptools::snapPointsToLines
@@ -171,7 +171,7 @@ segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 
   
   # -------- summarize species data by segment and convert to wide form -----------------------------------------------------------
   seg_final = segmented %>%
-    group_by(dataset_id, transect_id, seg_num, start_dt, seg_dist, mid_long, mid_lat, spp_cd, survey_type_cd)
+    group_by(dataset_id, transect_id, seg_num, start_dt, seg_dist, transect_width_nb, mid_long, mid_lat, spp_cd, survey_type_cd)
   
   if (occurences == FALSE) {
     # total species count
@@ -192,4 +192,4 @@ segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 
 
 ### example run ###
 source("Q:/Kyle_Working_Folder/Segmentation/pre_seg_new.R")
-seg.dat = segment(obs.pre, shp.pre, cts.dat)
+seg.dat = segmentCTS(obs.pre, shp.pre, cts.dat)
