@@ -2,7 +2,7 @@
 # Creates objects 'obs.pre' and 'shp.pre' to be used in segmentation function
 
 # Kyle Dettloff
-# 06-20-2016
+# 06-21-2016
 
 suppressMessages(library(broom))
 suppressMessages(library(maptools))
@@ -23,7 +23,8 @@ shp = readShapeLines("Q:/Kyle_Working_Folder/NWASC_data/transect_shp_files/line"
 preSegment = function(observations, tracks, transects) {
 
   # -------- prepare transect shapefile for segmentation --------------------------------------------------------------------------
-  # narrow all spatial line geometries to only cts transects
+  # narrow all observations and spatial line geometries to only cts transects
+  observations = observations %>% filter(transect_id %in% transects$transect_id)
   tracks = tracks[tracks@data$transect_i %in% transects$transect_id, ]
   shp_tidy = tidy(tracks)
   shp_data = tracks@data %>% select(transect_i, dataset_id) %>% add_rownames("id") %>% mutate(id = as.integer(id))
@@ -88,9 +89,9 @@ preSegment = function(observations, tracks, transects) {
     left_join(., new_obs_transect_id, by = "transect_id") %>% rename(count = obs_count_intrans_nb) %>%
     mutate(transect_id = new_transect_id, count = ifelse(is.na(count) & !is.na(spp_cd), 1, count)) %>%
     select(transect_id, spp_cd, count, st_astext) %>%
-    filter(transect_id %in% transects$transect_id, spp_cd != "NONE", count >= 0, !is.na(st_astext))
+    filter(spp_cd != "NONE", count >= 0, !is.na(st_astext))
   
-  # find transect IDs with missing coordinates
+  # check for transect IDs with missing coordinates to be removed
   obs_missing = observations %>% filter(is.na(st_astext)) %>% select(transect_id) %>% distinct
   
   # create dataframe to become spatial points object
