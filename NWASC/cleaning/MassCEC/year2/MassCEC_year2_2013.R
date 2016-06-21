@@ -113,32 +113,157 @@ if(all(!names(obs) %in% "index")){
 obs$key <- paste(obs$survey_num, obs$seat, obs$year, obs$month, obs$day, sep = "_")
 # since each obs is sharing a track file, need to make sure that is incorporated
 # for each unique key without waypoints duplicate the track data and assign it to each observer
-track = obs[grep("__",obs$key),]
-obs = obs[!grep("__",obs$key),]
+track = obs[grep("_NA_",obs$key),]
+obs = obs[!grep("_NA_",obs$key),]
 # in this case there are two observers for each track in the track file so can simply duplicate
-add1=track
-add2=track
-add1$seat="rr"
-add2$seat="lr"
-add1$dataChange=paste(add1$dataChange, "; Duplicated track file for each observer", sep="")
-add2$dataChange=paste(add1$dataChange, "; Duplicated track file for each observer", sep="")
-obs=rbind(obs,add1,add2)
-rm(add1,add2,track)
-obs$key <- paste(obs$survey_num, obs$seat, obs$year, obs$month, obs$day, sep = "_")
-obs <- split(obs, list(obs$key))
+add1 = track[!sapply(strsplit(track$key,"_"),head,1) %in% c("survey25","survey24")]
+add2 = add1
+add3 = track[sapply(strsplit(track$key,"_"),head,1) %in% c("survey25","survey24"),]
+add1$seat = "rr"
+add2$seat = "lr"
+add3$seat = "lrrr"
+add1$dataChange = paste(add1$dataChange, "; Duplicated track file for each observer", sep="")
+add2$dataChange = paste(add1$dataChange, "; Duplicated track file for each observer", sep="")
+add2$dataChange = paste(add1$dataChange, "; Changed SEAT from NA", sep="")
+track = rbind(add1,add2,add3); rm(add1,add2,add3)
+track$key <- paste(track$survey_num, track$seat, track$year, track$month, track$day, sep = "_")
+track$key[track$key=="survey23TRACK_lr_2013_9_11"]= "survey23_lr_2013_9_11"
+track$key[track$key=="survey23TRACK_rr_2013_9_11"]= "survey23_rr_2013_9_11"
+
+# combine
+obs = rbind(obs,track); rm(track)
+obs <- obs[order(obs$year, obs$month, obs$day, obs$sec, obs$index), ]
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
 # STEP 7: ADD BEG/END POINTS WHERE NEEDED IN OBSERVATION FILES
 # ---------------------------------------------------------------------------- #
-obs <- suppressMessages(lapply(obs, addBegEnd_obs))
-obs = do.call(rbind.data.frame, obs)
-# ---------------------------------------------------------------------------- #
+obs$offline[is.na(obs$offline)]="2" #temporary to run addBegEnd func
+obs <- split(obs, list(obs$key))
 
-# plot check
-p = obs %>% group_by(survey_num) %>% do(print(plots=ggplot(data=.)+
-                                                aes(x=lon,y=lat)+geom_point()+ggtitle(.$survey_num)))
-invisible(lapply(p$plots, print))
+addBegEnd_obs <- function(data) {
+  
+  data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
+  
+  # REMOVE BLANK SPACES IN TYPE FIELD
+  data$type <- gsub(" ", "", data$type)
+  
+  # CHANGE ALL BEGSEG/ENDSEG TO BEGCNT/ENDCNT
+  data$type[data$type == "BEGSEG"] <- "BEGCNT"
+  data$type[data$type == "ENDSEG"] <- "ENDCNT"
+  
+  data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
+  
+  # ADD BEGCNT
+  if (data$type[1] != "BEGCNT") {
+    add <- data[1, ]
+    add$type <- "BEGCNT"
+    add$index <- add$index - .01
+    add$dataChange <- paste(add$dataChange, "; added row due to missing BEG/END point", 
+                            sep = "")
+    data <- rbind(data, add)
+    data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
+  }
+  
+  # ADD ENDCNT
+  if (data$type[nrow(data)] != "ENDCNT") {
+    add <- data[nrow(data), ]
+    add$type <- "ENDCNT"
+    add$index <- add$index + .01
+    add$dataChange <- paste(add$dataChange, "; added row due to missing BEG/END point", 
+                            sep = "")
+    data <- rbind(data, add)
+    data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
+  }
+  
+  if (nrow(data) > 2) {
+    for (j in 2:(nrow(data)-1)) {
+      if (data$type[j] == "BEGCNT" & !(data$type[j-1] == "ENDCNT")) {
+        add <- data[j-1, ]
+        add$type <- "ENDCNT"
+        add$index <- add$index + .01
+        add$dataChange <- paste(add$dataChange, "; added row due to missing BEG/END point", 
+                                sep = "")
+        data <- rbind(data, add)
+      }
+      if (data$type[j] == "ENDCNT" & !(data$type[j+1] == "BEGCNT")) {
+        add <- data[j+1, ]
+        add$type <- "BEGCNT"
+        add$index <- add$index - .01
+        add$dataChange <- paste(add$dataChange, "; added row due to missing BEG/END point", 
+                                sep = "")
+        data <- rbind(data, add)
+      }
+    }
+    
+    
+    # OFFLINE
+    data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
+    for (j in 2:nrow(data)) {
+      if(data$offline[j] == "0" & data$offline[j-1] == "1" & !data$type[j-1] %in% "ENDCNT" & !data$type[j] %in% "ENDCNT") {
+        add <- data[j-1, ]
+        add$type <- "ENDCNT"
+        add$index <- add$index + .01
+        add$behavior <- ""
+        add$count <- "0"
+        add$dataChange <- paste(add$dataChange, "; added row due to missing BEG/END point",  sep = "")
+        data <- rbind(data, add)}
+      if(data$offline[j] == "1" & data$offline[j-1] == "0" & !data$type[j-1] %in% "ENDCNT" & !data$type[j] %in% "ENDCNT") { 
+        add <- data[j-1, ]
+        add$type <- "ENDCNT"
+        add$index <- add$index + .01
+        add$behavior <- ""
+        add$count <- "0"
+        add$dataChange <- paste(add$dataChange, "; added row due to missing BEG/END point",  sep = "")
+        data <- rbind(data, add)}
+    }
+    
+    data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
+    for (j in 2:(nrow(data)-1)) {
+      if(data$type[j-1] == "ENDCNT" & !data$type[j] %in% "BEGCNT") { 
+        add <- data[j, ]
+        add$type <- "BEGCNT"
+        add$index <- add$index - .01
+        add$behavior <- ""
+        add$count <- "0"
+        add$dataChange <- paste(add$dataChange, "; added row due to missing BEG/END point",  sep = "")
+        data <- rbind(data, add)
+      }    
+    }   
+  }
+  data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
+  return(data)  
+}
+
+obs <- suppressMessages(lapply(obs, addBegEnd_obs))
+
+# since WAYPOINTS are mainly NAs
+obs = do.call(rbind.data.frame, obs)
+obs$offline[obs$offline=="2"] = NA # change back to NA for na.locf
+obs <- split(obs, list(obs$key))
+
+extraStep<-function(data){
+  data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
+  data$piece = 0
+  for (j in 1:nrow(data)) {if(data$type[j]=="BEGCNT"){data$piece[j:nrow(data)]=data$piece[j:nrow(data)]+1}}
+  return(data)
+}
+obs = lapply(obs, extraStep)
+obs = do.call(rbind.data.frame, obs)
+
+obs$offline[obs$index==3040.00 & obs$key=="survey16_lr_2013_1_21" & obs$piece==3] = "1" # fix error
+
+data = obs %>% group_by(key,piece) %>% arrange(year,month,day,sec) %>% 
+  mutate(offline = ifelse(any(offline[!is.na(offline)]=="0") & any(offline[!is.na(offline)]=="1"),
+                "2", na.locf(offline))) %>% as.data.frame
+# summary table
+toFix = data %>% select(key,piece,offline) %>% distinct()
+toFix[toFix$offline=="2",]
+# if everything looks ok and there are no offline==2, or you have fixed those where offline==2
+data$dataChange[!is.na(data$offline) & is.na(obs$offline)] = paste(data$dataChange[!is.na(data$offline) & is.na(obs$offline)],
+                                                     "; Changed OFFLINE from NA", sep="")
+obs = data; rm(data, toFix)
+# ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
 # STEP 12: OUTPUT DATA 
@@ -148,11 +273,10 @@ write.csv(obs, file=paste(dir.out,"/", yearLabel,".csv", sep=""), row.names=FALS
 # divide obs and track with Beg/End count in both
 obs.only=obs[!obs$type %in% c("WAYPNT","COCH"),]
 track.only=obs[obs$type %in% c("WAYPNT","COCH","BEGCNT","ENDCNT"),]
-offline.only=obs[obs$offline==1,]
+offline.only=obs[obs$offline %in% c("1",NA),]
 write.csv(obs.only, file=paste(dir.out,"/", yearLabel,"_obs.csv", sep=""), row.names=FALSE)
 write.csv(track.only, file=paste(dir.out,"/", yearLabel,"_track.csv", sep=""), row.names=FALSE)
 write.csv(offline.only, file=paste(dir.out,"/", yearLabel,"_offline.csv", sep=""), row.names=FALSE)
-
 # ---------------------------------------------------------------------------- #
 
 
