@@ -89,6 +89,8 @@ obs$type[obs$type == "JASP"]="UNJA"
 obs$type[obs$type == "ULGU"]="UNLG"
 obs$type[obs$type == "ULSH"]="UNLS"
 
+
+
 # time
 names(obs)[names(obs)=="time"] <- "sec"
 
@@ -110,8 +112,14 @@ obs$day[basename(obs$file)=="survey17_TRACK_TR033013"] = 30
 obs$month = as.numeric(as.character(obs$month))
 obs$year = as.numeric(as.character(obs$year))
 obs$day = as.numeric(as.character(obs$day))
+obs$year[obs$year==2012] = 2013
+
 
 # comments
 names(obs)[names(obs)=="comments"] <- "comment"
+
+# comments
+names(obs)[names(obs)=="number"] <- "count"
+
 
 
