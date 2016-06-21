@@ -11,7 +11,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# 06-17-2016
+# 06-21-2016
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
