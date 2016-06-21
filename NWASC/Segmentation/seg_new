@@ -171,7 +171,7 @@ segment = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 
   
   # -------- summarize species data by segment and convert to wide form -----------------------------------------------------------
   seg_final = segmented %>%
-    group_by(dataset_id, transect_id, seg_num, seg_dist, mid_lat, mid_long, start_dt, spp_cd, survey_type_cd)
+    group_by(dataset_id, transect_id, seg_num, start_dt, seg_dist, mid_long, mid_lat, spp_cd, survey_type_cd)
   
   if (occurences == FALSE) {
     # total species count
