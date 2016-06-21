@@ -195,7 +195,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   
   # -------- summarize species data by segment and convert to wide form -----------------------------------------------------------
   seg_final = segmented %>%
-    group_by(SurveyNbr, Transect, Replicate, Obs, Year, Month, seg_num, seg_dist, mid_lat, mid_long, Species)
+    group_by(SurveyNbr, Transect, Replicate, Obs, Year, Month, seg_num, seg_dist, mid_long, mid_lat, Species)
   
     if (occurences == FALSE) {
       # total species count
