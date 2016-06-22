@@ -1,4 +1,4 @@
-# Process dts survey data
+# Process dts survey data in NWASC database
 
 # v.spd sets assumed vessel speed in knots when vessel speed is missing
 # Calculates species counts by default; set occurences = TRUE for number of flock sightings
@@ -6,7 +6,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# 06-21-2016
+# 06-22-2016
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -20,84 +20,87 @@ load("Q:/Kyle_Working_Folder/Segmentation/From_Arliss/database_extract_dts_obs.R
 
 segmentDTS = function(observations, transects, v.spd = 10, occurences = FALSE) {
 
-# -------- prepare observation table to be paired with dts midpoints --------------------------------------------------
-# narrow all observations to only those on dts transects
-obs.dat = observations %>% filter(transect_id %in% transects$transect_id) %>% select(-st_astext)
-
-# format times in dts table
-dts.time = transects %>%
-  select(transect_id, start_dt, end_dt, start_tm, end_tm, time_from_midnight_start, time_from_midnight_stop) %>%
-  mutate(start_tm = as.POSIXct(ymd(start_dt) + hms(start_tm)),
-         end_tm = as.POSIXct(ymd(end_dt) + hms(end_tm)),
-         time_from_midnight_start = as.POSIXct(ymd(start_dt) + seconds(time_from_midnight_start)),
-         time_from_midnight_stop = as.POSIXct(ymd(end_dt) + seconds(time_from_midnight_stop))) %>%
-  mutate(start_tm = ifelse(is.na(start_tm) & !is.na(time_from_midnight_start), time_from_midnight_start, start_tm),
-         end_tm = ifelse(is.na(end_tm) & !is.na(time_from_midnight_stop), time_from_midnight_stop, end_tm)) %>%
-  select(-c(time_from_midnight_start, time_from_midnight_stop))
-
-# format times in observation table
-obs.time = obs.dat %>%
-  select(transect_id, obs_dt, obs_start_tm, spp_cd, obs_count_intrans_nb, time_from_midnight) %>%
-  mutate(obs_start_tm = as.POSIXct(ymd(obs_dt) + hms(obs_start_tm)),
-         time_from_midnight = as.POSIXct(ymd(obs_dt) + seconds(time_from_midnight))) %>%
-  mutate(obs_start_tm = ifelse(is.na(obs_start_tm) & !is.na(time_from_midnight), time_from_midnight, obs_start_tm)) %>%
-  select(-time_from_midnight)
-
-# narrow observations to those on effort using time
-obs.dat = left_join(obs.time, dts.time, by = "transect_id") %>%
-  mutate(off_eff = as.integer(ifelse(obs_start_tm < start_tm | obs_start_tm > end_tm, 1, 0))) %>%
-  filter(off_eff == 0 | is.na(off_eff)) %>% select(-off_eff) %>%
-  rename(count = obs_count_intrans_nb) %>%
-  # assign count of one when species code present but count field missing
-  mutate(count = ifelse(is.na(count) & !is.na(spp_cd), 1, count)) %>%
-  select(transect_id, spp_cd, count) %>%
-  filter(spp_cd != "NONE", count >= 0)
-
-# -------- calculate dts survey midpoints -----------------------------------------------------------------------------
-# select only durations of 10 and 15 minutes
-dts = transects %>%
-  select(source_dataset_id, transect_id, start_dt, survey_type_cd, survey_method_cd, transect_width_nb,
-         transect_time_min_nb, traversal_speed_nb, heading_tx, st_astext) %>%
-  filter(transect_time_min_nb %in% c(10, 15)) %>%
-  mutate(traversal_speed_nb = replace(traversal_speed_nb, is.na(traversal_speed_nb), v.spd),
-         seg_dist = transect_time_min_nb * traversal_speed_nb / 60)
+  # -------- prepare observation table to be paired with dts midpoints --------------------------------------------------
+  # narrow all observations to only those on dts transects
+  obs.dat = observations %>% filter(transect_id %in% transects$transect_id) %>% select(-st_astext)
   
-# get midpoints of spatial points
-midpoints_point = dts %>% filter(grepl("POINT", st_astext), !is.na(heading_tx)) %>%
-  bind_cols(., as.data.frame(do.call(rbind, lapply(.$st_astext, readWKT)))) %>%
-  select(-st_astext) %>% rename(long = x, lat = y) %>%
-  mutate(half_dist_m = transect_time_min_nb * traversal_speed_nb * 1852 / 120) %>%
-  rowwise %>% mutate(coords_mid = list(destPoint(c(long, lat), heading_tx, half_dist_m))) %>%
-  ungroup %>% mutate(mid_long = unlist(lapply(coords_mid, `[[`, 1)), mid_lat = unlist(lapply(coords_mid, `[[`, 2))) %>%
-  select(source_dataset_id, transect_id, start_dt, survey_type_cd, survey_method_cd, transect_width_nb, seg_dist, mid_long, mid_lat)
+  # format times in dts table
+  dts.time = transects %>%
+    select(transect_id, start_dt, end_dt, start_tm, end_tm, time_from_midnight_start, time_from_midnight_stop) %>%
+    mutate(start_tm = as.POSIXct(ymd(start_dt) + hms(start_tm)),
+           end_tm = as.POSIXct(ymd(end_dt) + hms(end_tm)),
+           time_from_midnight_start = as.POSIXct(ymd(start_dt) + seconds(time_from_midnight_start)),
+           time_from_midnight_stop = as.POSIXct(ymd(end_dt) + seconds(time_from_midnight_stop))) %>%
+    mutate(start_tm = ifelse(is.na(start_tm) & !is.na(time_from_midnight_start), time_from_midnight_start, start_tm),
+           end_tm = ifelse(is.na(end_tm) & !is.na(time_from_midnight_stop), time_from_midnight_stop, end_tm)) %>%
+    select(-c(time_from_midnight_start, time_from_midnight_stop))
+  
+  # format times in observation table
+  obs.time = obs.dat %>%
+    select(transect_id, obs_dt, obs_start_tm, spp_cd, obs_count_intrans_nb, time_from_midnight) %>%
+    mutate(obs_start_tm = as.POSIXct(ymd(obs_dt) + hms(obs_start_tm)),
+           time_from_midnight = as.POSIXct(ymd(obs_dt) + seconds(time_from_midnight))) %>%
+    mutate(obs_start_tm = ifelse(is.na(obs_start_tm) & !is.na(time_from_midnight), time_from_midnight, obs_start_tm)) %>%
+    select(-time_from_midnight)
+  
+  # narrow observations to those on effort using time
+  obs.dat = left_join(obs.time, dts.time, by = "transect_id") %>%
+    mutate(off_eff = as.integer(ifelse(obs_start_tm < start_tm | obs_start_tm > end_tm, 1, 0))) %>%
+    filter(off_eff == 0 | is.na(off_eff)) %>% select(-off_eff) %>%
+    rename(count = obs_count_intrans_nb) %>%
+    # assign count of one when species code present but count field missing
+    mutate(count = ifelse(is.na(count) & !is.na(spp_cd), 1, count)) %>%
+    select(transect_id, spp_cd, count) %>%
+    filter(spp_cd != "NONE", count >= 0)
+  
+  # -------- calculate dts survey midpoints -----------------------------------------------------------------------------
+  # select only durations of 10 and 15 minutes
+  dts = transects %>%
+    select(source_dataset_id, transect_id, start_dt, survey_type_cd, survey_method_cd, transect_width_nb,
+           transect_time_min_nb, traversal_speed_nb, heading_tx, st_astext) %>%
+    filter(transect_time_min_nb %in% c(10, 15)) %>%
+    mutate(traversal_speed_nb = replace(traversal_speed_nb, is.na(traversal_speed_nb), v.spd),
+           seg_dist = round(transect_time_min_nb * traversal_speed_nb / 60, 3))
+    
+  ### get midpoints of spatial points
+  midpoints_point = dts %>% filter(grepl("POINT", st_astext), !is.na(heading_tx)) %>%
+    bind_cols(., as.data.frame(do.call(rbind, lapply(.$st_astext, readWKT)))) %>%
+    select(-st_astext) %>% rename(long = x, lat = y) %>%
+    mutate(half_dist_m = transect_time_min_nb * traversal_speed_nb * 1852 / 120) %>%
+    rowwise %>% mutate(coords_mid = list(destPoint(c(long, lat), heading_tx, half_dist_m))) %>%
+    ungroup %>% mutate(mid_long = unlist(lapply(coords_mid, `[[`, 1)), mid_lat = unlist(lapply(coords_mid, `[[`, 2))) %>%
+    select(source_dataset_id, transect_id, start_dt, survey_type_cd, survey_method_cd, transect_width_nb, seg_dist, mid_long, mid_lat)
+  
+  ### get midpoints of spatial lines
+  dts_line = dts %>% filter(grepl("LINE", st_astext))
+  lineframe = lapply(dts_line$st_astext, readWKT, p4s = CRS("+proj=longlat"))
+  # apply Hotine Oblique Mercator projection
+  lineframe = lapply(lineframe, spTransform, CRS("+proj=omerc +lonc=-75 +lat_0=35 +alpha=40 +k_0=0.9996 +ellps=GRS80 +datum=NAD83"))
+  # calculate geographic centroids of projected segments and convert back to lat/long
+  midpoints_line = do.call(rbind, lapply(lineframe, gCentroid, byid = TRUE)) %>% spTransform(CRS("+proj=longlat")) %>%
+    as.data.frame %>% rename(mid_long = x, mid_lat = y) %>%
+    bind_cols(select(dts_line, source_dataset_id, transect_id, start_dt, survey_type_cd, survey_method_cd, transect_width_nb, seg_dist), .)
+  
+  # combine midpoints of points and lines
+  midpoints = bind_rows(midpoints_point, midpoints_line)
+  
+  # -------- pair observations with midpoints ---------------------------------------------------------------------------
+  # keep only observations with matching dts transect IDs
+  obs.dat = obs.dat %>% filter(transect_id %in% midpoints$transect_id)
+  
+  # join midpoints and observations
+  dts_final = full_join(midpoints, obs.dat, by = "transect_id") %>%
+    mutate(spp_cd = replace(spp_cd, is.na(spp_cd), "NONE"))
+  
+  # -------- summarize species data and convert to wide form ------------------------------------------------------------
+  seg_final = dts_final %>%
+    group_by(source_dataset_id, transect_id, start_dt, seg_dist, transect_width_nb, mid_long, mid_lat, survey_type_cd, survey_method_cd, spp_cd)
 
-# get midpoints of spatial lines
-dts_line = dts %>% filter(grepl("LINE", st_astext))
-lineframe = lapply(dts_line$st_astext, readWKT)
-midpoints_line = do.call(rbind, lapply(lineframe, getSpatialLinesMidPoints)) %>% as.data.frame %>%
-  rename(mid_long = x, mid_lat = y) %>%
-  bind_cols(select(dts_line, source_dataset_id, transect_id, start_dt, survey_type_cd, survey_method_cd, transect_width_nb, seg_dist), .)
-
-# combine midpoints of points and lines
-midpoints = bind_rows(midpoints_point, midpoints_line)
-
-# -------- pair observations with midpoints ---------------------------------------------------------------------------
-# keep only observations with matching dts transect IDs
-obs.dat = obs.dat %>% filter(transect_id %in% midpoints$transect_id)
-
-# join midpoints and observations
-dts_final = full_join(midpoints, obs.dat, by = "transect_id") %>%
-  mutate(spp_cd = replace(spp_cd, is.na(spp_cd), "NONE"))
-
-# -------- summarize species data and convert to wide form ------------------------------------------------------------
-seg_final = dts_final %>%
-  group_by(source_dataset_id, transect_id, start_dt, seg_dist, transect_width_nb, mid_long, mid_lat, survey_type_cd, survey_method_cd, spp_cd)
-
-  if (occurences == FALSE) {
-    # total species count
-    seg_final = seg_final %>% summarise(count = sum(count)) %>%
-      spread(spp_cd, count, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
-  }
+    if (occurences == FALSE) {
+      # total species count
+      seg_final = seg_final %>% summarise(count = sum(count)) %>%
+        spread(spp_cd, count, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
+    }
     else if (occurences == TRUE) {
     # number of species occurences
     seg_final = seg_final %>% select(-count) %>% summarise(noccur = n()) %>%
