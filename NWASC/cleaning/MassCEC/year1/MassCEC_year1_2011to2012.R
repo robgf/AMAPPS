@@ -120,14 +120,38 @@ obs <- split(obs, list(obs$key))
 # ---------------------------------------------------------------------------- #
 # STEP 7: ADD BEG/END POINTS WHERE NEEDED IN OBSERVATION FILES
 # ---------------------------------------------------------------------------- #
-obs <- suppressMessages(lapply(obs, addBegEnd_obs))
+# Fix WAYPOINTS that dont have offline definition and observations with wrong definition
+source(file.path("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/MassCEC/MassCEC_surveyFix.R"))
+obs = lapply(obs, MassCEC_surveyFix)
 obs = do.call(rbind.data.frame, obs)
+
+# fix WAYPOINTS that were offline between the BEG and END of survey
+obs$offline[obs$key=="survey1_lr_2011_11_22" & obs$lon>(-71.15) & obs$lon<(-70.6) & obs$lat>41.147]="1"
+obs$offline[obs$key=="survey7_lr_2012_5_6" & obs$lon>(-70.35) & 
+              obs$sec>obs$sec[obs$type=="ENDCNT" & obs$lon>(-70.35)] & 
+              obs$sec<obs$sec[obs$type=="BEGCNT" & obs$lon>(-70.35)]]="1"
+add = obs[obs$key=="survey7_lr_2012_5_6" & obs$lon>(-70.35) & obs$type %in% c("ENDCNT","BEGCNT"),]
+add$key = "survey7_rr_2012_5_6"
+obs=rbind(obs,add)
+obs$offline[obs$key=="survey7_rr_2012_5_6" & obs$lon>(-70.35) & 
+              obs$sec>obs$sec[obs$type=="ENDCNT" & obs$lon>(-70.35)] & 
+              obs$sec<obs$sec[obs$type=="BEGCNT" & obs$lon>(-70.35)]]="1"
 # ---------------------------------------------------------------------------- #
 
-# plot check
-#p = obs %>% group_by(survey_num) %>% do(print(plots=ggplot(data=.)+
-#     aes(x=lon,y=lat)+geom_point()+ggtitle(.$survey_num)))
-#invisible(lapply(p$plots, print))
+# obs2=obs
+# obs=obs2[obs2$key==keys[27],]
+
+# test plot
+plot(obs$lon,obs$lat,col="grey")
+points(obs$lon[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="0"],
+       obs$lat[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="0"],col="blue",pch=20)
+points(obs$lon[obs$offline=="1"],obs$lat[obs$offline=="1"],col="yellow")
+points(obs$lon[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="1"],
+       obs$lat[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="1"],col="magenta",pch=20)
+points(obs$lon[obs$type=="BEGCNT"],obs$lat[obs$type=="BEGCNT"],col="green",pch=3)
+points(obs$lon[obs$type=="ENDCNT"],obs$lat[obs$type=="ENDCNT"],col="red",pch=4)
+leg.txt <- c("ONLINE WAYPNT","ONLINE OBS","OFFLINE WAYPNT","OFFLINE OBS", "BEGCNT","ENDCNT")
+legend("topright",leg.txt,col=c("grey","blue","yellow","magenta","green","red"),pch=c(1,20,20,20, 3,4))
 
 # ---------------------------------------------------------------------------- #
 # STEP 12: OUTPUT DATA 
