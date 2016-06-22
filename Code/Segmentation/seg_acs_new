@@ -11,7 +11,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# 06-21-2016
+# 06-22-2016
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -24,6 +24,7 @@ options(dplyr.show_progress = FALSE)
 
 # read in observation and track tables
 load("Q:/Kyle_Working_Folder/Segmentation/Atlantic_Coast_Surveys/Data/AMAPPS.RData")
+observations[observations == -9999] = NA
 
 segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol,
                          centroids = FALSE, maxDist = NA, occurences = FALSE) {
@@ -107,23 +108,32 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
     filter(seg_dist >= seg.min) %>% ungroup %>% select(-Piece)
   
   # -------- calculate segment midpoints ------------------------------------------------------------------------------------------
-  # create dataframe suitable to become spatial lines object 
+  # create dataframe suitable to become spatial lines object
   listLines = function(df) {
     df %>% select(Long, Lat) %>% as.data.frame %>% Line %>% list
   }
   
   linelist = seg_all_new %>% group_by(transect_id, id) %>% do(coords = listLines(.))
+  
+  # define Hotine Oblique Mercator projection
+  projHOM = "+proj=omerc +lonc=-75 +lat_0=35 +alpha=40 +k_0=0.9996 +ellps=GRS80 +datum=NAD83"
+  
   # create spatial lines dataframe from segment waypoints and assign ID to each segment
-  lineframe = mapply(x = linelist$coords, ids = linelist$id, function(x, ids) Lines(x, ids)) %>% SpatialLines %>%
-    SpatialLinesDataFrame(., as.data.frame(select(linelist, transect_id)), match.ID = FALSE)
+  lineframe = mapply(x = linelist$coords, ids = linelist$id, function(x, ids) Lines(x, ids)) %>%
+    SpatialLines(proj4string = CRS("+proj=longlat")) %>%
+    SpatialLinesDataFrame(., as.data.frame(select(linelist, transect_id)), match.ID = FALSE) %>%
+    # apply projection
+    spTransform(CRS(projHOM))
   
   if (centroids == TRUE) {
-    # obtain geographic centroids
-    midpoints = gCentroid(lineframe, byid = TRUE) %>% as.data.frame %>% rename(mid_long = x, mid_lat = y) %>% add_rownames("id")
+    # calculate geographic centroids of projected segments and convert back to lat/long
+    midpoints = gCentroid(lineframe, byid = TRUE) %>% spTransform(CRS("+proj=longlat")) %>%
+      as.data.frame %>% rename(mid_long = x, mid_lat = y) %>% add_rownames("id")
   }
   else if (centroids == FALSE) {
-    # obtain segment midpoints
-    midpoints = getSpatialLinesMidPoints(lineframe) %>% as.data.frame %>% rename(mid_long = Long, mid_lat = Lat) %>%
+    # calculate midpoints of projected segments and convert back to lat/long
+    midpoints = SpatialLinesMidPoints(lineframe) %>% spTransform(CRS("+proj=longlat")) %>%
+      as.data.frame %>% select(coords.x1, coords.x2) %>% rename(mid_long = coords.x1, mid_lat = coords.x2) %>%
       mutate(id = sapply(slot(lineframe, "lines"), function(x) slot(x, "ID")))
   }
   
@@ -159,17 +169,13 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   # wrapper function to restrict point to line pairing by transect ID
   obs2Lines = function(df, lineframe) {
     
-    # define projection
-    projHOM = "+proj=omerc +lonc=-75 +lat_0=35 +alpha=40 +k_0=0.9996 +ellps=GRS80 +datum=NAD83"
-    
     points = df %>% as.data.frame
+    # apply HOM projection
     coordinates(points) = c("Long", "Lat")
     proj4string(points) = CRS("+proj=longlat")
     points = spTransform(points, CRS(projHOM))
     
     lines = lineframe[lineframe@data$transect_id == df$transect_id[1], ]
-    proj4string(lines) = CRS("+proj=longlat")
-    lines = spTransform(lines, CRS(projHOM))
     
     assignPointsToLines(points, lines, maxDist)
   }
@@ -202,10 +208,10 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
       seg_final = seg_final %>% summarise(FlockSize = sum(FlockSize)) %>%
         spread(Species, FlockSize, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
     }
-      else if (occurences == TRUE) {
-      # number of species occurences
-      seg_final = seg_final %>% select(-FlockSize) %>% summarise(noccur = n()) %>%
-        spread(Species, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
+    else if (occurences == TRUE) {
+    # number of species occurences
+    seg_final = seg_final %>% select(-FlockSize) %>% summarise(noccur = n()) %>%
+      spread(Species, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
     }
 }
 
