@@ -1,4 +1,7 @@
 # Process dts survey data in NWASC database
+# Returns wide-form dataframe with processed data
+
+# Requires observation table with lat/long for each sighting and transect table with single row for each transect id
 
 # v.spd sets assumed vessel speed in knots when vessel speed is missing
 # Calculates species counts by default; set occurences = TRUE for number of flock sightings
