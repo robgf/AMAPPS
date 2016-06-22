@@ -120,8 +120,8 @@ add1 = track[!sapply(strsplit(track$key,"_"),head,1) %in% c("survey25","survey24
 add2 = add1
 add1$seat = "lr"
 obs %>% select(survey_num,seat) %>% distinct() %>% as.data.frame %>% filter(seat!="lr")
-add2$seat[survey_num %in% c("sur33","sur34","sur35")] = "rf"
-add2$seat[!survey_num %in% c("sur33","sur34","sur35")] = "rr"
+add2$seat[add2$survey_num %in% c("sur33","sur34","sur35")] = "rf"
+add2$seat[!add2$survey_num %in% c("sur33","sur34","sur35")] = "rr"
 add1$dataChange = paste(add1$dataChange, "; Duplicated track file for each observer", sep="")
 add2$dataChange = paste(add1$dataChange, "; Duplicated track file for each observer", sep="")
 track = rbind(add1,add2); rm(add1,add2)
@@ -130,14 +130,81 @@ track$key <- paste(track$survey_num, track$seat, track$year, track$month, track$
 # combine
 obs = rbind(obs,track); rm(track)
 obs <- obs[order(obs$year, obs$month, obs$day, obs$sec, obs$index), ]
+
+# split by key
+obs <- split(obs, list(obs$key))
+# ---------------------------------------------------------------------------- #
+
+# ---------------------------------------------------------------------------- #
+# STEP 7: ADD BEG/END POINTS WHERE NEEDED IN OBSERVATION FILES
+# ---------------------------------------------------------------------------- #
+#
+# Fix WAYPOINTS that dont have offline definition and observations with wrong definition
+source(file.path("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/MassCEC/MassCEC_surveyFix.R"))
+obs = lapply(obs, MassCEC_surveyFix)
+
+#extraStep<-function(data){
+#  data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
+#  data$piece = 0
+#  for (j in 1:nrow(data)) {if(data$type[j]=="BEGCNT"){data$piece[j:nrow(data)]=data$piece[j:nrow(data)]+1}}
+#  return(data)
+#}
+#obs = lapply(obs, extraStep)
+obs = do.call(rbind.data.frame, obs)
+
+obs$offline[obs$index==3040.00 & obs$key=="survey16_lr_2013_1_21"] = "1" # fix error
+
+# summary table
+#obs %>% select(key,piece,offline) %>% distinct()
+
+# last min fixes after adding BEG and END
+obs$count[obs$type %in% c("BEGCNT","ENDCNT")]=0
+obs$behavior[obs$type %in% c("BEGCNT","ENDCNT")]=""
+obs$comment[obs$type %in% c("BEGCNT","ENDCNT")]=""
+
+# ---------------------------------------------------------------------------- #
+
+# test plot
+plot(obs$lon,obs$lat,col="grey")
+points(obs$lon[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="0"],
+       obs$lat[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="0"],col="blue",pch=20)
+points(obs$lon[obs$offline=="1"],obs$lat[obs$offline=="1"],col="yellow")
+points(obs$lon[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="1"],
+       obs$lat[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="1"],col="magenta",pch=20)
+points(obs$lon[obs$type=="BEGCNT"],obs$lat[obs$type=="BEGCNT"],col="green",pch=3)
+points(obs$lon[obs$type=="ENDCNT"],obs$lat[obs$type=="ENDCNT"],col="red",pch=4)
+leg.txt <- c("ONLINE WAYPNT","ONLINE OBS","OFFLINE WAYPNT","OFFLINE OBS", "BEGCNT","ENDCNT")
+legend("topright",leg.txt,col=c("grey","blue","yellow","magenta","green","red"),pch=c(1,20,20,20, 3,4))
+
+# ---------------------------------------------------------------------------- #
+# STEP 12: OUTPUT DATA 
+# ---------------------------------------------------------------------------- #
+save.image(paste(dir.out, "/", yearLabel, ".Rdata",sep=""))
+write.csv(obs, file=paste(dir.out,"/", yearLabel,".csv", sep=""), row.names=FALSE)
+# divide obs and track with Beg/End count in both
+obs.only=obs[!obs$type %in% c("WAYPNT","COCH"),]
+track.only=obs[obs$type %in% c("WAYPNT","COCH","BEGCNT","ENDCNT"),]
+offline.only=obs[obs$offline %in% c("1",NA),]
+write.csv(obs.only, file=paste(dir.out,"/", yearLabel,"_obs.csv", sep=""), row.names=FALSE)
+write.csv(track.only, file=paste(dir.out,"/", yearLabel,"_track.csv", sep=""), row.names=FALSE)
+write.csv(offline.only, file=paste(dir.out,"/", yearLabel,"_offline.csv", sep=""), row.names=FALSE)
 # ---------------------------------------------------------------------------- #
 
 
-plot(obs$lon,obs$lat)
-points(obs$lon[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT")],obs$lat[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT")],col="blue",pch=20)
-points(obs$lon[obs$offline=="1"],obs$lat[obs$offline=="1"],col="yellow",pch=20)
-points(obs$lon[obs$type=="BEGCNT"],obs$lat[obs$type=="BEGCNT"],col="green",pch=3)
-points(obs$lon[obs$type=="ENDCNT"],obs$lat[obs$type=="ENDCNT"],col="red",pch=4)
-leg.txt <- c("WAYPNT","ONLINE","OFFLINE","BEGCNT","ENDCNT")
-legend("topright",leg.txt,col=c("black","blue","yellow","green","red"),pch=c(1,20,20,3,4))
+# ---------------------------------------------------------------------------- #
+# STEP 13: 
+# ---------------------------------------------------------------------------- #
+# CREATE DATA PROCESSING SUMMARY FILE
+sink(file.path(dir.out, "dataProcessingSummary.txt"))
+cat("Survey data folder:", dir.in, "\n\n")
+cat("Error fix R file used:", errfix.file, "\n\n")
+cat("\n\nFiles used:\n")
+print(sapply(strsplit(as.character(obs.files), "/"), tail, 1))
+print(sapply(strsplit(as.character(track.files), "/"), tail, 1))
+cat("\nData points read:\n")
+print(length(obs$year))
+cat("\n\nNumber of observations read by observer and seat:\n")
+print(table(obs$observer, obs$seat))
+cat("Data processing completed on", date(), "\n")
+sink()
 
