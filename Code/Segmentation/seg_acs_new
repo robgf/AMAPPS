@@ -1,7 +1,7 @@
 # Function to segment continuous survey data in AMAPPS database
 # Returns wide-form dataframe with segmented data
 
-# Requires observation table with lat/long for each sighting, and spatial lines shapefile containing survey effort
+# Requires observation table with lat/long for each sighting and spatial lines shapefile containing survey effort
 
 # Calculates species counts by default; set occurences = TRUE for number of flock sightings
 # maxDist argument sets maximum allowable distance (approx. meters) between an observation and its nearest segment line
