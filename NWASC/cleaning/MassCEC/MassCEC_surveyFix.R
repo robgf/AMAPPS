@@ -21,7 +21,8 @@ MassCEC_surveyFix <- function(data) {
   dists = abs(data$lat-41.1)
   if(any(dists<0.01 & data$type=="BEGCNT" & data$lon<(-71.0))){
     begin.sec = data$sec[dists<0.01 & data$type=="BEGCNT" & data$lon<(-71.0)]
-    data$comment[dists<0.01 & data$type=="BEGCNT" & data$lon<(-71.0)] = "BEGSEG"
+    data$dataChange[dists<0.01 & data$type=="BEGCNT" & data$lon<(-71.0)] = "Changed TYPE from BEGCNT"
+    data$type[dists<0.01 & data$type=="BEGCNT" & data$lon<(-71.0)] = "BEGTRAN"
 #    if(data$type[which(dists<0.005 & data$type=="BEGCNT" & data$lon<(-71.0))-1]!="ENDCNT"){
 #      add = data[dists<0.005 & data$type=="BEGCNT" & data$lon<(-71.0),]
 #      add$type ="ENDCNT"
@@ -33,10 +34,10 @@ MassCEC_surveyFix <- function(data) {
     dat=data[data$lon<(-71.0)]
     begin.sec = dat$sec[which.min(dists[data$lon<(-71.0)])]
     add1 = dat[which.min(dists[data$lon<(-71.0)]),]
-    add1$type ="BEGCNT"
+    add1$type ="BEGTRAN"
     add1$index = add1$index -0.1
     add1$offline="0"
-    add1$comment="BEGSEG"
+    add1$dataChange="Added BEGTRAN"
     data = rbind(data,add1)
 #    add2 = dat[which.min(dists[data$lon<(-71.0)]),]
 #    add2$type ="ENDCNT"
@@ -51,7 +52,8 @@ MassCEC_surveyFix <- function(data) {
     dists = abs(data$lat-41.4283)
     if(any(dists<0.01 & data$type=="ENDCNT" & data$lon>(-70.45))){
       end.sec = data$sec[dists<0.01 & data$type=="ENDCNT" & data$lon>(-70.45)]
-      data$comment[dists<0.01 & data$type=="ENDCNT" & data$lon>(-70.45)]="ENDSEG"
+      data$dataChange[dists<0.01 & data$type=="ENDCNT" & data$lon>(-70.45)]="Changed from ENDCNT"
+      data$type[dists<0.01 & data$type=="ENDCNT" & data$lon>(-70.45)]="ENDTRAN"
  #     if(data$type[which(dists<0.005 & data$type=="ENDCNT" & data$lon>(-70.45))+1]!="BEGCNT" & 
  #          nrow(data)>which(dists<0.005 & data$type=="ENDCNT" & data$lon>(-70.45))){
  #       add = data[dists<0.005 & data$type=="ENDCNT" & data$lon>(-70.45),]
@@ -64,9 +66,9 @@ MassCEC_surveyFix <- function(data) {
       dat=data[data$lon>(-70.45)]
       end.sec = dat$sec[which.min(dists[data$lon>(-70.45)])]
       add3 = dat[which.min(dists[data$lon>(-70.45)]),]
-      add3$type ="ENDCNT"
+      add3$type ="ENDTRAN"
       add3$offline="0"
-      add3$comment="ENDSEG"
+      add3$dataChange="Added ENDTRAN"
       add3$index = add3$index +0.1   
 #      if(nrow(data)>which.min(dists[data$lon>(-70.45)])){
 #        add4 = dat[which.min(dists[data$lon>(-70.45)]),]
