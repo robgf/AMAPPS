@@ -152,16 +152,16 @@ obs = lapply(obs, MassCEC_surveyFix)
 #obs = lapply(obs, extraStep)
 obs = do.call(rbind.data.frame, obs)
 
-obs$offline[obs$index==3040.00 & obs$key=="survey16_lr_2013_1_21"] = "1" # fix error
-
 # summary table
 #obs %>% select(key,piece,offline) %>% distinct()
 
 # last min fixes after adding BEG and END
 obs$count[obs$type %in% c("BEGCNT","ENDCNT")]=0
 obs$behavior[obs$type %in% c("BEGCNT","ENDCNT")]=""
-obs$comment[obs$type %in% c("BEGCNT","ENDCNT")]=""
+#obs$comment[obs$type %in% c("BEGCNT","ENDCNT")]=""
 
+# visual check
+obs %>% select(type,comment,key) %>% filter(comment %in% c("BEGSEG","ENDSEG"))
 # ---------------------------------------------------------------------------- #
 
 # test plot
