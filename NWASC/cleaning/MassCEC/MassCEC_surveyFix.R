@@ -19,15 +19,16 @@ MassCEC_surveyFix <- function(data) {
   
   # BEG
   dists = abs(data$lat-41.1)
-  if(any(dists<0.005 & data$type=="BEGCNT" & data$lon<(-71.0))){
-    begin.sec = data$sec[dists<0.005 & data$type=="BEGCNT" & data$lon<(-71.0)]
-    if(data$type[which(dists<0.005 & data$type=="BEGCNT" & data$lon<(-71.0))-1]!="ENDCNT"){
-      add = data[dists<0.005 & data$type=="BEGCNT" & data$lon<(-71.0),]
-      add$type ="ENDCNT"
-      add$offline="1"
-      add$index = add$index -0.1
-      data = rbind(data,add)
-    }
+  if(any(dists<0.01 & data$type=="BEGCNT" & data$lon<(-71.0))){
+    begin.sec = data$sec[dists<0.01 & data$type=="BEGCNT" & data$lon<(-71.0)]
+    data$comment[dists<0.01 & data$type=="BEGCNT" & data$lon<(-71.0)] = "BEGSEG"
+#    if(data$type[which(dists<0.005 & data$type=="BEGCNT" & data$lon<(-71.0))-1]!="ENDCNT"){
+#      add = data[dists<0.005 & data$type=="BEGCNT" & data$lon<(-71.0),]
+#      add$type ="ENDCNT"
+#      add$offline="1"
+#      add$index = add$index -0.1
+#      data = rbind(data,add)
+#    }
   } else {
     dat=data[data$lon<(-71.0)]
     begin.sec = dat$sec[which.min(dists[data$lon<(-71.0)])]
@@ -35,40 +36,45 @@ MassCEC_surveyFix <- function(data) {
     add1$type ="BEGCNT"
     add1$index = add1$index -0.1
     add1$offline="0"
-    add2 = dat[which.min(dists[data$lon<(-71.0)]),]
-    add2$type ="ENDCNT"
-    add2$index = add2$index -0.2
-    add2$offline="1"
-    data = rbind(data,add1,add2)
+    add1$comment="BEGSEG"
+    data = rbind(data,add1)
+#    add2 = dat[which.min(dists[data$lon<(-71.0)]),]
+#    add2$type ="ENDCNT"
+#    add2$index = add2$index -0.2
+#    add2$offline="1"
+#    add2$comment="ENDSEG"
+#    data = rbind(data,add1,add2)
   }
   data <- data[order(data$index), ]
   
   # END
     dists = abs(data$lat-41.4283)
-    if(any(dists<0.005 & data$type=="ENDCNT" & data$lon>(-70.45))){
-      end.sec = data$sec[dists<0.005 & data$type=="ENDCNT" & data$lon>(-70.45)]
-      if(data$type[which(dists<0.005 & data$type=="ENDCNT" & data$lon>(-70.45))+1]!="BEGCNT" & 
-           nrow(data)>which(dists<0.005 & data$type=="ENDCNT" & data$lon>(-70.45))){
-        add = data[dists<0.005 & data$type=="ENDCNT" & data$lon>(-70.45),]
-        add$type ="BEGCNT"
-        add$index = add$index -0.1
-        add$offline="1"
-        data = rbind(data,add)
-      }
+    if(any(dists<0.01 & data$type=="ENDCNT" & data$lon>(-70.45))){
+      end.sec = data$sec[dists<0.01 & data$type=="ENDCNT" & data$lon>(-70.45)]
+      data$comment[dists<0.01 & data$type=="ENDCNT" & data$lon>(-70.45)]="ENDSEG"
+ #     if(data$type[which(dists<0.005 & data$type=="ENDCNT" & data$lon>(-70.45))+1]!="BEGCNT" & 
+ #          nrow(data)>which(dists<0.005 & data$type=="ENDCNT" & data$lon>(-70.45))){
+ #       add = data[dists<0.005 & data$type=="ENDCNT" & data$lon>(-70.45),]
+ #       add$type ="BEGCNT"
+ #       add$index = add$index -0.1
+ #       add$offline="1"
+ #       data = rbind(data,add)
+ #     }
     } else {
       dat=data[data$lon>(-70.45)]
       end.sec = dat$sec[which.min(dists[data$lon>(-70.45)])]
       add3 = dat[which.min(dists[data$lon>(-70.45)]),]
       add3$type ="ENDCNT"
       add3$offline="0"
+      add3$comment="ENDSEG"
       add3$index = add3$index +0.1   
-      if(nrow(data)>which.min(dists[data$lon>(-70.45)])){
-        add4 = dat[which.min(dists[data$lon>(-70.45)]),]
-        add4$type ="BEGCNT"
-        add4$index = add4$index +0.2
-        add4$offline="1"
-        data = rbind(data,add4)       
-     }
+#      if(nrow(data)>which.min(dists[data$lon>(-70.45)])){
+#        add4 = dat[which.min(dists[data$lon>(-70.45)]),]
+#        add4$type ="BEGCNT"
+#        add4$index = add4$index +0.2
+#        add4$offline="1"
+#        data = rbind(data,add4)       
+#     }
       data = rbind(data,add3)
     }   
   data <- data[order(data$index), ]
