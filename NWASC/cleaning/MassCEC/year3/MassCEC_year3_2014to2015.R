@@ -161,29 +161,36 @@ obs$behavior[obs$type %in% c("BEGCNT","ENDCNT")]=""
 #obs$comment[obs$type %in% c("BEGCNT","ENDCNT")]=""
 
 # visual check
-obs %>% select(type,comment,key) %>% filter(comment %in% c("BEGSEG","ENDSEG"))
+obs %>% select(type,key) %>% filter(type %in% c("BEGTRAN","ENDTRAN"))
 # ---------------------------------------------------------------------------- #
 
 # test plot
-plot(obs$lon,obs$lat,col="grey")
+plot(obs$lon,obs$lat,col="grey",pch="-")
 points(obs$lon[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="0"],
-       obs$lat[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="0"],col="blue",pch=20)
-points(obs$lon[obs$offline=="1"],obs$lat[obs$offline=="1"],col="yellow")
+       obs$lat[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="0"],col="cyan",pch=20)
+points(obs$lon[obs$offline=="1"],obs$lat[obs$offline=="1"],col="yellow",pch="-")
 points(obs$lon[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="1"],
-       obs$lat[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="1"],col="magenta",pch=20)
+       obs$lat[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="1"],col="pink",pch=20)
 points(obs$lon[obs$type=="BEGCNT"],obs$lat[obs$type=="BEGCNT"],col="green",pch=3)
 points(obs$lon[obs$type=="ENDCNT"],obs$lat[obs$type=="ENDCNT"],col="red",pch=4)
-leg.txt <- c("ONLINE WAYPNT","ONLINE OBS","OFFLINE WAYPNT","OFFLINE OBS", "BEGCNT","ENDCNT")
-legend("topright",leg.txt,col=c("grey","blue","yellow","magenta","green","red"),pch=c(1,20,20,20, 3,4))
+points(obs$lon[obs$type=="BEGTRAN"],obs$lat[obs$type=="BEGTRAN"],col="forest green",pch=15)
+points(obs$lon[obs$type=="ENDTRAN"],obs$lat[obs$type=="ENDTRAN"],col="dark red",pch=15)
+leg.txt <- c("ONLINE WAYPNT","ONLINE OBS","OFFLINE WAYPNT","OFFLINE OBS", 
+             "BEGCNT","ENDCNT","BEGTRAN","ENDTRAN")
+legend("topright",leg.txt,
+       col=c("grey","cyan","yellow","pink","green","red","forest green","dark red"),
+       pch=c(1,20,20,20,3,4,15,15))
 
 # ---------------------------------------------------------------------------- #
 # STEP 12: OUTPUT DATA 
 # ---------------------------------------------------------------------------- #
+obs <- obs[order(obs$year,obs$month,obs$day,obs$seat,obs$sec),]
+
 save.image(paste(dir.out, "/", yearLabel, ".Rdata",sep=""))
 write.csv(obs, file=paste(dir.out,"/", yearLabel,".csv", sep=""), row.names=FALSE)
 # divide obs and track with Beg/End count in both
 obs.only=obs[!obs$type %in% c("WAYPNT","COCH"),]
-track.only=obs[obs$type %in% c("WAYPNT","COCH","BEGCNT","ENDCNT"),]
+track.only=obs[obs$type %in% c("WAYPNT","COCH","BEGCNT","ENDCNT","BEGTRAN","ENDTRAN"),]
 offline.only=obs[obs$offline %in% c("1",NA),]
 write.csv(obs.only, file=paste(dir.out,"/", yearLabel,"_obs.csv", sep=""), row.names=FALSE)
 write.csv(track.only, file=paste(dir.out,"/", yearLabel,"_track.csv", sep=""), row.names=FALSE)
