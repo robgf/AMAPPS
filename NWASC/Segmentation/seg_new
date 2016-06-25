@@ -4,8 +4,13 @@
 # Requires observation table with lat/long for each sighting, transect table with single row for each transect id,
 # and spatial lines shapefile containing survey effort
 
+# seg.length sets target segment length (seg.length > 0)
+
+# seg.tol sets threshold for creation of a new segment from extra transect distance (0 <= extra < seg.length)
+# as a proportion of target segment length (0 <= seg.tol < 1)
+
 # Calculates species counts by default; set occurences = TRUE for number of flock sightings
-# maxDist argument sets maximum allowable distance (approx. meters) between an observation and its nearest segment line
+# maxDist sets maximum allowable distance (approx. meters) between an observation and its nearest segment line
 # Segment midpoints fall on track line by default; set centroids = TRUE to use geographic centroid
 # seg.min sets minimum allowable segment length
 
@@ -16,6 +21,9 @@
 
 segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol,
                       centroids = FALSE, maxDist = NA, occurences = FALSE) {
+  
+  if(seg.length <= 0) stop("seg.length > 0 is FALSE")
+  if(seg.tol < 0 | seg.tol >= 1) stop("0 <= seg.tol < 1 is FALSE")
 
   # -------- segment track data ---------------------------------------------------------------------------------------------------
   seg = tracks %>% distinct(long, lat, piece, transect_id) %>% group_by(transect_id, piece) %>%
