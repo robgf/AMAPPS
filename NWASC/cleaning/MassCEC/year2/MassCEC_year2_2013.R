@@ -54,6 +54,7 @@ obs.files <- list.files(file.path(paste(dir.in,"/MCEC_Year2_Seabirds_9132013",se
 obs <- lapply(setNames(obs.files, basename(obs.files)), getData)
 obs <- lapply(obs, function(x) data.frame(cbind(x, "survey_num" = sapply(strsplit(sapply(strsplit(as.character(x$file), "/"), tail, 1),"_"),head,1))))
 obs = rbindlist(obs, fill=TRUE)
+
 track.files <- list.files(file.path(paste(dir.in,"/MCEC_Year2_Seabirds_9132013",sep="")), pattern = "TRACK", recursive = TRUE, full.names = TRUE) 
 track <- lapply(setNames(track.files, basename(track.files)), getData)
 track <- lapply(track, function(x) data.frame(cbind(x, "survey_num" = sapply(strsplit(sapply(strsplit(as.character(x$file), "/"), tail, 1),"_"),head,1))))
@@ -123,8 +124,8 @@ add1$seat = "rr"
 add2$seat = "lr"
 add3$seat = "lrrr"
 add1$dataChange = paste(add1$dataChange, "; Duplicated track file for each observer", sep="")
-add2$dataChange = paste(add1$dataChange, "; Duplicated track file for each observer", sep="")
-add2$dataChange = paste(add1$dataChange, "; Changed SEAT from NA", sep="")
+add2$dataChange = paste(add2$dataChange, "; Duplicated track file for each observer", sep="")
+add3$dataChange = paste(add3$dataChange, "; Changed SEAT from NA", sep="")
 track = rbind(add1,add2,add3); rm(add1,add2,add3)
 track$key <- paste(track$survey_num, track$seat, track$year, track$month, track$day, sep = "_")
 track$key[track$key=="survey23TRACK_lr_2013_9_11"]= "survey23_lr_2013_9_11"
@@ -133,141 +134,107 @@ track$key[track$key=="survey23TRACK_rr_2013_9_11"]= "survey23_rr_2013_9_11"
 # combine
 obs = rbind(obs,track); rm(track)
 obs <- obs[order(obs$year, obs$month, obs$day, obs$sec, obs$index), ]
+
+# Fix transects that were flown backwards
+# survey27_lr_2013_11_26
+obs$type[obs$key=="survey27_lr_2013_11_26" & obs$type=="BEGCNT"] = "BEGTRAN"
+obs$type[obs$key=="survey27_lr_2013_11_26" & obs$type=="ENDCNT"] = "ENDTRAN"
+obs$sec = as.numeric(as.character(obs$sec))
+obs$offline[obs$key=="survey27_lr_2013_11_26" & 
+              obs$sec>=obs$sec[obs$key=="survey27_lr_2013_11_26" & obs$type=="BEGTRAN"] &  
+              obs$sec<=obs$sec[obs$key=="survey27_lr_2013_11_26" & obs$type=="ENDTRAN"] & 
+              obs$type=="WAYPNT"]= "0"
+obs$offline[obs$key=="survey27_lr_2013_11_26" & 
+              obs$sec<obs$sec[obs$key=="survey27_lr_2013_11_26" & obs$type=="BEGTRAN"]]= "1"
+
+# survey27_rr_2013_11_26
+add = obs[which.max(obs$sec[obs$key=="survey27_rr_2013_11_26"]),]
+add$type = "ENDTRAN"
+add2 = obs[obs$key=="survey27_lr_2013_11_26" & obs$type=="BEGTRAN",] 
+add2$key = "survey27_rr_2013_11_26"
+add2$observer = "BCH"
+obs = rbind(obs,add,add2)
+obs$offline[obs$key=="survey27_rr_2013_11_26" & 
+              obs$sec>obs$sec[obs$key=="survey27_rr_2013_11_26" & obs$type=="BEGTRAN"] &  
+              obs$sec<obs$sec[obs$key=="survey27_rr_2013_11_26" & obs$type=="ENDTRAN"] & 
+              obs$type=="WAYPNT"]= "0"
+obs$offline[obs$key=="survey27_rr_2013_11_26" & 
+              obs$sec<obs$sec[obs$key=="survey27_rr_2013_11_26" & obs$type=="BEGTRAN"]]= "1"
+rm(add,add2)
+
+# "survey24_lrrr_2013_10_15"
+sub_obs = obs[obs$type!="WAYPNT" & obs$key=="survey24_lrrr_2013_10_15",]
+add = sub_obs[which.min(sub_obs$sec),]
+add$type = "BEGTRAN"
+add$count = 0
+add$behavior = ""
+add$index = add$index-0.1
+obs = rbind(obs, add)
+rm(add, sub_obs)
+obs$type[obs$key=="survey24_lrrr_2013_10_15" & obs$type=="ENDCNT"] = "ENDTRAN"
+obs$offline[obs$key=="survey24_lrrr_2013_10_15" & 
+              obs$sec>=obs$sec[obs$key=="survey24_lrrr_2013_10_15" & obs$type=="BEGTRAN"] &  
+              obs$sec<=obs$sec[obs$key=="survey24_lrrr_2013_10_15" & obs$type=="ENDTRAN"] & 
+              obs$type=="WAYPNT"]= "0"
+obs$offline[obs$key=="survey24_lrrr_2013_10_15" & 
+              obs$sec<obs$sec[obs$key=="survey24_lrrr_2013_10_15" & obs$type=="BEGTRAN"] | 
+              obs$sec>obs$sec[obs$key=="survey24_lrrr_2013_10_15" & obs$type=="ENDTRAN"]]= "1"
+
+#
+backwards = obs[obs$key %in% c("survey27_rr_2013_11_26","survey27_lr_2013_11_26","survey24_lrrr_2013_10_15"),]
+obs = obs[!obs$key %in% c("survey27_rr_2013_11_26","survey27_lr_2013_11_26"),]
+
+obs <- split(obs, list(obs$key))
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
 # STEP 7: ADD BEG/END POINTS WHERE NEEDED IN OBSERVATION FILES
 # ---------------------------------------------------------------------------- #
-obs$offline[is.na(obs$offline)]="2" #temporary to run addBegEnd func
-obs <- split(obs, list(obs$key))
-
-addBegEnd_obs <- function(data) {
-  
-  data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
-  
-  # REMOVE BLANK SPACES IN TYPE FIELD
-  data$type <- gsub(" ", "", data$type)
-  
-  # CHANGE ALL BEGSEG/ENDSEG TO BEGCNT/ENDCNT
-  data$type[data$type == "BEGSEG"] <- "BEGCNT"
-  data$type[data$type == "ENDSEG"] <- "ENDCNT"
-  
-  data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
-  
-  # ADD BEGCNT
-  if (data$type[1] != "BEGCNT") {
-    add <- data[1, ]
-    add$type <- "BEGCNT"
-    add$index <- add$index - .01
-    add$dataChange <- paste(add$dataChange, "; added row due to missing BEG/END point", 
-                            sep = "")
-    data <- rbind(data, add)
-    data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
-  }
-  
-  # ADD ENDCNT
-  if (data$type[nrow(data)] != "ENDCNT") {
-    add <- data[nrow(data), ]
-    add$type <- "ENDCNT"
-    add$index <- add$index + .01
-    add$dataChange <- paste(add$dataChange, "; added row due to missing BEG/END point", 
-                            sep = "")
-    data <- rbind(data, add)
-    data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
-  }
-  
-  if (nrow(data) > 2) {
-    for (j in 2:(nrow(data)-1)) {
-      if (data$type[j] == "BEGCNT" & !(data$type[j-1] == "ENDCNT")) {
-        add <- data[j-1, ]
-        add$type <- "ENDCNT"
-        add$index <- add$index + .01
-        add$dataChange <- paste(add$dataChange, "; added row due to missing BEG/END point", 
-                                sep = "")
-        data <- rbind(data, add)
-      }
-      if (data$type[j] == "ENDCNT" & !(data$type[j+1] == "BEGCNT")) {
-        add <- data[j+1, ]
-        add$type <- "BEGCNT"
-        add$index <- add$index - .01
-        add$dataChange <- paste(add$dataChange, "; added row due to missing BEG/END point", 
-                                sep = "")
-        data <- rbind(data, add)
-      }
-    }
-    
-    
-    # OFFLINE
-    data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
-    for (j in 2:nrow(data)) {
-      if(data$offline[j] == "0" & data$offline[j-1] == "1" & !data$type[j-1] %in% "ENDCNT" & !data$type[j] %in% "ENDCNT") {
-        add <- data[j-1, ]
-        add$type <- "ENDCNT"
-        add$index <- add$index + .01
-        add$behavior <- ""
-        add$count <- "0"
-        add$dataChange <- paste(add$dataChange, "; added row due to missing BEG/END point",  sep = "")
-        data <- rbind(data, add)}
-      if(data$offline[j] == "1" & data$offline[j-1] == "0" & !data$type[j-1] %in% "ENDCNT" & !data$type[j] %in% "ENDCNT") { 
-        add <- data[j-1, ]
-        add$type <- "ENDCNT"
-        add$index <- add$index + .01
-        add$behavior <- ""
-        add$count <- "0"
-        add$dataChange <- paste(add$dataChange, "; added row due to missing BEG/END point",  sep = "")
-        data <- rbind(data, add)}
-    }
-    
-    data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
-    for (j in 2:(nrow(data)-1)) {
-      if(data$type[j-1] == "ENDCNT" & !data$type[j] %in% "BEGCNT") { 
-        add <- data[j, ]
-        add$type <- "BEGCNT"
-        add$index <- add$index - .01
-        add$behavior <- ""
-        add$count <- "0"
-        add$dataChange <- paste(add$dataChange, "; added row due to missing BEG/END point",  sep = "")
-        data <- rbind(data, add)
-      }    
-    }   
-  }
-  data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
-  return(data)  
-}
-
-obs <- suppressMessages(lapply(obs, addBegEnd_obs))
-
-# since WAYPOINTS are mainly NAs
-obs = do.call(rbind.data.frame, obs)
-obs$offline[obs$offline=="2"] = NA # change back to NA for na.locf
-obs <- split(obs, list(obs$key))
-
-extraStep<-function(data){
-  data <- data[order(data$year, data$month, data$day, data$sec, data$index), ]
-  data$piece = 0
-  for (j in 1:nrow(data)) {if(data$type[j]=="BEGCNT"){data$piece[j:nrow(data)]=data$piece[j:nrow(data)]+1}}
-  return(data)
-}
-obs = lapply(obs, extraStep)
+# Fix WAYPOINTS that dont have offline definition and observations with wrong definition
+source(file.path("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/MassCEC/MassCEC_surveyFix.R"))
+obs = lapply(obs, MassCEC_surveyFix)
 obs = do.call(rbind.data.frame, obs)
 
-obs$offline[obs$index==3040.00 & obs$key=="survey16_lr_2013_1_21" & obs$piece==3] = "1" # fix error
+obs$offline[obs$index==3040.00 & obs$key=="survey16_lr_2013_1_21"] = "1" # fix error
 
-data = obs %>% group_by(key,piece) %>% arrange(year,month,day,sec) %>% 
-  mutate(offline = ifelse(any(offline[!is.na(offline)]=="0") & any(offline[!is.na(offline)]=="1"),
-                "2", na.locf(offline))) %>% as.data.frame
-# summary table
-toFix = data %>% select(key,piece,offline) %>% distinct()
-toFix[toFix$offline=="2",]
-# if everything looks ok and there are no offline==2, or you have fixed those where offline==2
-data$dataChange[!is.na(data$offline) & is.na(obs$offline)] = paste(data$dataChange[!is.na(data$offline) & is.na(obs$offline)],
-                                                     "; Changed OFFLINE from NA", sep="")
-obs = data; rm(data, toFix)
+# last min fixes after adding BEG and END
+obs$count[obs$type %in% c("BEGCNT","ENDCNT")]=0
+obs$behavior[obs$type %in% c("BEGCNT","ENDCNT")]=""
+obs$comment[obs$type %in% c("BEGCNT","ENDCNT")]=""
+
+# recombind with  backwards tracks
+obs = rbind(obs,backwards)
+rm(backwards)
 # ---------------------------------------------------------------------------- #
+
+# keys=unique(obs$key)
+# obs2=obs
+# obs=obs2[obs2$key==keys[17],]
+
+# test plot
+plot(obs$lon,obs$lat,col="grey",pch="-")
+points(obs$lon[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="0"],
+       obs$lat[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="0"],col="cyan",pch=20)
+points(obs$lon[obs$offline=="1"],obs$lat[obs$offline=="1"],col="yellow",pch="-")
+points(obs$lon[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="1"],
+       obs$lat[!obs$type %in% c("WAYPNT","BEGCNT","ENDCNT") & obs$offline=="1"],col="pink",pch=20)
+points(obs$lon[obs$type=="BEGCNT"],obs$lat[obs$type=="BEGCNT"],col="green",pch=3)
+points(obs$lon[obs$type=="ENDCNT"],obs$lat[obs$type=="ENDCNT"],col="red",pch=4)
+points(obs$lon[obs$type=="BEGTRAN"],obs$lat[obs$type=="BEGTRAN"],col="forest green",pch=15)
+points(obs$lon[obs$type=="ENDTRAN"],obs$lat[obs$type=="ENDTRAN"],col="dark red",pch=15)
+leg.txt <- c("ONLINE WAYPNT","ONLINE OBS","OFFLINE WAYPNT","OFFLINE OBS", 
+             "BEGCNT","ENDCNT","BEGTRAN","ENDTRAN")
+legend("topright",leg.txt,
+       col=c("grey","cyan","yellow","pink","green","red","forest green","dark red"),
+       pch=c(1,20,20,20,3,4,15,15))
+#points(obs$lon[which.min(obs$sec)],obs$lat[which.min(obs$sec)],col="green",pch=17)
+#points(obs$lon[which.max(obs$sec)],obs$lat[which.max(obs$sec)],col="red",pch=17)
 
 # ---------------------------------------------------------------------------- #
 # STEP 12: OUTPUT DATA 
 # ---------------------------------------------------------------------------- #
+obs <- obs[order(obs$year,obs$month,obs$day,obs$seat,obs$sec),]
+
 save.image(paste(dir.out, "/", yearLabel, ".Rdata",sep=""))
 write.csv(obs, file=paste(dir.out,"/", yearLabel,".csv", sep=""), row.names=FALSE)
 # divide obs and track with Beg/End count in both
