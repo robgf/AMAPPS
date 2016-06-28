@@ -13,8 +13,8 @@ getData <- function(data.path) {
   ncols <- max(count.fields(data.path, sep = ",", quote = NULL))
   obs.i <- read.csv(data.path, header = TRUE,  
                   colClasses = "character")
-  if(dirname(data.path)=="\\\\IFW9mbm-fs1/SeaDuck/seabird_database/datasets_received/MassCEC/MCEC_Year2_Seabirds_9132013/MCEC_Year2_Seabirds_9132013" &
-       ncols==3) {colnames(obs.i)=c("lat","lon","sec")}
+  if(ncols==3 & dirname(data.path)=="\\\\IFW9mbm-fs1/SeaDuck/seabird_database/datasets_received/MassCEC/MCEC_Year2_Seabirds_9132013/MCEC_Year2_Seabirds_9132013" |
+       dirname(data.path)=="\\\\IFW9mbm-fs1/SeaDuck/seabird_database/datasets_received/MassCEC/year3") {colnames(obs.i)=c("lat","lon","sec")}
   
   # CREATE DISTANCE COLUMN IF THERE ISNT ONE
   if(all(!names(obs.i) %in% "distance")) {obs.i$distance=""}
