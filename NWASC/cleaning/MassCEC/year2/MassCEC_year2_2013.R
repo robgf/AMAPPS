@@ -182,7 +182,7 @@ obs$offline[obs$key=="survey24_lrrr_2013_10_15" &
 
 #
 backwards = obs[obs$key %in% c("survey27_rr_2013_11_26","survey27_lr_2013_11_26","survey24_lrrr_2013_10_15"),]
-obs = obs[!obs$key %in% c("survey27_rr_2013_11_26","survey27_lr_2013_11_26"),]
+obs = obs[!obs$key %in% c("survey27_rr_2013_11_26","survey27_lr_2013_11_26","survey24_lrrr_2013_10_15"),]
 
 obs <- split(obs, list(obs$key))
 # ---------------------------------------------------------------------------- #
