@@ -90,7 +90,7 @@ points(obs$lon[obs$offline==0],obs$lat[obs$offline==0],col="blue")
 legend("topleft",c("Observation", "Transit","Transect"),pch=16, col=c("black","red","blue"))
 
 # ---------------------------------------------------------------------------- #
-# STEP 2: create estimated transect lines 
+# STEP 3: create estimated transect lines 
 # ---------------------------------------------------------------------------- #
 one = cbind(rbind(c(-75.51966,36.86826),c(-75.4503,36.86826)),c(1,1),c("BEGCNT","ENDCNT"))
 two = cbind(rbind(c(-75.51966,36.8844),c(-75.4503,36.8844)),c(2,2),c("BEGCNT","ENDCNT"))
@@ -116,7 +116,7 @@ lines(six[,1],six[,2],col="purple")
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
-# STEP 3: MAKE SPATIAL LINE OUTPUT FOR TRACK
+# STEP 4: MAKE SPATIAL LINE OUTPUT FOR TRACK
 # ---------------------------------------------------------------------------- #
 L1 = Line(cbind(track$lon[track$piece==1],track$lat[track$piece==1]))
 L2 = Line(cbind(track$lon[track$piece==2],track$lat[track$piece==2]))
@@ -137,7 +137,7 @@ writeOGR(SLDF, dir.out, "VOWTAP", "ESRI Shapefile", morphToESRI = TRUE)
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
-# STEP 4: OUTPUT DATA 
+# STEP 5: OUTPUT DATA 
 # ---------------------------------------------------------------------------- #
 save.image(paste(dir.out, "/", yearLabel, ".Rdata",sep=""))
 write.csv(obs, file=paste(dir.out,"/", yearLabel,".csv", sep=""), row.names=FALSE)
@@ -145,7 +145,7 @@ write.csv(track, file=paste(dir.out,"/", yearLabel,"_EstimatedTrack.csv", sep=""
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
-# STEP 13: 
+# STEP 6: SUMMARY
 # ---------------------------------------------------------------------------- #
 # CREATE DATA PROCESSING SUMMARY FILE
 sink(file.path(dir.out, "dataProcessingSummary.txt"))
