@@ -90,10 +90,58 @@ points(obs$lon[obs$offline==0],obs$lat[obs$offline==0],col="blue")
 legend("topleft",c("Observation", "Transit","Transect"),pch=16, col=c("black","red","blue"))
 
 # ---------------------------------------------------------------------------- #
-# STEP 12: OUTPUT DATA 
+# STEP 2: create estimated transect lines 
+# ---------------------------------------------------------------------------- #
+one = cbind(rbind(c(-75.51966,36.86826),c(-75.4503,36.86826)),c(1,1),c("BEGCNT","ENDCNT"))
+two = cbind(rbind(c(-75.51966,36.8844),c(-75.4503,36.8844)),c(2,2),c("BEGCNT","ENDCNT"))
+three = cbind(rbind(c(-75.51966,36.90023),c(-75.4503,36.90023)),c(3,3),c("BEGCNT","ENDCNT"))
+four = cbind(rbind(c(-75.51966,36.91702),c(-75.4503,36.91702)),c(4,4),c("BEGCNT","ENDCNT"))
+five = cbind(rbind(c(-75.51966,36.93232),c(-75.4503,36.93232)),c(5,5),c("BEGCNT","ENDCNT"))
+six = cbind(rbind(c(-75.51966,36.95019),c(-75.4503,36.95019)),c(6,6),c("BEGCNT","ENDCNT"))
+
+track = rbind(one,two,three,four,five,six)
+colnames(track) = c("lon","lat","piece","type")
+track = as.data.frame(track)
+track$lat = as.numeric(as.character(track$lat))
+track$lon = as.numeric(as.character(track$lon))
+plot(obs$lon[obs$offline==0],obs$lat[obs$offline==0],col="grey")
+points(track$lon[track$type=="BEGCNT"],track$lat[track$type=="BEGCNT"],col="forest green",pch=20)
+points(track$lon[track$type=="ENDCNT"],track$lat[track$type=="ENDCNT"],col="dark red",pch=20)
+lines(one[,1],one[,2],col="red")
+lines(two[,1],two[,2],col="orange")
+lines(three[,1],three[,2],col="gold")
+lines(four[,1],four[,2],col="green")
+lines(five[,1],five[,2],col="blue")
+lines(six[,1],six[,2],col="purple")
+# ---------------------------------------------------------------------------- #
+
+# ---------------------------------------------------------------------------- #
+# STEP 3: MAKE SPATIAL LINE OUTPUT FOR TRACK
+# ---------------------------------------------------------------------------- #
+L1 = Line(cbind(track$lon[track$piece==1],track$lat[track$piece==1]))
+L2 = Line(cbind(track$lon[track$piece==2],track$lat[track$piece==2]))
+L3 = Line(cbind(track$lon[track$piece==3],track$lat[track$piece==3]))
+L4 = Line(cbind(track$lon[track$piece==4],track$lat[track$piece==4]))
+L5 = Line(cbind(track$lon[track$piece==5],track$lat[track$piece==5]))
+L6 = Line(cbind(track$lon[track$piece==6],track$lat[track$piece==6]))
+Ls1 = Lines(list(L1), ID = "1")
+Ls2 = Lines(list(L2), ID = "2")
+Ls3 = Lines(list(L3), ID = "3")
+Ls4 = Lines(list(L4), ID = "4")
+Ls5 = Lines(list(L5), ID = "5")
+Ls6 = Lines(list(L6), ID = "6")
+latlong = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+SL = SpatialLines(list(Ls1, Ls2, Ls3, Ls4, Ls5, Ls6), proj4string = CRS(latlong))
+SLDF = SpatialLinesDataFrame(SL, data.frame(piece = c("1","2","3","4","5","6")))
+writeOGR(SLDF, dir.out, "VOWTAP", "ESRI Shapefile", morphToESRI = TRUE)
+# ---------------------------------------------------------------------------- #
+
+# ---------------------------------------------------------------------------- #
+# STEP 4: OUTPUT DATA 
 # ---------------------------------------------------------------------------- #
 save.image(paste(dir.out, "/", yearLabel, ".Rdata",sep=""))
 write.csv(obs, file=paste(dir.out,"/", yearLabel,".csv", sep=""), row.names=FALSE)
+write.csv(track, file=paste(dir.out,"/", yearLabel,"_EstimatedTrack.csv", sep=""), row.names=FALSE)
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
