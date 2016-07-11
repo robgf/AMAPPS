@@ -7,13 +7,13 @@
 
 datalist <- function(data, dataset_name, newParent) {
   library(RODBC)
-  db <- odbcConnect("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb"))
-  datalist <- sqlFetch(db, "dataset")
-  odbcClose(db)
+  db <- odbcConnectAccess2007("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
+  datasets <- sqlFetch(db, "dataset")
   
-  dataset_id = max(datalist$dataset_id)+1
+  
+  dataset_id = max(datasets$dataset_id)+1
   source_dataset_id = dataset_name
-  possible_parents = c("AMAPPS","MassCEC","DOEBRIBoat","EcoMon","HerringAcoustic")
+  possible_parents = c("","AMAPPS","DOEBRIBoat","EcoMon","HerringAcoustic","MassCEC", "SEFSC", "RISAMP", "WHOI")
   parent_project = ifelse(missing(newParent),select.list(possible_parents, preselect = NULL, multiple = FALSE, title = NULL),newParent)
   survey_type = c("Aerial = a", "Boat = b", "Camera = c", "Area-wide ground survey = g", "Fixed point ground survey = f")
   dataset_type = c("Original transect = ot", "Derived effort = de", "Original general observation = og")
@@ -30,7 +30,20 @@ datalist <- function(data, dataset_name, newParent) {
   start_date = min(data$start_dt)
   end_date = max(data$end_dt)
   number_of_records = dim(data)[1]
-  out = cbind(dataset_id, source_dataset_id, survey_type_cd, dataset_type_cd, share_level, survey_method_cd, start_date, end_date, number_of_records)
+  out = cbind(dataset_id, source_dataset_id, survey_type_cd, dataset_type_cd, share_level, survey_method_cd, start_date, 
+              end_date, number_of_records, parent_project)
+  out = as.data.frame(out)
   return(out)
+  
+  # add to NWASC temporary db
+  add = c("Yes, I would like to add this dataset description to the temporary database", 
+          "No, I do not wish to add this dataset description to the temporary database") 
+  to_add = select.list(add, preselect = NULL, multiple = FALSE, title = NULL)
+  if(substr(to_add,1,1)=="Y") {
+    #datasets = rbind(datasets,out)
+    #out$dataset_id = as.numeric(as.character(out$dataset_id))
+    #sqlUpdate(db, out, tablename = "dataset", append = FALSE)
+  }
+  odbcClose(db)
 }
 
