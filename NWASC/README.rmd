@@ -7,14 +7,14 @@ Currently the working version of the database is in PostgreSQL and can only be a
 This is an ongoing effort by FWS, NOAA, and BOEM. A progress table can be seen [here](https://sites.google.com/a/fws.gov/nwasc/progress-table). When a data set is recieved, put the data in a new folder named after the data set and year(s) surveyed. If that data set is part of a larger effort there should be a parent folder for that survey name and then folders for each data set within that parent folder. Please include a text document listing a point of contact for that data set and any other pertinent information. If you are able to obtain a report for that data set from the provider, include that in the folder as well. Please see the [data submission guidelines](https://github.com/USFWS/AMAPPS/blob/master/NWASC/Submission%20Guidelines%20for%20NWASC.rmd) for details about what should be requested. 
 
 ### **2. Quality control data**  
-This will most likely be simple data checks (e.g. do species codes match those in the catalog, are the gps coordinates in latitude and longitude units) - data should be cleaned by the data provider before submission
+While the data should be cleaned by the data provider before submission, this isn't always the case. This will most likely be simple data checks (e.g. do species codes match those in the catalog, are the gps coordinates in latitude and longitude units, are certain data columns like count a number, etc.); however, more effort is sometimes required. For datasets where there is a clear survey design, yet the provider cannot supply one, an estimated track effort file needs to be made in order to segment that data for NOAA. Sometimes the lines are simple and straight forward, but if it is more complex, try to use an average of the data to create a line between commonly used start and stop points.  
 
 ### **3. Enter data into the database**  
-There are several tables in the seabird schema; however, the most important ones are the observations and transect tables. 
-Track data is stored in the QGIS spatial portion of PostgreSQL. 
+There are several tables in the seabird schema; however, the most important ones are the observations, dataset, and transect tables. 
+Track data is stored in the QGIS spatial portion of PostgreSQL. The dataset table is where most of the metadata for that dataset is gathered, most of this information can be found in the dataset report (if there is one). 
 
 ### **4. Check database integrity**  
-After adding data, you should verify that the joins were successful.
+After adding data, you should verify that the joins were successful and no existing data was altered in the process.
 
 ### **5. Submit data to users and archives**  
 -  NCEI (NOAA National Centers for Environmental Information)/ NODC ([National Oceanographic Data Center](https://www.nodc.noaa.gov/))  
