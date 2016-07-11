@@ -6,11 +6,12 @@
 # -------------------------------- #
 
 datalist <- function(data, dataset_name, newParent) {
+  # load dataset descriptions
   library(RODBC)
   db <- odbcConnectAccess2007("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
   datasets <- sqlFetch(db, "dataset")
   
-  
+  # fill table
   dataset_id = max(datasets$dataset_id)+1
   source_dataset_id = dataset_name
   possible_parents = c("","AMAPPS","DOEBRIBoat","EcoMon","HerringAcoustic","MassCEC", "SEFSC", "RISAMP", "WHOI")
@@ -30,9 +31,10 @@ datalist <- function(data, dataset_name, newParent) {
   start_date = min(data$start_dt)
   end_date = max(data$end_dt)
   number_of_records = dim(data)[1]
-  out = cbind(dataset_id, source_dataset_id, survey_type_cd, dataset_type_cd, share_level, survey_method_cd, start_date, 
-              end_date, number_of_records, parent_project)
-  out = as.data.frame(out)
+  
+  # export
+  out = as.data.frame(cbind(dataset_id, source_dataset_id, survey_type_cd, dataset_type_cd, share_level, survey_method_cd, start_date, 
+              end_date, number_of_records, parent_project))
   return(out)
   
   # add to NWASC temporary db
