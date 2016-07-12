@@ -23,18 +23,45 @@ datalist <- function(data, dataset_name, newParent) {
   survey_method = c("Continuous time strip = cts", "Discrete time strip = dts", "Discrete time horizon = dth",
                     "General observation = go", "bycatch = byc", "Christmas Bird Count = cbc", "targeted species survey = tss")
   
-
-  survey_type_cd = sapply(strsplit(select.list(survey_type, preselect = NULL, multiple = FALSE, title = NULL), "= "),tail,1)
-  dataset_type_cd = sapply(strsplit(select.list(dataset_type, preselect = NULL, multiple = FALSE, title = NULL), "= "),tail,1)
-  share_level = sapply(strsplit(select.list(share_level, preselect = NULL, multiple = FALSE, title = NULL), "= "),tail,1)
-  survey_method_cd = sapply(strsplit(select.list(survey_method, preselect = NULL, multiple = FALSE, title = NULL), "= "),tail,1)
-  start_date = min(data$start_dt)
-  end_date = max(data$end_dt)
-  number_of_records = dim(data)[1]
+  # if there is only one date column
+  if(any(!c("start_dt","end_dt") %in% colnames(data))) {
+    ind = grep("date",colnames(obs))
+    data$start_dt = as.Date(data[,ind])
+    data$end_dt = as.Date(data[,ind])
+  }
+  
+  out = as.data.frame(matrix(ncol=24, nrow=1, data=NA))
+  colnames(out) = colnames(datasets)
+  out$dataset_id = dataset_id
+  out$survey_type_cd = sapply(strsplit(select.list(survey_type, preselect = NULL, multiple = FALSE, title = NULL), "= "),tail,1)
+  out$dataset_type_cd = sapply(strsplit(select.list(dataset_type, preselect = NULL, multiple = FALSE, title = NULL), "= "),tail,1)
+  out$share_level = sapply(strsplit(select.list(share_level, preselect = NULL, multiple = FALSE, title = NULL), "= "),tail,1)
+  out$survey_method_cd = sapply(strsplit(select.list(survey_method, preselect = NULL, multiple = FALSE, title = NULL), "= "),tail,1)
+  out$start_date = min(data$start_dt)
+  out$end_date = max(data$end_dt)
+  out$number_of_records = dim(data)[1]
+  out$noaa_priority = sapply(strsplit(select.list(c("NOAA Priority level = 1","NOAA Priority level = 2", "NOAA Priority level = 3")), "= "),tail,1) 
+  out$who_created = sapply(strsplit(select.list(c("Created by Andrew G. = 1","Created by Allison S. = 2", "Created by Kaycee C. = 3")), "= "),tail,1)           
+  out$date_created = Sys.Date()
+  
+  # need to be filled in manually, but need the column names in order to use sqlSave
+  out$survey_width_m = ""   
+  out$admin_notes = ""            
+  out$import_notes = ""            
+  out$usgs_priority = ""            
+  out$action_required = ""         
+  out$action_taken = ""          
+  out$discrete_time_unit = ""      
+  out$noaa_import_priority = ""    
+  out$funded = ""                 
+  out$at_usgs = ""                 
+  out$in_db = ""  
   
   # export
-  out = as.data.frame(cbind(dataset_id, source_dataset_id, survey_type_cd, dataset_type_cd, share_level, survey_method_cd, start_date, 
-              end_date, number_of_records, parent_project))
+  out$dataset_id = as.numeric(out$dataset_id)
+  out$start_date = as.character(out$start_date)
+  out$end_date = as.character(out$end_date)
+  out = as.data.frame(out)
   return(out)
   
   # add to NWASC temporary db
@@ -42,10 +69,10 @@ datalist <- function(data, dataset_name, newParent) {
           "No, I do not wish to add this dataset description to the temporary database") 
   to_add = select.list(add, preselect = NULL, multiple = FALSE, title = NULL)
   if(substr(to_add,1,1)=="Y") {
-    #datasets = rbind(datasets,out)
-    #out$dataset_id = as.numeric(as.character(out$dataset_id))
-    #sqlUpdate(db, out, tablename = "dataset", append = FALSE)
+    # need to have the same column names 
+    sqlSave(db, out, tablename = "dataset", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=TRUE)
+    print("Please fill enter notes and other pertinent information directly into the access table")
   }
   odbcClose(db)
+  
 }
-
