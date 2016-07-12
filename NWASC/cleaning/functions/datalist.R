@@ -62,7 +62,6 @@ datalist <- function(data, dataset_name, newParent) {
   out$start_date = as.character(out$start_date)
   out$end_date = as.character(out$end_date)
   out = as.data.frame(out)
-  return(out)
   
   # add to NWASC temporary db
   add = c("Yes, I would like to add this dataset description to the temporary database", 
@@ -74,5 +73,5 @@ datalist <- function(data, dataset_name, newParent) {
     print("Please fill enter notes and other pertinent information directly into the access table")
   }
   odbcClose(db)
-  
+  return(out)
 }
