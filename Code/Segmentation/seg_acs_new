@@ -114,7 +114,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
            transect_id = paste(SurveyNbr, Transect, Replicate, Obs, sep = "-")) %>%
     group_by(SurveyNbr, Transect, Replicate) %>%
     mutate(Year = min(Year, na.rm = TRUE), Month = min(Month, na.rm = TRUE), Day = min(Day, na.rm = TRUE)) %>%
-    filter(seg_dist >= seg.min, seg_dist > 0) %>% ungroup %>% select(-Piece)
+    ungroup %>% select(-Piece) %>% filter(seg_dist >= seg.min, seg_dist > 0)
   
   # -------- calculate segment midpoints ------------------------------------------------------------------------------------------
   # create dataframe suitable to become spatial lines object
