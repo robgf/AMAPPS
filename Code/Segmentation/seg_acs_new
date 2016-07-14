@@ -11,12 +11,13 @@
 # Calculates species counts by default; set occurences = TRUE for number of flock sightings
 # maxDist sets maximum allowable distance (approx. meters) between an observation and its nearest segment line
 # Segment midpoints fall on track line by default; set centroids = TRUE to use geographic centroid
-# seg.min sets minimum allowable segment length
+# seg.min sets minimum allowable segment length (>= 0)
 
 # Distances are in nautical miles
 
 # Kyle Dettloff
 # 06-22-2016
+# Modified 07-14-16 after dplyr 0.5.0 update
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -35,12 +36,13 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   
   if(seg.length <= 0) stop("seg.length > 0 is FALSE")
   if(seg.tol < 0 | seg.tol >= 1) stop("0 <= seg.tol < 1 is FALSE")
+  if(seg.min < 0) stop("seg.min >= 0 is FALSE")
 
   # -------- segment track data ---------------------------------------------------------------------------------------------------
   seg = tracks %>% select(-c(Crew, Seat)) %>% arrange(SurveyNbr, Transect, Replicate, Obs, Year, Month, Day, Sec) %>%
     mutate(Piece = ifelse(Type %in% c("BEGTRAN", "BEGCNT"), 1, 0)) %>%
     group_by(SurveyNbr, Transect, Replicate, Obs) %>% mutate(Piece = cumsum(Piece)) %>%
-    distinct(Long, Lat, Piece, Replicate, Obs, Transect, SurveyNbr) %>%
+    distinct(Long, Lat, Piece, Replicate, Obs, Transect, SurveyNbr, .keep_all = TRUE) %>%
     group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
     mutate(long_i = lag(Long, default = first(Long), order_by = Sec),
            lat_i = lag(Lat, default = first(Lat), order_by = Sec)) %>%
@@ -59,8 +61,8 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
            tot_empty = as.integer(nseg - n_distinct(seg_num)))
   
   # create rows for segments without waypoints  
-  seg_empty = seg %>% select(SurveyNbr, Transect, Replicate, Obs, Piece, dist_total, nseg, tot_empty) %>%
-    distinct %>% ungroup %>% filter(tot_empty > 0) %>% slice(rep(row_number(), tot_empty)) %>% select(-tot_empty) %>%
+  seg_empty = seg %>% ungroup %>% select(SurveyNbr, Transect, Replicate, Obs, Piece, dist_total, nseg, tot_empty) %>%
+    distinct %>% filter(tot_empty > 0) %>% slice(rep(row_number(), tot_empty)) %>% select(-tot_empty) %>%
     mutate(empty_seg = 1)
   
   # combine segments with and without waypoints
@@ -107,12 +109,12 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   seg_all_new = seg_all %>% filter(is.na(empty_seg)) %>% select(-c(empty_seg, seg_dist_cuml, coords_end)) %>%
     bind_rows(., seg_ends) %>% arrange(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num, dist_cuml) %>% select(-dist_cuml) %>%
     group_by(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num) %>%
-    mutate(seg_dist = round(first(seg_dist[!is.na(seg_dist)]), 3),
+    mutate(seg_dist = round(max(seg_dist, na.rm = TRUE), 3),
            id = paste(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num, sep = "-"),
            transect_id = paste(SurveyNbr, Transect, Replicate, Obs, sep = "-")) %>%
     group_by(SurveyNbr, Transect, Replicate) %>%
-    mutate(Year = first(Year[!is.na(Year)]), Month = first(Month[!is.na(Month)]), Day = first(Day[!is.na(Day)])) %>%
-    filter(seg_dist >= seg.min) %>% ungroup %>% select(-Piece)
+    mutate(Year = min(Year, na.rm = TRUE), Month = min(Month, na.rm = TRUE), Day = min(Day, na.rm = TRUE)) %>%
+    filter(seg_dist >= seg.min, seg_dist > 0) %>% ungroup %>% select(-Piece)
   
   # -------- calculate segment midpoints ------------------------------------------------------------------------------------------
   # create dataframe suitable to become spatial lines object
@@ -135,7 +137,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   if (centroids == TRUE) {
     # calculate geographic centroids of projected segments and convert back to lat/long
     midpoints = gCentroid(lineframe, byid = TRUE) %>% spTransform(CRS("+proj=longlat")) %>%
-      as.data.frame %>% rename(mid_long = x, mid_lat = y) %>% add_rownames("id")
+      as.data.frame %>% rename(mid_long = x, mid_lat = y) %>% rownames_to_column("id")
   }
   else if (centroids == FALSE) {
     # calculate midpoints of projected segments and convert back to lat/long
