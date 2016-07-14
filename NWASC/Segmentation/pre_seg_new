@@ -3,6 +3,7 @@
 
 # Kyle Dettloff
 # 06-21-2016
+# Modified 07-14-16 after dplyr 0.5.0 update
 
 suppressMessages(library(broom))
 suppressMessages(library(maptools))
@@ -27,7 +28,7 @@ preSegment = function(observations, tracks, transects) {
   observations = observations %>% filter(transect_id %in% transects$transect_id)
   tracks = tracks[tracks@data$transect_i %in% transects$transect_id, ]
   shp_tidy = tidy(tracks)
-  shp_data = tracks@data %>% select(transect_i, dataset_id) %>% add_rownames("id") %>% mutate(id = as.integer(id))
+  shp_data = tracks@data %>% select(transect_i, dataset_id) %>% rownames_to_column("id") %>% mutate(id = as.integer(id))
   
   # remove duplicate waypoints
   shp_tidy = shp_tidy %>% select(-order) %>% distinct %>% group_by(id) %>% mutate(order = seq.int(n())) %>% ungroup
