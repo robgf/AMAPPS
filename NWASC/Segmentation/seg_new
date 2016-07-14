@@ -12,21 +12,23 @@
 # Calculates species counts by default; set occurences = TRUE for number of flock sightings
 # maxDist sets maximum allowable distance (approx. meters) between an observation and its nearest segment line
 # Segment midpoints fall on track line by default; set centroids = TRUE to use geographic centroid
-# seg.min sets minimum allowable segment length
+# seg.min sets minimum allowable segment length (>= 0)
 
 # Distances are in nautical miles
 
 # Kyle Dettloff
 # 06-22-2016
+# Modified 07-14-16 after dplyr 0.5.0 update
 
 segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol,
                       centroids = FALSE, maxDist = NA, occurences = FALSE) {
   
   if(seg.length <= 0) stop("seg.length > 0 is FALSE")
   if(seg.tol < 0 | seg.tol >= 1) stop("0 <= seg.tol < 1 is FALSE")
+  if(seg.min < 0) stop("seg.min >= 0 is FALSE")
 
   # -------- segment track data ---------------------------------------------------------------------------------------------------
-  seg = tracks %>% distinct(long, lat, piece, transect_id) %>% group_by(transect_id, piece) %>%
+  seg = tracks %>% distinct(long, lat, piece, transect_id, .keep_all = TRUE) %>% group_by(transect_id, piece) %>%
     mutate(long_i = lag(long, default = first(long), order_by = order),
            lat_i = lag(lat, default = first(lat), order_by = order)) %>%
     rowwise %>% mutate(dist = distVincentySphere(c(long_i, lat_i), c(long, lat)) / 1852) %>%
@@ -52,8 +54,8 @@ segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol
            tot_empty = as.integer(nseg - n_distinct(seg_num)))
   
   # create rows for segments without waypoints  
-  seg_empty = seg %>% select(piece, dataset_id, transect_id, dist_total, nseg, dist_odd, seg_odd, tot_empty) %>%
-    distinct %>% ungroup %>% filter(tot_empty > 0) %>% slice(rep(row_number(), tot_empty)) %>% select(-tot_empty) %>%
+  seg_empty = seg %>% ungroup %>% select(piece, dataset_id, transect_id, dist_total, nseg, dist_odd, seg_odd, tot_empty) %>%
+    distinct() %>%  filter(tot_empty > 0) %>% slice(rep(row_number(), tot_empty)) %>% select(-tot_empty) %>%
     mutate(empty_seg = 1)
   
   # combine segments with and without waypoints
@@ -97,9 +99,9 @@ segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol
   # combine segment start points and endpoints with other waypoints
   seg_all_new = seg_all %>% filter(is.na(empty_seg)) %>% select(-c(empty_seg, seg_dist_cuml, coords_end)) %>%
     bind_rows(., seg_ends) %>% arrange(dataset_id, transect_id, piece, seg_num, dist_cuml) %>% select(-dist_cuml) %>%
-    group_by(transect_id, piece, seg_num) %>% mutate(seg_dist = round(first(seg_dist[!is.na(seg_dist)]), 3),
+    group_by(transect_id, piece, seg_num) %>% mutate(seg_dist = round(max(seg_dist, na.rm = TRUE), 3),
                                                      id = paste(transect_id, piece, seg_num, sep = "-")) %>%
-    filter(seg_dist >= seg.min) %>% ungroup %>% select(-piece)
+    ungroup %>% select(-piece) %>% filter(seg_dist >= seg.min, seg_dist > 0)
   
   # -------- calculate segment midpoints ------------------------------------------------------------------------------------------
   # create dataframe suitable to become spatial lines object 
@@ -122,7 +124,7 @@ segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol
   if (centroids == TRUE) {
     # calculate geographic centroids of projected segments and convert back to lat/long
     midpoints = gCentroid(lineframe, byid = TRUE) %>% spTransform(CRS("+proj=longlat")) %>%
-      as.data.frame %>% rename(mid_long = x, mid_lat = y) %>% add_rownames("id")
+      as.data.frame %>% rename(mid_long = x, mid_lat = y) %>% rownames_to_column("id")
   }
     else if (centroids == FALSE) {
     # calculate midpoints of projected segments and convert back to lat/long
