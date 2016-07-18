@@ -17,7 +17,6 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# 06-22-2016
 # Modified 07-18-16 after dplyr 0.5.0 update
 
 segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol,
