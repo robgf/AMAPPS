@@ -17,7 +17,7 @@
 
 # Kyle Dettloff
 # 06-22-2016
-# Modified 07-14-16 after dplyr 0.5.0 update
+# Modified 07-18-16 after dplyr 0.5.0 update
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -111,7 +111,8 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
     bind_rows(., seg_ends) %>% arrange(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num, dist_cuml) %>% select(-dist_cuml) %>%
     group_by(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num) %>%
     mutate(seg_dist = round(max(seg_dist, na.rm = TRUE), 3),
-           id = paste(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num, sep = "-"),
+           id = paste(sprintf("%02d", SurveyNbr), sprintf("%02d", Transect), sprintf("%02d", Replicate),
+                      Obs, sprintf("%02d", Piece), sprintf("%02d", seg_num), sep = "-"),
            transect_id = paste(SurveyNbr, Transect, Replicate, Obs, sep = "-")) %>%
     group_by(SurveyNbr, Transect, Replicate) %>%
     mutate(Year = min(Year, na.rm = TRUE), Month = min(Month, na.rm = TRUE), Day = min(Day, na.rm = TRUE)) %>%
@@ -160,17 +161,11 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
     if (!is.na(maxDist)) {
       w = gWithinDistance(points, lines, dist = maxDist, byid = TRUE)
       validPoints = apply(w, 2, any)
-      validLines = apply(w, 1, any)
       points = points[validPoints, ]
-      lines = lines[validLines, ]
     }
     
     d = gDistance(points, lines, byid = TRUE) # distance matrix of each point to each segment
-    nearest_line_index = apply(d, 2, which.min) # position of each nearest segment in lines object
-    
-    # recover lines' IDs (IDs and index differ if maxDist is given)
-    if (!is.na(maxDist)) seg_num = as.numeric(rownames(d)[nearest_line_index]) + 1
-    else seg_num = nearest_line_index
+    seg_num = apply(d, 2, which.min) # position of each nearest segment in lines object
     
     # create data frame
     cbind(points@data, seg_num)
