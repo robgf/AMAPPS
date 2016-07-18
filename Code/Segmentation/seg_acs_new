@@ -16,7 +16,6 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# 06-22-2016
 # Modified 07-18-16 after dplyr 0.5.0 update
 
 suppressMessages(library(maptools))
