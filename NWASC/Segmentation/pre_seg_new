@@ -2,7 +2,6 @@
 # Creates objects 'obs.pre' and 'shp.pre' to be used in segmentation function
 
 # Kyle Dettloff
-# 06-21-2016
 # Modified 07-14-16 after dplyr 0.5.0 update
 
 suppressMessages(library(broom))
