@@ -9,9 +9,10 @@ variable names
     *   ii. Dates inclusive of all surveys submitted  
     *   iii. Type of platform used for observations (boat, aircraft, etc.)  
     *   iv. Preferred citation if data are made public  
-    *   v. Definition of fields transferred to NWASC including range of values  
-    
-2) The observation data should be accompanied by a transect/ effort file  
+    *   v. Definition of fields transferred to NWASC including range of values    
+    *   vi. If species codes were used, please include documentation describing the codes  
+
+2) The observation data should be accompanied by a transect/ effort file. The survey effort would be a record of when and where the observer was counting birds. If survey effort was not accounted for, please include the survey design, the location of the transects, or the beginning and end points of the transects surveyed.   
 *    a. Please provide this information in WGS84 datum or provide information on projection. Coordinates would be in decimal degrees 
     (not UTMs)  
 *    b. Please provide beginning and ending points of transects  
