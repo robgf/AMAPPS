@@ -19,7 +19,7 @@ options(dplyr.show_progress = FALSE)
 # read in cts and observation tables
 load("Q:/Kyle_Working_Folder/Segmentation/From_Arliss/database_extract_cts_obs.RData")
 # read in transect shapefile
-shp = readShapeLines("Q:/Kyle_Working_Folder/NWASC_data/transect_shp_files/line")
+shp = readShapeLines("Q:/Kyle_Working_Folder/Segmentation/transect_shp_files/line")
 
 preSegment = function(observations, tracks, transects) {
 
