@@ -19,7 +19,7 @@ suppressMessages(library(tidyr))
 suppressMessages(library(lubridate))
 
 # read in dts and observation tables
-load("Q:/Kyle_Working_Folder/Segmentation/From_Arliss/database_extract_dts_obs.RData")
+load("Q:/Kyle_Working_Folder/Segmentation/Data/database_extract_dts_obs.RData")
 
 segmentDTS = function(observations, transects, v.spd = 10, occurences = FALSE) {
 
@@ -59,8 +59,8 @@ segmentDTS = function(observations, transects, v.spd = 10, occurences = FALSE) {
   # -------- calculate dts survey midpoints -----------------------------------------------------------------------------
   # select only durations of 10 and 15 minutes
   dts = transects %>%
-    select(source_dataset_id, transect_id, start_dt, survey_type_cd, survey_method_cd, transect_width_nb,
-           transect_time_min_nb, traversal_speed_nb, heading_tx, st_astext) %>%
+    select(source_dataset_id, segmented_transect_id, transect_id, start_dt, survey_type_cd, survey_method_cd,
+           transect_width_nb, transect_time_min_nb, traversal_speed_nb, heading_tx, st_astext) %>%
     filter(transect_time_min_nb %in% c(10, 15)) %>%
     mutate(traversal_speed_nb = replace(traversal_speed_nb, is.na(traversal_speed_nb), v.spd),
            seg_dist = round(transect_time_min_nb * traversal_speed_nb / 60, 3))
@@ -72,7 +72,8 @@ segmentDTS = function(observations, transects, v.spd = 10, occurences = FALSE) {
     mutate(half_dist_m = transect_time_min_nb * traversal_speed_nb * 1852 / 120) %>%
     rowwise %>% mutate(coords_mid = list(destPoint(c(long, lat), heading_tx, half_dist_m))) %>%
     ungroup %>% mutate(mid_long = unlist(lapply(coords_mid, `[[`, 1)), mid_lat = unlist(lapply(coords_mid, `[[`, 2))) %>%
-    select(source_dataset_id, transect_id, start_dt, survey_type_cd, survey_method_cd, transect_width_nb, seg_dist, mid_long, mid_lat)
+    select(source_dataset_id, segmented_transect_id, transect_id, start_dt, survey_type_cd, survey_method_cd,
+           transect_width_nb, seg_dist, mid_long, mid_lat)
   
   ### get midpoints of spatial lines
   dts_line = dts %>% filter(grepl("LINE", st_astext))
@@ -82,7 +83,8 @@ segmentDTS = function(observations, transects, v.spd = 10, occurences = FALSE) {
   # calculate geographic centroids of projected segments and convert back to lat/long
   midpoints_line = do.call(rbind, lapply(lineframe, gCentroid, byid = TRUE)) %>% spTransform(CRS("+proj=longlat")) %>%
     as.data.frame %>% rename(mid_long = x, mid_lat = y) %>%
-    bind_cols(select(dts_line, source_dataset_id, transect_id, start_dt, survey_type_cd, survey_method_cd, transect_width_nb, seg_dist), .)
+    bind_cols(select(dts_line, source_dataset_id, segmented_transect_id, transect_id, start_dt,
+                     survey_type_cd, survey_method_cd, transect_width_nb, seg_dist), .)
   
   # combine midpoints of points and lines
   midpoints = bind_rows(midpoints_point, midpoints_line)
@@ -97,17 +99,20 @@ segmentDTS = function(observations, transects, v.spd = 10, occurences = FALSE) {
   
   # -------- summarize species data and convert to wide form ------------------------------------------------------------
   seg_final = dts_final %>%
-    group_by(source_dataset_id, transect_id, start_dt, seg_dist, transect_width_nb, mid_long, mid_lat, survey_type_cd, survey_method_cd, spp_cd)
+    group_by(source_dataset_id, segmented_transect_id, transect_id, start_dt, seg_dist, transect_width_nb,
+             mid_long, mid_lat, survey_type_cd, survey_method_cd, spp_cd)
 
     if (occurences == FALSE) {
       # total species count
       seg_final = seg_final %>% summarise(count = sum(count)) %>%
-        spread(spp_cd, count, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
+        spread(spp_cd, count, fill = 0) %>% select(everything(), -matches("NONE")) %>%
+        ungroup %>% arrange(transect_id)
     }
     else if (occurences == TRUE) {
-    # number of species occurences
-    seg_final = seg_final %>% select(-count) %>% summarise(noccur = n()) %>%
-      spread(spp_cd, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
+      # number of species occurences
+      seg_final = seg_final %>% select(-count) %>% summarise(noccur = n()) %>%
+        spread(spp_cd, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>%
+        ungroup %>% arrange(transect_id)
     }
 
 }
@@ -117,4 +122,5 @@ seg.dat.dts = segmentDTS(obs.dat, dts.dat)
 
 ### example: combine segmented cts and dts data ###
 seg.dat.all = bind_rows(seg.dat.cts, seg.dat.dts) %>%
-  mutate_at(vars(-c(source_dataset_id:survey_method_cd)), funs(replace(., is.na(.), 0)))
+  mutate_at(vars(-c(source_dataset_id:survey_method_cd)), funs(replace(., is.na(.), 0))) %>%
+  arrange(transect_id, seg_num)
