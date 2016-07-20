@@ -17,7 +17,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# Modified 07-18-16 after dplyr 0.5.0 update
+# Modified 07-20-16 after dplyr 0.5.0 update
 
 segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol,
                       centroids = FALSE, maxDist = NA, occurences = FALSE) {
@@ -188,14 +188,16 @@ segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol
         spread(spp_cd, count, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
     }
     else if (occurences == TRUE) {
-    # number of species occurences
-    seg_final = seg_final %>% select(-count) %>% summarise(noccur = n()) %>%
-      spread(spp_cd, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
+      # number of species occurences
+      seg_final = seg_final %>% select(-count) %>% summarise(noccur = n()) %>%
+        spread(spp_cd, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
     }
   
   # add descriptive dataset IDs
-  seg_final = transects %>% select(dataset_id, source_dataset_id) %>% distinct %>%
-    left_join(seg_final, ., by = "dataset_id") %>% select(source_dataset_id, everything(), -dataset_id)
+  seg_final = transects %>% select(transect_id, source_dataset_id, segmented_transect_id) %>% distinct %>%
+    left_join(seg_final, ., by = "transect_id") %>%
+    select(source_dataset_id, segmented_transect_id, everything(), -dataset_id) %>%
+    arrange(transect_id, seg_num)
 
 }
 
