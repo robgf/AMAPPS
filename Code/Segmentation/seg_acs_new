@@ -213,9 +213,9 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
         spread(Species, FlockSize, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
     }
     else if (occurences == TRUE) {
-    # number of species occurences
-    seg_final = seg_final %>% select(-FlockSize) %>% summarise(noccur = n()) %>%
-      spread(Species, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
+      # number of species occurences
+      seg_final = seg_final %>% select(-FlockSize) %>% summarise(noccur = n()) %>%
+        spread(Species, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
     }
 }
 
