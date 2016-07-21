@@ -16,7 +16,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# Modified 07-18-16 after dplyr 0.5.0 update
+# Modified 07-21-16 after dplyr 0.5.0 update
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -39,7 +39,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   if(seg.min < 0) stop("seg.min >= 0 is FALSE")
 
   # -------- segment track data ---------------------------------------------------------------------------------------------------
-  seg = tracks %>% select(-c(Crew, Seat)) %>% arrange(SurveyNbr, Transect, Replicate, Obs, Year, Month, Day, Sec) %>%
+  seg = tracks %>% arrange(SurveyNbr, Transect, Replicate, Obs, Year, Month, Day, Sec) %>%
     mutate(Piece = ifelse(Type %in% c("BEGTRAN", "BEGCNT"), 1, 0)) %>%
     group_by(SurveyNbr, Transect, Replicate, Obs) %>% mutate(Piece = cumsum(Piece)) %>%
     distinct(Long, Lat, Piece, Replicate, Obs, Transect, SurveyNbr, .keep_all = TRUE) %>%
@@ -148,7 +148,8 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   }
   
   # merge segment midpoints with transect information
-  seg_mids = seg_all_new %>% select(-c(Long, Lat, GpsError, Type, Condition)) %>% distinct %>%
+  seg_mids = seg_all_new %>% select(SurveyNbr, Transect, Replicate, Obs, Year, Month, Day,
+                                    seg_num, seg_dist, id, transect_id) %>% distinct %>%
     group_by(SurveyNbr, Transect, Replicate, Obs) %>% mutate(seg_num = seq.int(n())) %>% ungroup %>%
     left_join(., midpoints, by = "id") %>% select(-c(id, transect_id, Day))
   
@@ -201,20 +202,19 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   
   # join segment midpoints and observations
   segmented = full_join(seg_mids, seg_obs, by = c("SurveyNbr", "Transect", "Replicate", "Obs", "Year", "Month", "seg_num")) %>%
-    mutate(FlockSize = replace(FlockSize, is.na(FlockSize), 0), Species = replace(Species, is.na(Species), "NONE"))
-  
-  # -------- summarize species data by segment and convert to wide form -----------------------------------------------------------
-  seg_final = segmented %>%
+    mutate(FlockSize = replace(FlockSize, is.na(FlockSize), 0), Species = replace(Species, is.na(Species), "NONE"),
+           SurveyNbr = factor(SurveyNbr), Transect = factor(Transect), Replicate = factor(Replicate)) %>%
     group_by(SurveyNbr, Transect, Replicate, Obs, Year, Month, seg_num, seg_dist, mid_long, mid_lat, Species)
   
+  # -------- summarize species data by segment and convert to wide form -----------------------------------------------------------
     if (occurences == FALSE) {
       # total species count
-      seg_final = seg_final %>% summarise(FlockSize = sum(FlockSize)) %>%
+      segmented = segmented %>% summarise(FlockSize = sum(FlockSize)) %>%
         spread(Species, FlockSize, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
     }
     else if (occurences == TRUE) {
       # number of species occurences
-      seg_final = seg_final %>% select(-FlockSize) %>% summarise(noccur = n()) %>%
+      segmented = segmented %>% select(-FlockSize) %>% summarise(noccur = n()) %>%
         spread(Species, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
     }
 }
