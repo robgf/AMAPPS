@@ -22,7 +22,7 @@ dir <- "//IFW9mbm-fs1/SeaDuck/seabird_database/datasets_received"
 setwd(dir)
 dbpath <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/DataBase"
 dir.in <- paste(dir, surveyFolder, sep = "/") 
-dir.out <- paste(gsub("datasets_received", "data_import/in_progress", dir), surveyFolder,  sep = "/") 
+dir.out <- paste(gsub("datasets_received", "data_import/in_progress/StatOil", dir), sep = "/") 
 speciesPath <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/DataProcessing/"
 
 # SOURCE R FUNCTIONS
@@ -30,7 +30,7 @@ source(file.path("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Fo
 sourceDir(file.path("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/_Rfunctions"))
 
 # SET PATH TO R FILE THAT FIXES DATA ERRORS
-errfix.file <- file.path(dir.out, paste(yearLabel, "_ObsFilesFix.R", sep = ""))
+errfix.file <- file.path(dir.out, paste(gsub("-","",yearLabel), "_ObsFilesFix.R", sep = ""))
 
 # ---------------------------------------------------------------------------- #
 # STEP 1: READ IN RAW OBSERVATION DATA (in this case, mixed with track data)
@@ -51,19 +51,29 @@ sfdf=as.data.frame(sf)
 names(sfdf)[names(sfdf) == "X__in_Flock"] <- "__in_Flock"
 sfdf = sfdf %>% select(-F25,-F26,-F27,-Cor_infloc,-coords.x1,-coords.x2)  
 obs = rbind(obs, sfdf); rm(sfdf)
+names(obs)[names(obs) == "SpeciesCor"] <- "type"
+obs = obs[!is.na(obs$type),]
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
 # STEP 2: OUTPUT COAST SURVEY DATA; FIX OBSERVATION FILE ERRORS
 # ---------------------------------------------------------------------------- #
 # REMOVE SPACES IN CERTAIN COLUMNS
-names(obs)[names(obs) == "SpeciesCor"] <- "type"
 obs <- commonErrors(obs)
 obs <- fixMixed(obs) 
 
 if (!file.exists(errfix.file)) {
   warning("Error fix R file is missing and will not be sourced.")
 } else source(errfix.file, local = TRUE)
+# ---------------------------------------------------------------------------- #
+
+# ---------------------------------------------------------------------------- #
+# STEP 3: build transect
+plot(obs$lon,obs$lat, xlim = c(-69.59,-69.47), ylim = c(43.48,43.55))
+test = obs %>% select(lon, lat) %>% mutate(lon = as.numeric(lon), lat = as.numeric(lat))
+test = test[test$lat>=43.48 & test$lat<=43.55,]
+test = test$lon>c(-69.59) & test$lon<=c(-69.47)
+approx(test$lon, test$lat, method="constant")
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
