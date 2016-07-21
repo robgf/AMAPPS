@@ -1,6 +1,5 @@
 # ------------------------------- #
-# track = pieces
-# transect = 1
+# To format track and transect survey effort for temporary database
 # ------------------------------- #
 
 forNWASC_import_effort <- function(id, data_track, data_transect) {
