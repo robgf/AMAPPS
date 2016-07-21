@@ -62,7 +62,8 @@ s2$DATE_TEXT = as.character(s2$DATE_TEXT)
 obs = full_join(s1, s2)
 rm(s1,s2)
 colnames(obs) = tolower(colnames(obs))
-
+obs$source_transect_id[obs$surv_area=="Transect"]=1
+obs$original_species_tx = obs$species
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
@@ -92,12 +93,12 @@ legend("topleft",c("Observation", "Transit","Transect"),pch=16, col=c("black","r
 # ---------------------------------------------------------------------------- #
 # STEP 3: create estimated transect lines 
 # ---------------------------------------------------------------------------- #
-one = cbind(rbind(c(-75.51966,36.86826),c(-75.4503,36.86826)),c(1,1),c("BEGCNT","ENDCNT"))
-two = cbind(rbind(c(-75.51966,36.8844),c(-75.4503,36.8844)),c(2,2),c("BEGCNT","ENDCNT"))
-three = cbind(rbind(c(-75.51966,36.90023),c(-75.4503,36.90023)),c(3,3),c("BEGCNT","ENDCNT"))
-four = cbind(rbind(c(-75.51966,36.91702),c(-75.4503,36.91702)),c(4,4),c("BEGCNT","ENDCNT"))
-five = cbind(rbind(c(-75.51966,36.93232),c(-75.4503,36.93232)),c(5,5),c("BEGCNT","ENDCNT"))
-six = cbind(rbind(c(-75.51966,36.95019),c(-75.4503,36.95019)),c(6,6),c("BEGCNT","ENDCNT"))
+six = cbind(rbind(c(-75.51966,36.86826),c(-75.4503,36.86826)),c(1,1),c("ENDCNT","BEGCNT"))
+five = cbind(rbind(c(-75.51966,36.8844),c(-75.4503,36.8844)),c(2,2),c("BEGCNT","ENDCNT"))
+four = cbind(rbind(c(-75.51966,36.90023),c(-75.4503,36.90023)),c(3,3),c("ENDCNT","BEGCNT"))
+three = cbind(rbind(c(-75.51966,36.91702),c(-75.4503,36.91702)),c(4,4),c("BEGCNT","ENDCNT"))
+two = cbind(rbind(c(-75.51966,36.93232),c(-75.4503,36.93232)),c(5,5),c("ENDCNT","BEGCNT"))
+one = cbind(rbind(c(-75.51966,36.95019),c(-75.4503,36.95019)),c(6,6),c("BEGCNT","ENDCNT"))
 
 track = rbind(one,two,three,four,five,six)
 colnames(track) = c("lon","lat","piece","type")
@@ -113,6 +114,33 @@ lines(three[,1],three[,2],col="gold")
 lines(four[,1],four[,2],col="green")
 lines(five[,1],five[,2],col="blue")
 lines(six[,1],six[,2],col="purple")
+
+rm(one,two,three,four,five,six)
+
+
+# reformat
+track2 = as.data.frame(matrix(ncol=6,nrow=6,data=NA))
+colnames(track2)=c("transect","piece","start_lon","start_lat","end_lon","end_lat")
+track2$transect=1
+track2$piece=1:6
+track2$start_lon = track$lon[track$type=="BEGCNT"]
+track2$start_lat = track$lat[track$type=="BEGCNT"]
+track2$end_lon = track$lon[track$type=="ENDCNT"]
+track2$end_lat = track$lat[track$type=="ENDCNT"]
+
+dates = sort(unique(obs$date))
+transect = as.data.frame(matrix(nrow=length(dates),ncol=6,data=NA))
+colnames(transect)=c("date","transect","start_lon","start_lat","end_lon","end_lat")
+transect$date = dates
+transect$transect=1
+transect$start_lon = track2$start_lon[track2$piece==1] #start at top
+transect$start_lat = track2$start_lat[track2$piece==1]
+transect$end_lon = track2$end_lon[track2$piece==6] 
+transect$end_lat = track2$end_lat[track2$piece==6]
+
+tracks = rbind(track2,track2,track2,track2,track2,track2,track2,track2,track2,track2,track2,track2,track2) # number of unique dates
+tracks$date = sort(rep(dates,dim(track2)[1]))
+rm(track,track2)
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
@@ -141,7 +169,8 @@ writeOGR(SLDF, dir.out, "VOWTAP", "ESRI Shapefile", morphToESRI = TRUE)
 # ---------------------------------------------------------------------------- #
 save.image(paste(dir.out, "/", yearLabel, ".Rdata",sep=""))
 write.csv(obs, file=paste(dir.out,"/", yearLabel,".csv", sep=""), row.names=FALSE)
-write.csv(track, file=paste(dir.out,"/", yearLabel,"_EstimatedTrack.csv", sep=""), row.names=FALSE)
+write.csv(tracks, file=paste(dir.out,"/", yearLabel,"_EstimatedTrack.csv", sep=""), row.names=FALSE)
+write.csv(transect, file=paste(dir.out,"/", yearLabel,"_EstimatedTransect.csv", sep=""), row.names=FALSE)
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
