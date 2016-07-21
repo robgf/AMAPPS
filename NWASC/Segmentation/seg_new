@@ -17,7 +17,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# Modified 07-20-16 after dplyr 0.5.0 update
+# Modified 07-21-16 after dplyr 0.5.0 update
 
 segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol,
                       centroids = FALSE, maxDist = NA, occurences = FALSE) {
@@ -176,28 +176,26 @@ segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol
   
   # join segment midpoints and observations
   segmented = full_join(seg_mids, seg_obs, by = c("transect_id", "seg_num")) %>%
-    mutate(spp_cd = replace(spp_cd, is.na(spp_cd), "NONE"))
-  
-  # -------- summarize species data by segment and convert to wide form -----------------------------------------------------------
-  seg_final = segmented %>%
+    mutate(spp_cd = replace(spp_cd, is.na(spp_cd), "NONE")) %>%
     group_by(dataset_id, transect_id, seg_num, start_dt, seg_dist, transect_width_nb, mid_long, mid_lat, survey_type_cd, survey_method_cd, spp_cd)
   
+  # -------- summarize species data by segment and convert to wide form -----------------------------------------------------------
     if (occurences == FALSE) {
       # total species count
-      seg_final = seg_final %>% summarise(count = sum(count)) %>%
+      segmented = segmented %>% summarise(count = sum(count)) %>%
         spread(spp_cd, count, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
     }
     else if (occurences == TRUE) {
       # number of species occurences
-      seg_final = seg_final %>% select(-count) %>% summarise(noccur = n()) %>%
+      segmented = segmented %>% select(-count) %>% summarise(noccur = n()) %>%
         spread(spp_cd, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
     }
   
   # add descriptive dataset IDs
-  seg_final = transects %>% select(transect_id, source_dataset_id, segmented_transect_id) %>% distinct %>%
-    left_join(seg_final, ., by = "transect_id") %>%
+  segmented = transects %>% select(transect_id, source_dataset_id, segmented_transect_id) %>% distinct %>%
+    left_join(segmented, ., by = "transect_id") %>%
     select(source_dataset_id, segmented_transect_id, everything(), -dataset_id) %>%
-    arrange(transect_id, seg_num)
+    arrange(transect_id, seg_num) %>% mutate(transect_id = factor(transect_id))
 
 }
 
