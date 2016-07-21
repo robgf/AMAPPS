@@ -1,8 +1,8 @@
 # ------------------------# 
 # change names
-names(obs)[names(obs) == "__in_Flock"] <- "count"
+#names(obs)[names(obs) == "__in_Flock"] <- "count"
+names(obs)[names(obs) == "flock_cor"] <- "count"
 obs$type = toupper(obs$type)
-obs$behavior=gsub("\\s", "", obs$behavior)
 # ------------------------# 
 
 # ------------------------# 
@@ -30,6 +30,7 @@ tmp2$lon=""
 obs = rbind(cbind(tmp,longlatcoor),tmp2)
 rm(tmp,tmp2,longlatcoor,utms,utmcoor)
 colnames(obs) = tolower(colnames(obs))
+obs$behavior=gsub("\\s", "", obs$behavior)
 # ------------------------# 
 
 # SPECIES
@@ -57,6 +58,7 @@ obs$type[obs$type=="UNGE"] = ""
 obs$type[obs$type=="UNID"] = ""
 obs$type[obs$type=="UNMG"] = ""
 	
-	
+#dates
+obs$gps_date = as.Date(obs$gps_date)
 	
 	
