@@ -9,7 +9,8 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# 06-22-2016
+# 06-22-16
+# Modified 07-21-16
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -95,22 +96,20 @@ segmentDTS = function(observations, transects, v.spd = 10, occurences = FALSE) {
   
   # join midpoints and observations
   dts_final = full_join(midpoints, obs.dat, by = "transect_id") %>%
-    mutate(spp_cd = replace(spp_cd, is.na(spp_cd), "NONE"))
+    mutate(spp_cd = replace(spp_cd, is.na(spp_cd), "NONE"), transect_id = factor(transect_id)) %>%
+    group_by(source_dataset_id, segmented_transect_id, transect_id, start_dt, seg_dist,
+             transect_width_nb, mid_long, mid_lat, survey_type_cd, survey_method_cd, spp_cd)
   
   # -------- summarize species data and convert to wide form ------------------------------------------------------------
-  seg_final = dts_final %>%
-    group_by(source_dataset_id, segmented_transect_id, transect_id, start_dt, seg_dist, transect_width_nb,
-             mid_long, mid_lat, survey_type_cd, survey_method_cd, spp_cd)
-
     if (occurences == FALSE) {
       # total species count
-      seg_final = seg_final %>% summarise(count = sum(count)) %>%
+      dts_final = dts_final %>% summarise(count = sum(count)) %>%
         spread(spp_cd, count, fill = 0) %>% select(everything(), -matches("NONE")) %>%
         ungroup %>% arrange(transect_id)
     }
     else if (occurences == TRUE) {
       # number of species occurences
-      seg_final = seg_final %>% select(-count) %>% summarise(noccur = n()) %>%
+      dts_final = dts_final %>% select(-count) %>% summarise(noccur = n()) %>%
         spread(spp_cd, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>%
         ungroup %>% arrange(transect_id)
     }
