@@ -49,8 +49,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
     rowwise %>% mutate(dist = distVincentySphere(c(long_i, lat_i), c(Long, Lat)) / 1852) %>%
     select(-c(long_i, lat_i, Sec)) %>% ungroup %>% group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
     # calculate cumulative distance traveled between waypoints
-    mutate(dist_cuml = cumsum(dist), dist_total = max(dist_cuml)) %>%
-    select(-dist) %>%
+    mutate(dist_cuml = cumsum(dist), dist_total = max(dist_cuml)) %>% select(-dist) %>%
     # calculate number of segments for each transect
     mutate(nseg = ifelse(dist_total <= seg.length, 1,
                          ifelse(dist_total / seg.length - floor(dist_total / seg.length) >= seg.tol,
