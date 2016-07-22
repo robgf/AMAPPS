@@ -138,12 +138,12 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
     # apply projection
     spTransform(CRS(projHOM))
   
-  if (centroids == TRUE) {
+  if (centroids) {
     # calculate geographic centroids of projected segments and convert back to lat/long
     midpoints = gCentroid(lineframe, byid = TRUE) %>% spTransform(CRS("+proj=longlat")) %>%
       as.data.frame %>% rename(mid_long = x, mid_lat = y) %>% rownames_to_column("id")
   }
-  else if (centroids == FALSE) {
+  if (!centroids) {
     # calculate midpoints of projected segments and convert back to lat/long
     midpoints = SpatialLinesMidPoints(lineframe) %>% spTransform(CRS("+proj=longlat")) %>%
       as.data.frame %>% select(coords.x1, coords.x2) %>% rename(mid_long = coords.x1, mid_lat = coords.x2) %>%
@@ -209,12 +209,12 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
     group_by(SurveyNbr, Transect, Replicate, Obs, Year, Month, Condition, seg_num, seg_dist, mid_long, mid_lat, Species)
   
   # -------- summarize species data by segment and convert to wide form -----------------------------------------------------------
-    if (occurences == FALSE) {
+    if (!occurences) {
       # total species count
       segmented = segmented %>% summarise(FlockSize = sum(FlockSize)) %>%
         spread(Species, FlockSize, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
     }
-    else if (occurences == TRUE) {
+    if (occurences) {
       # number of species occurences
       segmented = segmented %>% select(-FlockSize) %>% summarise(noccur = n()) %>%
         spread(Species, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
