@@ -107,13 +107,13 @@ segmentDTS = function(observations, transects, v.spd = 10, occurences = FALSE) {
              transect_width_nb, mid_long, mid_lat, survey_type_cd, survey_method_cd, spp_cd)
   
   # -------- summarize species data and convert to wide form ------------------------------------------------------------
-    if (occurences == FALSE) {
+    if (!occurences) {
       # total species count
       dts_final = dts_final %>% summarise(count = sum(count)) %>%
         spread(spp_cd, count, fill = 0) %>% select(everything(), -matches("NONE")) %>%
         ungroup %>% arrange(transect_id)
     }
-    else if (occurences == TRUE) {
+    if (occurences) {
       # number of species occurences
       dts_final = dts_final %>% select(-count) %>% summarise(noccur = n()) %>%
         spread(spp_cd, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>%
