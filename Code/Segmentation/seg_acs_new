@@ -16,7 +16,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# Modified 07-21-16 after dplyr 0.5.0 update
+# Modified 07-22-16 after dplyr 0.5.0 update
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -49,7 +49,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
     rowwise %>% mutate(dist = distVincentySphere(c(long_i, lat_i), c(Long, Lat)) / 1852) %>%
     select(-c(long_i, lat_i, Sec)) %>% ungroup %>% group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
     # calculate cumulative distance traveled between waypoints
-    mutate(dist_cuml = cumsum(dist), dist_total = max(dist_cuml), Condition = sum(Condition * dist) / dist_total) %>%
+    mutate(dist_cuml = cumsum(dist), dist_total = max(dist_cuml)) %>%
     select(-dist) %>%
     # calculate number of segments for each transect
     mutate(nseg = ifelse(dist_total <= seg.length, 1,
@@ -108,16 +108,18 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   
   # combine segment start points and endpoints with other waypoints
   seg_all_new = seg_all %>% filter(is.na(empty_seg)) %>% select(-c(empty_seg, seg_dist_cuml, coords_end)) %>%
-    bind_rows(., seg_ends) %>% arrange(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num, dist_cuml) %>% select(-dist_cuml) %>%
+    bind_rows(., seg_ends) %>% arrange(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num, dist_cuml) %>%
     group_by(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num) %>%
     mutate(seg_dist = round(max(seg_dist, na.rm = TRUE), 3),
            id = paste(sprintf("%02d", SurveyNbr), sprintf("%02d", Transect), sprintf("%02d", Replicate),
                       Obs, sprintf("%02d", Piece), sprintf("%02d", seg_num), sep = "-"),
            transect_id = paste(SurveyNbr, Transect, Replicate, Obs, sep = "-")) %>%
-    group_by(transect_id, Piece) %>% mutate(Condition = round(max(Condition, na.rm = TRUE), 3)) %>%
-    group_by(SurveyNbr, Transect, Replicate) %>%
+    group_by(SurveyNbr, Transect, Replicate) %>% select(-Piece) %>%
     mutate(Year = min(Year, na.rm = TRUE), Month = min(Month, na.rm = TRUE), Day = min(Day, na.rm = TRUE)) %>%
-    ungroup %>% select(-Piece) %>% filter(seg_dist >= seg.min, seg_dist > 0)
+    group_by(transect_id) %>% mutate(Condition = na.locf(Condition)) %>%
+    group_by(id) %>% mutate(dist = dist_cuml - lag(dist_cuml, default = first(dist_cuml)),
+                            Condition = round(sum(Condition * dist) / sum(dist), 2)) %>% select(-c(dist, dist_cuml)) %>%
+    filter(seg_dist >= seg.min, seg_dist > 0) %>% ungroup
   
   # -------- calculate segment midpoints ------------------------------------------------------------------------------------------
   # create dataframe suitable to become spatial lines object
