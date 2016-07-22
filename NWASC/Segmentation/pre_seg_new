@@ -2,19 +2,14 @@
 # Creates objects 'obs.pre' and 'shp.pre' to be used in segmentation function
 
 # Kyle Dettloff
-# Modified 07-14-16 after dplyr 0.5.0 update
+# Modified 07-22-16 after dplyr 0.5.0 update
 
 suppressMessages(library(broom))
-suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
-suppressMessages(library(geosphere))
 suppressMessages(library(dplyr))
 suppressMessages(library(tibble))
-suppressMessages(library(tidyr))
 suppressMessages(library(lubridate))
 suppressMessages(library(zoo))
-
-options(dplyr.show_progress = FALSE)
 
 # read in transect and observation tables
 load("Q:/Kyle_Working_Folder/Segmentation/Data/database_extract_cts_obs.RData")
@@ -23,10 +18,18 @@ shp = readShapeLines("Q:/Kyle_Working_Folder/Segmentation/Data/transect_shp_file
 
 preSegment = function(observations, tracks, transects) {
 
+  if(nrow(transects) == 0) stop("empty transect table")
+  
   # -------- prepare transect shapefile for segmentation --------------------------------------------------------------------------
-  # narrow all observations and spatial line geometries to only cts transects
-  observations = observations %>% filter(transect_id %in% transects$transect_id)
+  # narrow all spatial line geometries to only cts transects
   tracks = tracks[tracks@data$transect_i %in% transects$transect_id, ]
+  if(nrow(tracks) == 0) stop("no spatial information present for given transects")
+  
+  # narrow all observations to only cts transects
+  observations = observations %>% filter(transect_id %in% transects$transect_id)
+  if(nrow(observations) == 0) stop("no observations present for given transects")
+  
+  # convert spatial object to tidy dataframe
   shp_tidy = tidy(tracks)
   shp_data = tracks@data %>% select(transect_i, dataset_id) %>% rownames_to_column("id") %>% mutate(id = as.integer(id))
   
@@ -66,10 +69,10 @@ preSegment = function(observations, tracks, transects) {
   # format times in cts table
   cts.time = transects %>%
     select(transect_id, start_dt, end_dt, start_tm, end_tm, time_from_midnight_start, time_from_midnight_stop) %>%
-    mutate(start_tm = as.POSIXct(ymd(start_dt) + hms(start_tm)),
-           end_tm = as.POSIXct(ymd(end_dt) + hms(end_tm)),
-           time_from_midnight_start = as.POSIXct(ymd(start_dt) + seconds(time_from_midnight_start)),
-           time_from_midnight_stop = as.POSIXct(ymd(end_dt) + seconds(time_from_midnight_stop))) %>%
+    mutate(start_tm = as.POSIXct(ymd(start_dt, quiet = TRUE) + hms(start_tm, quiet = TRUE)),
+           end_tm = as.POSIXct(ymd(end_dt, quiet = TRUE) + hms(end_tm, quiet = TRUE)),
+           time_from_midnight_start = as.POSIXct(ymd(start_dt, quiet = TRUE) + seconds(time_from_midnight_start)),
+           time_from_midnight_stop = as.POSIXct(ymd(end_dt, quiet = TRUE) + seconds(time_from_midnight_stop))) %>%
     mutate(start_tm = ifelse(is.na(start_tm) & !is.na(time_from_midnight_start), time_from_midnight_start, start_tm),
            end_tm = ifelse(is.na(end_tm) & !is.na(time_from_midnight_stop), time_from_midnight_stop, end_tm)) %>%
     select(-c(time_from_midnight_start, time_from_midnight_stop))
@@ -77,8 +80,8 @@ preSegment = function(observations, tracks, transects) {
   # format times in observation table
   obs.time = observations %>%
     select(transect_id, obs_dt, obs_start_tm, st_astext, spp_cd, obs_count_intrans_nb, time_from_midnight) %>%
-    mutate(obs_start_tm = as.POSIXct(ymd(obs_dt) + hms(obs_start_tm)),
-           time_from_midnight = as.POSIXct(ymd(obs_dt) + seconds(time_from_midnight))) %>%
+    mutate(obs_start_tm = as.POSIXct(ymd(obs_dt, quiet = TRUE) + hms(obs_start_tm, quiet = TRUE)),
+           time_from_midnight = as.POSIXct(ymd(obs_dt, quiet = TRUE) + seconds(time_from_midnight))) %>%
     mutate(obs_start_tm = ifelse(is.na(obs_start_tm) & !is.na(time_from_midnight), time_from_midnight, obs_start_tm)) %>%
     select(-time_from_midnight)
   
@@ -93,6 +96,8 @@ preSegment = function(observations, tracks, transects) {
     select(transect_id, spp_cd, count, st_astext) %>%
     filter(spp_cd != "NONE", count >= 0, !is.na(st_astext))
   
+  if(nrow(obs.dat.new) == 0) stop("no valid observations")
+  
   # check for transect IDs with missing observation coordinates
   obs_missing = observations %>% filter(is.na(st_astext)) %>% select(transect_id) %>% distinct
   
@@ -101,9 +106,13 @@ preSegment = function(observations, tracks, transects) {
     bind_cols(., select(obs.dat.new, -st_astext)) %>% rename(long = x, lat = y)
   
   # -------- create dataframe to become spatial lines object ----------------------------------------------------------------------
-  shp.pre <<- shp_tidy_data_new %>% select(-transect_id) %>% rename(transect_id = new_transect_id) %>%
+  shp.pre = shp_tidy_data_new %>% select(-transect_id) %>% rename(transect_id = new_transect_id) %>%
     # remove transect IDs with missing observation coordinates
     filter(!(transect_id %in% obs_missing$transect_id))
+  
+  if(nrow(shp.pre) == 0) stop("no valid transects")
+  
+  shp.pre <<- shp.pre
 
 }
 
