@@ -17,7 +17,17 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# Modified 07-21-16 after dplyr 0.5.0 update
+# Modified 07-22-16 after dplyr 0.5.0 update
+
+suppressMessages(library(maptools))
+suppressMessages(library(rgeos))
+suppressMessages(library(geosphere))
+suppressMessages(library(dplyr))
+suppressMessages(library(tibble))
+suppressMessages(library(tidyr))
+suppressMessages(library(zoo))
+
+options(dplyr.show_progress = FALSE)
 
 segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol,
                       centroids = FALSE, maxDist = NA, occurences = FALSE) {
@@ -39,9 +49,9 @@ segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol
                          ifelse(dist_total / seg.length - floor(dist_total / seg.length) >= seg.tol,
                                 floor(dist_total / seg.length) + 1, floor(dist_total / seg.length))),
            # calculate length of odd segment
-           dist_odd = ifelse(nseg == 1, 0, ifelse(dist_total - seg.length * floor(dist_total / seg.length) < seg.length * seg.tol,
-                                                  dist_total - seg.length * floor(dist_total / seg.length) + seg.length,
-                                                  dist_total - seg.length * floor(dist_total / seg.length))),
+           dist_extra = dist_total - seg.length * floor(dist_total / seg.length),
+           dist_odd = ifelse(nseg == 1, 0, ifelse(dist_extra < seg.length * seg.tol,
+                                                  dist_extra + seg.length, dist_extra)),
            # randomly determine which segment will be assigned odd length
            seg_odd = ifelse(dist_odd == 0, 0, ceiling(runif(1, 0, nseg))),
            # number segments with waypoints
@@ -50,7 +60,7 @@ segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol
                                    ifelse(dist_cuml > seg.length * (seg_odd - 1) + dist_odd,
                                           ceiling(1 + (dist_cuml - dist_odd) / seg.length), seg_odd))),
            # determine number of segments without waypoints
-           tot_empty = as.integer(nseg - n_distinct(seg_num)))
+           tot_empty = as.integer(nseg - n_distinct(seg_num))) %>% select(-dist_extra)
   
   # create rows for segments without waypoints  
   seg_empty = seg %>% ungroup %>% select(piece, dataset_id, transect_id, dist_total, nseg, dist_odd, seg_odd, tot_empty) %>%
@@ -102,6 +112,8 @@ segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol
     mutate(seg_dist = round(max(seg_dist, na.rm = TRUE), 3),
            id = paste(sprintf("%02d", transect_id), sprintf("%02d", piece), sprintf("%02d", seg_num), sep = "-")) %>%
     ungroup %>% select(-piece) %>% filter(seg_dist >= seg.min, seg_dist > 0)
+  
+  if(nrow(seg_all_new) == 0) stop("all segments shorter than seg.min")
   
   # -------- calculate segment midpoints ------------------------------------------------------------------------------------------
   # create dataframe suitable to become spatial lines object 
@@ -177,7 +189,8 @@ segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol
   # join segment midpoints and observations
   segmented = full_join(seg_mids, seg_obs, by = c("transect_id", "seg_num")) %>%
     mutate(spp_cd = replace(spp_cd, is.na(spp_cd), "NONE")) %>%
-    group_by(dataset_id, transect_id, seg_num, start_dt, seg_dist, transect_width_nb, mid_long, mid_lat, survey_type_cd, survey_method_cd, spp_cd)
+    group_by(dataset_id, transect_id, seg_num, start_dt, seg_dist, transect_width_nb,
+             mid_long, mid_lat, survey_type_cd, survey_method_cd, spp_cd)
   
   # -------- summarize species data by segment and convert to wide form -----------------------------------------------------------
     if (occurences == FALSE) {
