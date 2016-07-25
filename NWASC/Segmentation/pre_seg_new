@@ -2,7 +2,7 @@
 # Creates objects 'obs.pre' and 'shp.pre' to be used in segmentation function
 
 # Kyle Dettloff
-# Modified 07-22-16 after dplyr 0.5.0 update
+# Modified 07-25-16 after dplyr 0.5.0 update
 
 suppressMessages(library(broom))
 suppressMessages(library(rgeos))
@@ -30,36 +30,36 @@ preSegment = function(observations, tracks, transects) {
   if(nrow(observations) == 0) stop("no observations present for given transects")
   
   # convert spatial object to tidy dataframe
-  shp_tidy = tidy(tracks)
-  shp_data = tracks@data %>% select(transect_i, dataset_id) %>% rownames_to_column("id") %>% mutate(id = as.integer(id))
+  shp.tidy = tidy(tracks)
+  shp.data = tracks@data %>% select(transect_i, dataset_id) %>% rownames_to_column("id") %>% mutate(id = as.integer(id))
   
   # remove duplicate waypoints
-  shp_tidy = shp_tidy %>% select(-order) %>% distinct %>% group_by(id) %>% mutate(order = seq.int(n())) %>% ungroup
+  shp.tidy = shp.tidy %>% select(-order) %>% distinct %>% group_by(id) %>% mutate(order = seq.int(n())) %>% ungroup
   
   # merge continuous pieces in shapefile
-  id_groups = shp_tidy %>% select(-c(group, order)) %>% mutate(id = as.integer(id), piece = as.integer(piece)) %>%
+  id.groups = shp.tidy %>% select(-c(group, order)) %>% mutate(id = as.integer(id), piece = as.integer(piece)) %>%
     group_by(id) %>% filter(max(piece) > 1) %>% group_by(id, piece) %>% slice(c(1, n())) %>% group_by(id) %>%
     mutate(diff = ifelse(round(long, 5) == round(lead(long), 5) & round(lat, 5) == round(lead(lat), 5), 1, 0)) %>%
     group_by(id, piece) %>% slice(n()) %>% ungroup %>% filter(diff == 1) %>% select(-c(diff, long, lat)) %>%
     mutate(group = paste(id, piece + 1, sep = ".")) %>% select(group)
   
-  shp_tidy_data = shp_tidy %>% mutate(id = as.integer(id),
-                                      piece = as.integer(ifelse(group %in% id_groups$group, NA, piece))) %>%
+  shp.tidy.data = shp.tidy %>% mutate(id = as.integer(id),
+                                      piece = as.integer(ifelse(group %in% id.groups$group, NA, piece))) %>%
     select(-group) %>% group_by(id) %>% mutate(piece = as.integer(factor(na.locf(piece)))) %>% ungroup %>%
-    left_join(., shp_data, by = "id") %>% select(-id) %>%
+    left_join(., shp.data, by = "id") %>% select(-id) %>%
     mutate(group = paste(dataset_id, transect_i, sep = ".")) %>% arrange(dataset_id, transect_i, piece, order)
   
   # merge continuous segments defined as seqential transects
-  id_transects = shp_tidy_data %>% select(-c(order, group)) %>%
+  id.transects = shp.tidy.data %>% select(-c(order, group)) %>%
     group_by(dataset_id) %>% filter(n_distinct(transect_i) > 1) %>% group_by(dataset_id, transect_i) %>%
     slice(c(1, n())) %>% group_by(dataset_id) %>%
     mutate(diff = ifelse(round(long, 5) == round(lead(long), 5) & round(lat, 5) == round(lead(lat), 5), 1, 0)) %>%
     group_by(dataset_id, transect_i) %>% slice(n()) %>% ungroup %>% filter(diff == 1) %>% select(-c(diff, long, lat)) %>%
     mutate(group = paste(dataset_id, transect_i + 1, sep = ".")) %>% select(group)
   
-  shp_tidy_data_new = shp_tidy_data %>% mutate(new_transect_id = ifelse(group %in% id_transects$group, NA, transect_i),
-                                               piece = ifelse(group %in% id_transects$group, NA, piece),
-                                               order = ifelse(group %in% id_transects$group, NA, order)) %>%
+  shp.tidy.data.new = shp.tidy.data %>% mutate(new_transect_id = ifelse(group %in% id.transects$group, NA, transect_i),
+                                               piece = ifelse(group %in% id.transects$group, NA, piece),
+                                               order = ifelse(group %in% id.transects$group, NA, order)) %>%
     select(-group) %>% group_by(dataset_id) %>% mutate(new_transect_id = na.locf(new_transect_id)) %>%
     group_by(new_transect_id) %>% mutate(piece = as.integer(factor(na.locf(piece))),
                                          order = as.integer(factor(na.locf(order)))) %>%
@@ -86,11 +86,11 @@ preSegment = function(observations, tracks, transects) {
     select(-time_from_midnight)
   
   # assign updated transect IDs to observations and narrow observations to those on effort using time
-  new_obs_transect_id = shp_tidy_data_new %>% select(transect_id, new_transect_id) %>% distinct
+  new.obs.transect.id = shp.tidy.data.new %>% select(transect_id, new_transect_id) %>% distinct
   obs.dat.new = left_join(obs.time, cts.time, by = "transect_id") %>%
     mutate(off_eff = as.integer(ifelse(obs_start_tm < start_tm | obs_start_tm > end_tm, 1, 0))) %>%
     filter(off_eff == 0 | is.na(off_eff)) %>% select(-off_eff) %>%
-    left_join(., new_obs_transect_id, by = "transect_id") %>% rename(count = obs_count_intrans_nb) %>%
+    left_join(., new.obs.transect.id, by = "transect_id") %>% rename(count = obs_count_intrans_nb) %>%
     # assign count of one when species code present but count field missing
     mutate(transect_id = new_transect_id, count = ifelse(is.na(count) & !is.na(spp_cd), 1, count)) %>%
     select(transect_id, spp_cd, count, st_astext) %>%
@@ -99,16 +99,16 @@ preSegment = function(observations, tracks, transects) {
   if(nrow(obs.dat.new) == 0) stop("no valid observations")
   
   # check for transect IDs with missing observation coordinates
-  obs_missing = observations %>% filter(is.na(st_astext)) %>% select(transect_id) %>% distinct
+  obs.missing = observations %>% filter(is.na(st_astext)) %>% select(transect_id) %>% distinct
   
   # create dataframe to become spatial points object
   obs.pre <<- do.call(rbind, lapply(obs.dat.new$st_astext, readWKT)) %>% as.data.frame %>%
     bind_cols(., select(obs.dat.new, -st_astext)) %>% rename(long = x, lat = y)
   
   # -------- create dataframe to become spatial lines object ----------------------------------------------------------------------
-  shp.pre = shp_tidy_data_new %>% select(-transect_id) %>% rename(transect_id = new_transect_id) %>%
+  shp.pre = shp.tidy.data.new %>% select(-transect_id) %>% rename(transect_id = new_transect_id) %>%
     # remove transect IDs with missing observation coordinates
-    filter(!(transect_id %in% obs_missing$transect_id))
+    filter(!(transect_id %in% obs.missing$transect_id))
   
   if(nrow(shp.pre) == 0) stop("no valid transects")
   
