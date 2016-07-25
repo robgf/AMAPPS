@@ -9,8 +9,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# 06-22-16
-# Modified 07-22-16
+# Modified 07-25-16
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -72,7 +71,7 @@ segmentDTS = function(observations, transects, v.spd = 10, occurences = FALSE) {
   if(nrow(transects) == 0) stop("no valid transects")
     
   ### get midpoints of spatial points
-  midpoints_point = transects %>% filter(grepl("POINT", st_astext), !is.na(heading_tx)) %>%
+  midpoints.point = transects %>% filter(grepl("POINT", st_astext), !is.na(heading_tx)) %>%
     bind_cols(., as.data.frame(do.call(rbind, lapply(.$st_astext, readWKT)))) %>%
     select(-st_astext) %>% rename(long = x, lat = y) %>%
     mutate(half_dist_m = transect_time_min_nb * traversal_speed_nb * 1852 / 120) %>%
@@ -82,18 +81,18 @@ segmentDTS = function(observations, transects, v.spd = 10, occurences = FALSE) {
            transect_width_nb, seg_dist, mid_long, mid_lat)
   
   ### get midpoints of spatial lines
-  dts_line = transects %>% filter(grepl("LINE", st_astext))
-  lineframe = lapply(dts_line$st_astext, readWKT, p4s = CRS("+proj=longlat"))
+  dts.line = transects %>% filter(grepl("LINE", st_astext))
+  lineframe = lapply(dts.line$st_astext, readWKT, p4s = CRS("+proj=longlat"))
   # apply Hotine Oblique Mercator projection
   lineframe = lapply(lineframe, spTransform, CRS("+proj=omerc +lonc=-75 +lat_0=35 +alpha=40 +k_0=0.9996 +ellps=GRS80 +datum=NAD83"))
   # calculate geographic centroids of projected segments and convert back to lat/long
-  midpoints_line = do.call(rbind, lapply(lineframe, gCentroid, byid = TRUE)) %>% spTransform(CRS("+proj=longlat")) %>%
+  midpoints.line = do.call(rbind, lapply(lineframe, gCentroid, byid = TRUE)) %>% spTransform(CRS("+proj=longlat")) %>%
     as.data.frame %>% rename(mid_long = x, mid_lat = y) %>%
-    bind_cols(select(dts_line, source_dataset_id, segmented_transect_id, transect_id, start_dt,
+    bind_cols(select(dts.line, source_dataset_id, segmented_transect_id, transect_id, start_dt,
                      survey_type_cd, survey_method_cd, transect_width_nb, seg_dist), .)
   
   # combine midpoints of points and lines
-  midpoints = bind_rows(midpoints_point, midpoints_line)
+  midpoints = bind_rows(midpoints.point, midpoints.line)
   
   # -------- pair observations with midpoints ---------------------------------------------------------------------------
   # keep only observations with matching dts transect IDs
@@ -101,7 +100,7 @@ segmentDTS = function(observations, transects, v.spd = 10, occurences = FALSE) {
   if(nrow(observations) == 0) stop("no observations present for given transects")
   
   # join midpoints and observations
-  dts_final = full_join(midpoints, observations, by = "transect_id") %>%
+  dts.final = full_join(midpoints, observations, by = "transect_id") %>%
     mutate(spp_cd = replace(spp_cd, is.na(spp_cd), "NONE"), transect_id = factor(transect_id)) %>%
     group_by(source_dataset_id, segmented_transect_id, transect_id, start_dt, seg_dist,
              transect_width_nb, mid_long, mid_lat, survey_type_cd, survey_method_cd, spp_cd)
@@ -109,13 +108,13 @@ segmentDTS = function(observations, transects, v.spd = 10, occurences = FALSE) {
   # -------- summarize species data and convert to wide form ------------------------------------------------------------
     if (!occurences) {
       # total species count
-      dts_final = dts_final %>% summarise(count = sum(count)) %>%
+      dts.final = dts.final %>% summarise(count = sum(count)) %>%
         spread(spp_cd, count, fill = 0) %>% select(everything(), -matches("NONE")) %>%
         ungroup %>% arrange(transect_id)
     }
-    if (occurences) {
+    else if (occurences) {
       # number of species occurences
-      dts_final = dts_final %>% select(-count) %>% summarise(noccur = n()) %>%
+      dts.final = dts.final %>% select(-count) %>% summarise(noccur = n()) %>%
         spread(spp_cd, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>%
         ungroup %>% arrange(transect_id)
     }
