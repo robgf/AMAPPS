@@ -16,7 +16,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# Modified 07-22-16 after dplyr 0.5.0 update
+# Modified 07-25-16 after dplyr 0.5.0 update
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -61,12 +61,12 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
            tot_empty = as.integer(nseg - n_distinct(seg_num)))
   
   # create rows for segments without waypoints  
-  seg_empty = seg %>% ungroup %>% select(SurveyNbr, Transect, Replicate, Obs, Piece, dist_total, nseg, tot_empty) %>%
+  seg.empty = seg %>% ungroup %>% select(SurveyNbr, Transect, Replicate, Obs, Piece, dist_total, nseg, tot_empty) %>%
     distinct %>% filter(tot_empty > 0) %>% slice(rep(row_number(), tot_empty)) %>% select(-tot_empty) %>%
     mutate(empty_seg = 1)
   
   # combine segments with and without waypoints
-  seg_all = seg %>% select(-tot_empty) %>% bind_rows(., seg_empty) %>% group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
+  seg.all = seg %>% select(-tot_empty) %>% bind_rows(., seg.empty) %>% group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
     # number segments without waypoints
     mutate(seg_num = replace(seg_num, is.na(seg_num), setdiff(1:first(nseg), seg_num)),
            # calculate segment lengths
@@ -99,15 +99,15 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
     select(-c(heading, dist_shy)) %>% ungroup
   
   # create rows for segment endpoints
-  end_pts = seg_all %>% select(-empty_seg) %>% filter(!is.na(coords_end)) %>%
+  end.pts = seg.all %>% select(-empty_seg) %>% filter(!is.na(coords_end)) %>%
     mutate(Long = unlist(lapply(coords_end, `[[`, 1)), Lat = unlist(lapply(coords_end, `[[`, 2)), dist_cuml = seg_dist_cuml) %>%
     select(-c(coords_end, seg_dist_cuml))
   # create rows for segment start points and combine with segment endpoints
-  seg_ends = end_pts %>% select(-seg_dist) %>% mutate(seg_num = seg_num + 1) %>% bind_rows(end_pts, .)
+  seg.ends = end.pts %>% select(-seg_dist) %>% mutate(seg_num = seg_num + 1) %>% bind_rows(end.pts, .)
   
   # combine segment start points and endpoints with other waypoints
-  seg_all_new = seg_all %>% filter(is.na(empty_seg)) %>% select(-c(empty_seg, seg_dist_cuml, coords_end)) %>%
-    bind_rows(., seg_ends) %>% arrange(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num, dist_cuml) %>%
+  seg.all.new = seg.all %>% filter(is.na(empty_seg)) %>% select(-c(empty_seg, seg_dist_cuml, coords_end)) %>%
+    bind_rows(., seg.ends) %>% arrange(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num, dist_cuml) %>%
     group_by(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num) %>%
     mutate(seg_dist = round(max(seg_dist, na.rm = TRUE), 3),
            id = paste(sprintf("%02d", SurveyNbr), sprintf("%02d", Transect), sprintf("%02d", Replicate),
@@ -126,7 +126,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
     df %>% select(Long, Lat) %>% as.data.frame %>% Line %>% list
   }
   
-  linelist = seg_all_new %>% group_by(transect_id, id) %>% do(coords = listLines(.))
+  linelist = seg.all.new %>% group_by(transect_id, id) %>% do(coords = listLines(.))
   
   # define Hotine Oblique Mercator projection
   projHOM = "+proj=omerc +lonc=-75 +lat_0=35 +alpha=40 +k_0=0.9996 +ellps=GRS80 +datum=NAD83"
@@ -151,7 +151,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   }
   
   # merge segment midpoints with transect information
-  seg_mids = seg_all_new %>% select(-c(Lat, Long)) %>% distinct %>%
+  seg.mids = seg.all.new %>% select(-c(Lat, Long)) %>% distinct %>%
     group_by(SurveyNbr, Transect, Replicate, Obs) %>% mutate(seg_num = seq.int(n())) %>% ungroup %>%
     left_join(., midpoints, by = "id") %>% select(-c(id, transect_id, Day))
   
@@ -188,7 +188,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   }
   
   # prepare observation table
-  obs_transect_id = lineframe@data$transect_id
+  obs.transect.id = lineframe@data$transect_id
   obs = observations %>%
     select(SurveyNbr, Transect, Replicate, Obs, Year, Month, Species, FlockSize, Long, Lat) %>%
     # narrow observations to birds
@@ -197,13 +197,13 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
                             "RIDO", "RIWH", "WIMA", "SEAL", "WHAL", "UNMM", "UNSD", "SHAR",
                             "UNRA", "UIST", "BALN"))) %>%
     mutate(transect_id = paste(SurveyNbr, Transect, Replicate, Obs, sep = "-")) %>%
-    filter(transect_id %in% obs_transect_id)
+    filter(transect_id %in% obs.transect.id)
   # for each transect, find nearest segment to each point
-  seg_obs = obs %>% group_by(transect_id) %>% do(obs2Lines(., lineframe)) %>% ungroup %>%
+  seg.obs = obs %>% group_by(transect_id) %>% do(obs2Lines(., lineframe)) %>% ungroup %>%
     select(-transect_id)
   
   # join segment midpoints and observations
-  segmented = full_join(seg_mids, seg_obs, by = c("SurveyNbr", "Transect", "Replicate", "Obs", "Year", "Month", "seg_num")) %>%
+  segmented = full_join(seg.mids, seg.obs, by = c("SurveyNbr", "Transect", "Replicate", "Obs", "Year", "Month", "seg_num")) %>%
     mutate(FlockSize = replace(FlockSize, is.na(FlockSize), 0), Species = replace(Species, is.na(Species), "NONE"),
            SurveyNbr = factor(SurveyNbr), Transect = factor(Transect), Replicate = factor(Replicate)) %>%
     group_by(SurveyNbr, Transect, Replicate, Obs, Year, Month, Condition, seg_num, seg_dist, mid_long, mid_lat, Species)
@@ -214,11 +214,12 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
       segmented = segmented %>% summarise(FlockSize = sum(FlockSize)) %>%
         spread(Species, FlockSize, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
     }
-    if (occurences) {
+    else if (occurences) {
       # number of species occurences
       segmented = segmented %>% select(-FlockSize) %>% summarise(noccur = n()) %>%
         spread(Species, noccur, fill = 0) %>% select(everything(), -matches("NONE")) %>% ungroup
     }
+
 }
 
 ### example run ###
