@@ -24,12 +24,13 @@ forNWASC_import_effort <- function(id, data_track, data_transect) {
     
     dat_transect$dataset_id = id
     dat_transect$transect_id = c((max(dat_design$transect_id)+1):(max(dat_design$transect_id)+dim(design)[1]))
+    dat_track$source_transect_id = data_transect[,which(colnames(data_transect) %in% c("transect","transect_id"))]
     dat_transect$temp_start_lon = data_transect[,which(colnames(data_transect) %in% c("start_lon", "begin_lon","start_longitude", "begin_longitude","start_long", "begin_long"))]
     dat_transect$temp_start_lat = data_transect[,which(colnames(data_transect) %in% c("start_lat", "begin_lat","start_latitude", "begin_latitude"))]
     dat_transect$temp_stop_lon = data_transect[,which(colnames(data_transect) %in% c("end_lon", "stop_lon","end_longitude", "stop_longitude","end_long", "stop_long"))]
     dat_transect$temp_stop_lat = data_transect[,which(colnames(data_transect) %in% c("end_lat", "stop_lat","end_latitude", "stop_latitude"))]
-    dat_transect$start_dt = format(as.Date(data_transect$date),'%m/%d/%Y')
-    dat_transect$end_dt = format(as.Date(data_transect$date),'%m/%d/%Y')
+    dat_transect$start_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","start_dt","start_date"))]),'%m/%d/%Y')
+    dat_transect$end_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","end_dt","end_date"))]),'%m/%d/%Y')
   }
   # ------------------------ #
   
@@ -37,38 +38,53 @@ forNWASC_import_effort <- function(id, data_track, data_transect) {
   # ------------------------ #
   # track
   # ------------------------ #
-  unique_transect_piece_days = sort(unique(paste(data_track$transect, data$piece, gsub("-","_", data_track$date),sep="_")))
-  dat_track = as.data.frame(matrix(ncol=dim(transects.in.db)[2], nrow=length(unique_transect_piece_days), data=NA))
+  # the track data should not be in start/stop lat/lon format. There should be a point type with each location
+  # only transect information for be in the start/stop format
+  
+  dat_track = as.data.frame(matrix(ncol=dim(tracks.in.db)[2], nrow=dim(data_track)[1], data=NA))
   colnames(dat_track) = colnames(tracks.in.db)
-  
-  # group by transect, piece, and day
-  # find min/max times for each day/transect
-  
-  # if its is estimated data go straight to 
-  # reformat, create, and/or rename
   
   # move those variables over that have the same name
   same_nm = colnames(data_track[colnames(data_track) %in% colnames(dat_track)])
-  dat_track[,colnames(dat_track) %in% same_nm] = data_track[,colnames(data_track) %in% same_nm]
+  dat_track[,same_nm] = data_track[,same_nm]
   
   dat_track$dataset_id = id
-  dat_track$temp_start_lon = data_track[,which(colnames(data_track) %in% c("start_lon", "begin_lon","start_longitude", "begin_longitude","start_long", "begin_long"))]
-  dat_track$temp_start_lat = data_track[,which(colnames(data_track) %in% c("start_lat", "begin_lat","start_latitude", "begin_latitude"))]
-  dat_track$temp_stop_lon = data_track[,which(colnames(data_track) %in% c("end_lon", "stop_lon","end_longitude", "stop_longitude","end_long", "stop_long"))]
-  dat_track$temp_stop_lat = data_track[,which(colnames(data_track) %in% c("end_lat", "stop_lat","end_latitude", "stop_latitude"))]
-  dat_track$start_dt = format(as.Date(data_track$date),'%m/%d/%Y')
-  dat_track$end_dt = format(as.Date(data_track$date),'%m/%d/%Y')
+  dat_track$track_lon = data_track[,which(colnames(data_track) %in% c("lon", "longitude", "long"))]
+  dat_track$track_lat = data_track[,which(colnames(data_track) %in% c("lat", "latitude"))]    
+  dat_track$point_type = data_track[,which(colnames(data_track) %in% c("type"))]
+  dat_track$track_dt = format(as.Date(data_track[,which(colnames(data_track) %in% c("date","start_dt","start_date"))]),'%m/%d/%Y')
+  dat_track$source_transect_id = data_track[,which(colnames(data_track) %in% c("transect","transect_id"))]
   
   # if the transect information needs to be pulled from the track files
   if(missing(data_transect) {
-    unique_transect_days = sort(unique(paste(data$transect,data$date,sep="_")))
-    dat_transect = as.data.frame(matrix(ncol=dim(transects.in.db)[2], nrow=length(unique_transect_days), data=NA))
-    colnames(dat_transect) = colnames(transects.in.db)
-  
+   
     # group by transect and day
-    # find min/max times for each day/transect
+    # pieces in transect
+    # only works if there is a Beg and End
+    library(geosphere)
+    # pieces
+    transect_pieces = dat_track %>% select(track_lat, track_lon, track_dt, source_transect_id, piece, point_type) %>% 
+      filter(point_type %in% c("BEGTRAN","BEGCNT","ENDTRAN","ENDCNT")) %>%
+      mutate(source_transect_id = factor(source_transect_id)) %>% 
+      group_by(track_dt, source_transect_id, piece) %>%
+      arrange(point_type) %>%
+      summarize(start_lon = first(track_lon), start_lat = first(track_lat), end_lon = last(track_lon), end_lat = last(track_lat)) %>%
+      rowwise %>% 
+      mutate(distance =  distm(c(start_lat, start_lon), c(end_lat, end_lon), fun = distHaversine)) %>% ungroup 
+    #summarize pieces to transects
+    transects = transect_pieces %>% 
+      mutate(source_transect_id = factor(source_transect_id)) %>% 
+      group_by(source_transect_id, track_dt) %>% 
+      summarise(transect_distance_nb = sum(distance)) %>% mutate(transect_distance_nb = transect_distance_nb[1]) %>%
+      rename(start_dt = track_dt) %>% ungroup %>% as.data.frame
     
-  }
+    # fill in the db transects table
+    dat_transect = as.data.frame(matrix(ncol=dim(transects.in.db)[2], nrow=dim(transects)[1], data=NA))
+    colnames(dat_transect) = colnames(transects.in.db)
+    same_nm = colnames(transects[colnames(transects) %in% colnames(dat_transect)])
+    dat_transect[,same_nm] = transects[,same_nm]
+    
+ }
   # ------------------------ #
   
     
