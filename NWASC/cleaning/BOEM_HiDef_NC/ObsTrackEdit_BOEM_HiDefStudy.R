@@ -20,7 +20,7 @@ yearLabel = "BOEM_HiDefStudy"
 # SET INPUT/OUTPUT DIRECTORY PATHS
 dir <- "//IFW9mbm-fs1/SeaDuck/seabird_database/datasets_received"
 setwd(dir)
-dbpath <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/DataBase"
+dbpath <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/DataProcessing"
 dir.in <- paste(dir, surveyFolder, sep = "/") 
 dir.out <- paste(gsub("datasets_received", "data_import/in_progress", dir), surveyFolder,  sep = "/") 
 speciesPath <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/DataProcessing/"
@@ -42,13 +42,10 @@ fieldData = sqlFetch(database, "field_data_tbl")
 fieldData = fieldData[order(fieldData$ID),]
 enviroData = sqlFetch(database, "environ_data_tbl", stringsAsFactors = FALSE)
 GPSdata = sqlFetch(database, "GPS_tbl")
+
+## Ignore Camera data for now as it is priority 3 and might require additional formating
 # CameraGPSdata = sqlFetch(database, "Camera GPS data")
 # CameraData = sqlFetch(database, "Camera target data")
-# ------------------------------------------------------------------------- #
-
-# list of codes we are using
-codes = odbcConnectExcel2007(file.path(dbpath, "NWASC_codes.xlsx"), readOnly = TRUE) 
-name <- sqlFetch(codes,"codes")
 
 # list of codes used by BOEM
 Species_Information = sqlQuery(database, 
@@ -59,7 +56,10 @@ Species_Information = sqlQuery(database,
 
 starts = rbind(sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
                                         FROM field_data_tbl 
-                                        WHERE (((field_data_tbl.comments) Like '%start%'));")), 
+                                        WHERE (((field_data_tbl.comments) Like '%start%'));")),
+               sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
+                                        FROM field_data_tbl 
+                                        WHERE (((field_data_tbl.comments) Like '%began%'));")),
                sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
                                         FROM field_data_tbl 
                                         WHERE (((field_data_tbl.comments) Like '%begin%'));")))
@@ -71,45 +71,102 @@ ends = rbind(sqlQuery(database, paste("SELECT field_data_tbl.comments, field_dat
              sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
                                       FROM field_data_tbl 
                                       WHERE (((field_data_tbl.comments) Like '%stop%'));")))
-# exclude ID 1889 
-ends = ends[ends$ID != 1889,]
-
+transit = rbind(sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
+                                        FROM field_data_tbl 
+                                        WHERE (((field_data_tbl.comments) Like '%transit%'));")),
+                sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
+                                        FROM field_data_tbl 
+                                        WHERE (((field_data_tbl.comments) Like '%off effort%'));")))
+transect = rbind(sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
+                                      FROM field_data_tbl 
+                                      WHERE (((field_data_tbl.comments) Like '%transect%'));")))
 # close database
 odbcCloseAll()
 
+# exclude ID 1889 
+ends = ends[ends$ID != 1889,]
+
+# create BEG and END Counts
+#fieldData$type = NA
+#fieldData$type[fieldData$ID %in% ends$ID] = "ENDCNT"
+#fieldData$type[fieldData$ID %in% starts$ID] = "BEGCNT"
+#rm(ends,starts)
+
+# create offline (1) / online (0)
+fieldData$offline = ""
+fieldData$offline[fieldData$ID %in% transit$ID] = 1
+fieldData$offline[fieldData$ID %in% transect$ID] = 0
+rm(transect,transit)
+# ------------------------------------------------------------------------- #
 
 # ------------------------------------------------------------------------- #
 # STEP 2: RESTRUCTURE DATA
 # ------------------------------------------------------------------------- #
 
+# --------------------------- # 
 ## GPS
-  names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/@lat"] = "lat"
-  names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/@lon"] = "long"
-  names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/time"] = "time"
-  GPSdata$platform = tolower(GPSdata$platform)
+names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/@lat"] = "lat"
+names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/@lon"] = "long"
+names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/time"] = "time"
+GPSdata$platform = tolower(GPSdata$platform)
+# --------------------------- # 
 
+# --------------------------- # 
 ## Species Information
+# edit the table to consolidate
+Species_Information$scientific_name = as.character(Species_Information$scientific_name)
+Species_Information$scientific_name[is.na(Species_Information$scientific_name) & !is.na(Species_Information$species)] = 
+  as.character(Species_Information$species[is.na(Species_Information$scientific_name) & !is.na(Species_Information$species)])
+Species_Information$common_name = as.character(Species_Information$common_name)
+Species_Information$commonc_name[is.na(Species_Information$common_name) & !is.na(Species_Information$common_name.1)] = 
+  as.character(Species_Information$common_name.1[is.na(Species_Information$common_name) & !is.na(Species_Information$common_name.1)])
+drops <- c("french_name","E","I","H","A","N","M","species","ID", "common_name.1")
+Species_Information = Species_Information[,!(names(Species_Information) %in% drops)]
 
-  # edit the table to consolidate
-  Species_Information$scientific_name = as.character(Species_Information$scientific_name)
-  Species_Information$scientific_name[is.na(Species_Information$scientific_name) & !is.na(Species_Information$species)] = 
-    as.character(Species_Information$species[is.na(Species_Information$scientific_name) & !is.na(Species_Information$species)])
-  Species_Information$common_name = as.character(Species_Information$common_name)
-  Species_Information$commonc_name[is.na(Species_Information$common_name) & !is.na(Species_Information$common_name.1)] = 
-    as.character(Species_Information$common_name.1[is.na(Species_Information$common_name) & !is.na(Species_Information$common_name.1)])
-  drops <- c("french_name","E","I","H","A","N","M","species","ID", "common_name.1")
-  Species_Information = Species_Information[,!(names(Species_Information) %in% drops)]
-  
-  common_name = tolower(Species_Information$common_name)
-  spplist = as.character(Species_Information$species_code)
-  tmp = !spplist %in% name$spp_cd
-  cat("Found", sum(tmp), "out of",  length(spplist), "entries with non-matching AOU code(s).\n\n")
-  
-  # correct species codes to meet the codes that we use
-  source(file.path(paste(path, "BOEM_HiDefStudy_SppFilesFix.R", sep ="/")))
-  Species_Information$species_code = spplist 
-  Species_Information = Species_Information[order(Species_Information$species_code),]
+common_name = tolower(Species_Information$common_name)
+spplist = as.character(Species_Information$species_code)
 
+# list of codes we are using
+codes = odbcConnectExcel2007(file.path(dbpath, "NWASC_codes.xlsx"), readOnly = TRUE) 
+name <- sqlFetch(codes,"codes")
+odbcCloseAll()
+
+if (!file.exists(errfix.file)) {
+  warning("Error fix R file is missing and will not be sourced.")
+} else source(errfix.file, local = TRUE)
+
+tmp = !spplist %in% name$spp_cd
+cat("Found", sum(tmp), "out of",  length(spplist), "entries with non-matching AOU code(s).\n\n")
+# spplist[!spplist %in% name$spp_cd]
+
+Species_Information$spp = spplist
+fieldData$species = tolower(fieldData$species)
+
+#df = data.frame(cbind(species = common_name, spp_type = spplist), stringsAsFactors = FALSE)
+#test = left_join(fieldData, df, by = "species") %>% rowwise %>% mutate(type = replace(type, is.na(type), spp_type))
+
+# test = data.frame(cbind(species = common_name, spp_type = spplist), stringsAsFactors = FALSE) %>%
+#        left_join(fieldData, ., by = "species") %>% rowwise %>% mutate(type = replace(type, is.na(type), spp_type)) %>% data.frame
+
+fieldData$type = ""
+for (a in 1:length(fieldData$species)) {
+  fieldData$type[a] = spplist[fieldData$species[a] == common_name]
+}
+fieldData$type[fieldData$ID %in% ends$ID] = "ENDCNT"
+fieldData$type[fieldData$ID %in% starts$ID] = "BEGCNT"
+rm(ends,starts)
+
+# errors (some were in the middle of transects, rather than at the end)
+fieldData$type[fieldData$ID == c("590","678","702","710","717","725","731","735",
+                                 "733","855","901","999","1060","1076","1191",
+                                 "1213", "1297")] = "ENDCNT"
+fieldData$type[fieldData$ID == c("679","703","711","718","726","732","736","856",
+                                 "902","910","1000","1061","1298","1360")] = "BEGCNT"
+fieldData$type[fieldData$ID == c("1788") = "COMMENT"
+
+# --------------------------- # 
+
+# --------------------------- # 
 ## Observation
   if (is.null(fieldData$dataChange)) {
     fieldData$dataChange <- ""
