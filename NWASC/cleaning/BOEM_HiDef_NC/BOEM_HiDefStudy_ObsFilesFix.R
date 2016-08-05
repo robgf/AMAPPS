@@ -67,10 +67,10 @@ spplist = ifelse(common_name == "sphyrna species", "HASH", spplist) #Hammerhead 
 spplist = ifelse(common_name == "unidentified elasmobranch", "UNEL", spplist)  
 spplist = ifelse(common_name == "stenula species", "ZOOP", spplist)  #zooplankton            
 spplist = ifelse(common_name == "thalasseus species", "UNTE", spplist) #unidentified tern    
-spplist = ifelse(common_name == "Fin Whale", "FIWH", spplist)
-spplist = ifelse(common_name == "North Atlantic Right Whale", "RIWH", spplist)
-spplist = ifelse(common_name == "Pygmy Killer Whale", "PKWH", spplist)       
-spplist = ifelse(common_name == "Sperm Whale", "SPWH", spplist)
+spplist = ifelse(common_name == "fin whale", "FIWH", spplist)
+spplist = ifelse(common_name == "north atlantic right whale", "RIWH", spplist)
+spplist = ifelse(common_name == "pygmy killer whale", "PKWH", spplist)       
+spplist = ifelse(common_name == "sperm whale", "SPWH", spplist)
 
 spplist = ifelse(spplist == "BlSt", "BNST", spplist)
 spplist = ifelse(spplist == "YeNi", "YCNH", spplist)
