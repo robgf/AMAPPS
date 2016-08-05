@@ -1,4 +1,3 @@
-
 # --------------------------------------------- #
 #                     STEP 1                    #
 #          FIX INCORRECT TYPE CODINGS           #
@@ -42,18 +41,18 @@ spplist = ifelse(common_name == "unidentified ray species", "UNRA", spplist)
 spplist = ifelse(common_name == "unidentified bait fish", "BAIT", spplist) #same as bait ball
 spplist = ifelse(common_name == "sunfish", "MOLA", spplist)
 spplist = ifelse(common_name == "manta ray", "MARA", spplist)
-spplist = ifelse(common_name == "green turtle", "GRST", spplist)
-spplist = ifelse(common_name == "unidentified turtle species", "UIST", spplist)
-spplist = ifelse(common_name == "loggerhead turtle", "LOST", spplist)
+spplist = ifelse(common_name == "green turtle", "GRTU", spplist)
+spplist = ifelse(common_name == "unidentified turtle species", "TURT", spplist)
+spplist = ifelse(common_name == "loggerhead turtle", "LOTU", spplist)
 spplist = ifelse(common_name == "kemps' ridley turtle", "KRST", spplist)
 spplist = ifelse(common_name == "hawksbill turtle", "HATU", spplist)
-spplist = ifelse(common_name == "leatherback turtle", "LEST", spplist)
+spplist = ifelse(common_name == "leatherback turtle", "LETU", spplist)
 
 spplist = ifelse(common_name == "unidentified bird species", "UNBI", spplist)      
 spplist = ifelse(common_name %in% c("laridae species","larinae species") , "UNGU", spplist) #unidentified Gull??? #typo unidentified Gull???               
 spplist = ifelse(common_name == "calidris species", "UNCA", spplist) #new unidentified Calidris              
 spplist = ifelse(common_name == "dowitcher species", "DOWI", spplist)              
-spplist = ifelse(common_name == "chelonidae species", "UIST", spplist) #unidentified sea trutle?            
+spplist = ifelse(common_name == "chelonidae species", "UNCH", spplist) #new, unidentified cheloniidae
 spplist = ifelse(common_name == "delphinidae species", "UNDO", spplist) #unidentified dolphin           
 spplist = ifelse(common_name == "sterna species", "UNTE", spplist) #unidentified tern                
 spplist = ifelse(common_name == "stercorarius species", "UNSK", spplist) #unidentified skua      
@@ -63,11 +62,15 @@ spplist = ifelse(common_name == "hydrobatidae species", "UNSP", spplist) #uniden
 spplist = ifelse(common_name == "unidentified warbler species", "UNWA", spplist)  
 spplist = ifelse(common_name == "unidentified raptor species", "UNRP", spplist)  
 spplist = ifelse(common_name == "unidentified passerine species", "UNPA", spplist)
-spplist = ifelse(common_name == "stenella species", "UNSN", spplist)           
+spplist = ifelse(common_name == "stenella species", "SPDO", spplist)           
 spplist = ifelse(common_name == "sphyrna species", "HASH", spplist) #Hammerhead shark spp.        
 spplist = ifelse(common_name == "unidentified elasmobranch", "UNEL", spplist)  
 spplist = ifelse(common_name == "stenula species", "ZOOP", spplist)  #zooplankton            
 spplist = ifelse(common_name == "thalasseus species", "UNTE", spplist) #unidentified tern    
+spplist = ifelse(common_name == "Fin Whale", "FIWH", spplist)
+spplist = ifelse(common_name == "North Atlantic Right Whale", "RIWH", spplist)
+spplist = ifelse(common_name == "Pygmy Killer Whale", "PKWH", spplist)       
+spplist = ifelse(common_name == "Sperm Whale", "SPWH", spplist)
 
 spplist = ifelse(spplist == "BlSt", "BNST", spplist)
 spplist = ifelse(spplist == "YeNi", "YCNH", spplist)
@@ -112,6 +115,8 @@ spplist = ifelse(spplist == "RsTe", "ROST", spplist)
 spplist = ifelse(spplist == "RoTe", "ROYT", spplist)
 spplist = ifelse(spplist == "LoJa", "LTJA", spplist)
 spplist = ifelse(spplist == "SoPo", "SPSK", spplist)
+spplist = ifelse(spplist == "WiSt", "WISP", spplist)
+spplist = ifelse(spplist == "DoCo", "DCCO", spplist)
 
 # change correct code to uppercase
 spplist = toupper(spplist)
@@ -132,7 +137,6 @@ spplist = toupper(spplist)
 # unidentified elasmobranch, "UNEL"
 # black skimmer, "BLSK"
 # boat-tailed grackle, "BTGR"
-# stenella species", "UNSN", spplist)     
 # unidentified raptor species", "UNRP"
 # true's beaked whale", "TBWH"
 # cownose ray", "CNRA"
@@ -141,14 +145,3 @@ spplist = toupper(spplist)
 # calidris species", "UNCA"
 
 # might need to split up Thalasseus and Sterna (UNTE)
-
-
-
-
-
-
-
-
-
-
-
