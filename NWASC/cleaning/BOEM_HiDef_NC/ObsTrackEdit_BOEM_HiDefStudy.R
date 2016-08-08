@@ -12,6 +12,10 @@
 #
 # ------------------------------------------------------------------------- #
 
+require(dplyr) # 
+require(RODBC) # odbcConnect
+library(lubridate) #fix timestamps
+
 # ------------------------------------------------------------------------- #
 # DEFINE SURVEY, CHANGE THIS!!!
 surveyFolder = "BOEM_HiDef_NC"
@@ -87,10 +91,10 @@ odbcCloseAll()
 ends = ends[ends$ID != 1889,]
 
 # create BEG and END Counts
-#fieldData$type = NA
-#fieldData$type[fieldData$ID %in% ends$ID] = "ENDCNT"
-#fieldData$type[fieldData$ID %in% starts$ID] = "BEGCNT"
-#rm(ends,starts)
+fieldData$type = NA
+fieldData$type[fieldData$ID %in% ends$ID] = "ENDCNT"
+fieldData$type[fieldData$ID %in% starts$ID] = "BEGCNT"
+rm(ends,starts)
 
 # create offline (1) / online (0)
 fieldData$offline = ""
@@ -100,37 +104,8 @@ rm(transect,transit)
 # ------------------------------------------------------------------------- #
 
 # ------------------------------------------------------------------------- #
-# STEP 2: RESTRUCTURE DATA
+# STEP 2: QA/QC
 # ------------------------------------------------------------------------- #
-
-# --------------------------- # 
-## GPS
-names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/@lat"] = "lat"
-names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/@lon"] = "long"
-names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/time"] = "time"
-GPSdata$platform = tolower(GPSdata$platform)
-# --------------------------- # 
-
-# --------------------------- # 
-## Species Information
-# edit the table to consolidate
-Species_Information$scientific_name = as.character(Species_Information$scientific_name)
-Species_Information$scientific_name[is.na(Species_Information$scientific_name) & !is.na(Species_Information$species)] = 
-  as.character(Species_Information$species[is.na(Species_Information$scientific_name) & !is.na(Species_Information$species)])
-Species_Information$common_name = as.character(Species_Information$common_name)
-Species_Information$commonc_name[is.na(Species_Information$common_name) & !is.na(Species_Information$common_name.1)] = 
-  as.character(Species_Information$common_name.1[is.na(Species_Information$common_name) & !is.na(Species_Information$common_name.1)])
-drops <- c("french_name","E","I","H","A","N","M","species","ID", "common_name.1")
-Species_Information = Species_Information[,!(names(Species_Information) %in% drops)]
-
-common_name = tolower(Species_Information$common_name)
-spplist = as.character(Species_Information$species_code)
-
-# list of codes we are using
-codes = odbcConnectExcel2007(file.path(dbpath, "NWASC_codes.xlsx"), readOnly = TRUE) 
-name <- sqlFetch(codes,"codes")
-odbcCloseAll()
-
 if (!file.exists(errfix.file)) {
   warning("Error fix R file is missing and will not be sourced.")
 } else source(errfix.file, local = TRUE)
@@ -138,117 +113,18 @@ if (!file.exists(errfix.file)) {
 tmp = !spplist %in% name$spp_cd
 cat("Found", sum(tmp), "out of",  length(spplist), "entries with non-matching AOU code(s).\n\n")
 # spplist[!spplist %in% name$spp_cd]
-
-Species_Information$spp = spplist
-fieldData$species = tolower(fieldData$species)
-
-#df = data.frame(cbind(species = common_name, spp_type = spplist), stringsAsFactors = FALSE)
-#test = left_join(fieldData, df, by = "species") %>% rowwise %>% mutate(type = replace(type, is.na(type), spp_type))
-
-# test = data.frame(cbind(species = common_name, spp_type = spplist), stringsAsFactors = FALSE) %>%
-#        left_join(fieldData, ., by = "species") %>% rowwise %>% mutate(type = replace(type, is.na(type), spp_type)) %>% data.frame
-
-fieldData$type = ""
-for (a in 1:length(fieldData$species)) {
-  fieldData$type[a] = spplist[fieldData$species[a] == common_name]
-}
-fieldData$type[fieldData$ID %in% ends$ID] = "ENDCNT"
-fieldData$type[fieldData$ID %in% starts$ID] = "BEGCNT"
-rm(ends,starts)
-
-# errors (some were in the middle of transects, rather than at the end)
-fieldData$type[fieldData$ID == c("590","678","702","710","717","725","731","735",
-                                 "733","855","901","999","1060","1076","1191",
-                                 "1213", "1297")] = "ENDCNT"
-fieldData$type[fieldData$ID == c("679","703","711","718","726","732","736","856",
-                                 "902","910","1000","1061","1298","1360")] = "BEGCNT"
-fieldData$type[fieldData$ID == c("1788") = "COMMENT"
-
 # --------------------------- # 
 
-# --------------------------- # 
-## Observation
-  if (is.null(fieldData$dataChange)) {
-    fieldData$dataChange <- ""
-    fieldData$dataError <- "" }
+# ------------------------------------------------------------------------- #
+# STEP 3: RESTRUCTURE DATA
+# ------------------------------------------------------------------------- #
 
-  # add species codes to field data table
-  b = tolower(Species_Information$common_name)
-  c = tolower(fieldData$species)
-  for (a in 1:length(Species_Information[,1])) {
-    fieldData$spp_cd[c == b[a]] = Species_Information$species_code[a]
-  }
+               
 
-  fieldData$crew = sub("^\\s+", "", tolower(paste(fieldData$obs_first_name, fieldData$obs_last_name, sep = "_")))
-  fieldData$crew[fieldData$crew == "allison_mac connell"] = "allison_macconnell"
-  fieldData$crew[fieldData$crew == "mary jo_barkaszi"] = "maryjo_barkaszi"
-  #fieldData$crew[fieldData$crew == "erik_haney"] = "eric_haney" # probably???????????????????????
-  drops = c("obs_first_name", "obs_last_name", "End Transect", "Start Transect", "missing_sp")
-  fieldData = fieldData[,!(names(fieldData) %in% drops)]
-  fieldData$platform = tolower(fieldData$platform)
-
-  # BEGCNT and ENDCNT
-  # is.na(fieldData$spp_cd[which(fieldData$ID %in% ends$ID)]) #check
-  # is.na(fieldData$spp_cd[which(fieldData$ID %in% starts$ID)]) #check
-  fieldData$spp_cd[which(fieldData$ID %in% ends$ID)] = "ENDCNT"
-  fieldData$spp_cd[which(fieldData$ID %in% starts$ID)] = "BEGCNT"
-  rm(starts,ends)
-  # add BEGCNT after ENDCNT if there is a NA directly after
   
 
 
 ####################### FIX THIS #######################################
-
-
-
-
-a = which(fieldData$spp_cd == "ENDCNT") - 1
-  b = which(is.na(fieldData$spp_cd))
-  c = b-a
-  fieldData$dataChange[)] = 
-    paste(fieldData$dataChange[which(is.na(fieldData$spp_cd[a+1]))],
-          "; Changed SPP_CD from NA based ENDCNT", sep = "")
-  fieldData$spp_cd[which(is.na(fieldData$spp_cd[a+1]))] ="BEGCNT"
-  # add BEGCNT after ENDCNT if there is a NA directly after
-  a = which(fieldData$spp_cd == "BEGCNT")
-  fieldData$dataChange[which(is.na(fieldData$spp_cd[a-1]))] = 
-    paste(fieldData$dataChange[which(is.na(fieldData$spp_cd[a-1]))],
-          "; Changed SPP_CD from NA based BEGCNT", sep = "")
-  fieldData$spp_cd[which(is.na(fieldData$spp_cd[a-1]))] ="ENDCNT"
-
-
-  # cut unnecessary columns
-  #fieldData$comments[!is.na(fieldData$F26)] = paste(fieldData$comments[!is.na(fieldData$F26)], 
-  #                                                  fieldData$F26[!is.na(fieldData$F26)], sep ="; ")
-  drops <- c("Observers", "Data-sheet ID", "F26")
-  fieldData = fieldData[,!(names(fieldData) %in% drops)]
-
-  # fix time stamps and 
-  # add lat and long to observations
-  library(lubridate)
-  df <- data.frame(date = fieldData$obs_time_rd, #satellite_GPS_time,
-                   hr = as.numeric(format(fieldData$obs_time_rd, format = "%H")),
-                   min = as.numeric(format(fieldData$obs_time_rd, format = "%M")),
-                   sec = as.numeric(format(fieldData$obs_time_rd, format = "%S")))
-  fieldData$year_[fieldData$year_ == 11] = 2011
-  fieldData$date = ISOdatetime(fieldData$year_, fieldData$month_, fieldData$day, df$hr, df$min, df$sec) #Y m d H M S
-   
-  rm(df)
-  df <- data.frame(date = GPSdata$GPS_time_rd,
-                   hr = as.numeric(format(GPSdata$GPS_time_rd , format = "%H")),
-                   min = as.numeric(format(GPSdata$GPS_time_rd , format = "%M")),
-                   sec = as.numeric(format(GPSdata$GPS_time_rd , format = "%S")))
-  GPSdata$date = ISOdatetime(GPSdata$year_, GPSdata$month_, GPSdata$day, df$hr, df$min, df$sec) #Y m d H M S
-  rm(df)
-
-  # create time index
-# this does not get everything....
-  for (a in 1: length(fieldData$date)) {
-    fieldData$lat[a] = GPSdata$lat[fieldData$date[a] == GPSdata$date & fieldData$platform[a] == GPSdata$platform]
-    fieldData$long[a] = GPSdata$long[fieldData$date[a] == GPSdata$date & fieldData$platform[a] == GPSdata$platform]
-  }
-
-    
   # fill in spots were transect number is missing using event number, but if all NA's can't fix now
   a = which(fieldData$event_number == 1)
   old = fieldData$"Transect ID"
@@ -262,81 +138,6 @@ a = which(fieldData$spp_cd == "ENDCNT") - 1
   }
   fieldData$"Transect ID" = as.character(fieldData$"Transect ID")
 
-  
-
-## Crew
-
-  Crew_Information = data.frame(matrix(nrow = length(unique(fieldData$crew)), ncol = 3))
-  colnames(Crew_Information) = c("crew","obs_first_name","obs_last_name")
-  Crew_Information$crew = unique(fieldData$crew)
-  
-  a = strsplit(Crew_Information$crew,"_")
-  b  <- matrix(unlist(a), ncol=2, byrow=TRUE)
-  Crew_Information$obs_first_name = b[,1]
-  Crew_Information$obs_last_name = b[,2]
-  Crew_Information$obs_first_name[Crew_Information$obs_first_name == "maryjo"] = "mary jo"
-  Crew_Information$obs_last_name[Crew_Information$obs_last_name == "macconnell"] = "mac connell"
-  rm(a,b)
-  
-  # Capitalize names
-  capwords <- function(s, strict = FALSE) {
-    cap <- function(s) paste(toupper(substring(s, 1, 1)),
-  {s <- substring(s, 2); if(strict) tolower(s) else s},
-                             sep = "", collapse = " " )
-    sapply(strsplit(s, split = " "), cap, USE.NAMES = !is.null(names(s)))
-  }
-  Crew_Information$obs_first_name = capwords(Crew_Information$obs_first_name)
-  Crew_Information$obs_last_name = capwords(Crew_Information$obs_last_name)
-  
-  # remove Na row
-  Crew_Information = Crew_Information[Crew_Information$crew != "na_na",]
-
-## Behavior
-  fieldData$behavior = tolower(fieldData$behavior)
-  Behaviors = data.frame(matrix(nrow = length(unique(fieldData$behavior)), ncol = 2))
-  colnames(Behaviors) = c("code","action")
-  Behaviors$action = unique(fieldData$behavior)
-
-  
-  Behaviors = Behaviors[order(Behaviors$code),]
-
-  #fieldData$comments[!is.na(fieldData$behavior)] = paste(fieldData$comments[!is.na(fieldData$behavior)],
-  #                                                       fieldData$behavior[!is.na(fieldData$behavior)], 
-  #                                                       sep = "; behavior defined ")
-  #fieldData$behavior[which(fieldData$behavior %in% fieldData$action)] = Behaviors$code
-
-## Environmental
-  # holding off on this for now...visability in fieldData should be enough for db
-
-
-
-# ------------------------------------------------------------------------- #
-# STEP 3: FIND ERRORS AND FIX DATA
-# ------------------------------------------------------------------------- #
-obs = fieldData
-obs$type = obs$species
-obs$count = obs$number_individuals
-
-# SET INPUT/OUTPUT DIRECTORY PATHS
-dir.in <- inpath 
-dir.out <- path
-speciesPath = dbpath
-dbpath <- dbpath
-
-# SET PATH TO R FILE THAT FIXES DATA ERRORS
-errfix.file <- file.path(dir.out, paste(yearLabel, "_ObsFilesFix.R", sep = ""))
-
-# SOURCE R FUNCTIONS
-source(file.path(dir, "_Rfunctions/sourceDir.R"))
-sourceDir(file.path(dir, "_Rfunctions"))
-# ---------------------------------------------------------------------------- #
-# STEP 3a: OUTPUT COAST SURVEY DATA; FIX OBSERVATION FILE ERRORS
-# ---------------------------------------------------------------------------- #
-
-if (!file.exists(errfix.file)) {
-  warning("Error fix R file is missing and will not be sourced.")
-} else source(errfix.file, local = TRUE)
-# ---------------------------------------------------------------------------- #
 
 
 # ---------------------------------------------------------------------------- #
@@ -485,21 +286,6 @@ Observations$platform_tx = platform
 #metadata_tx = NULL
 #source_dataset_id = "BOEMHighDef_NC2011Boat"
 # ------------------------------------------------------------------------- #
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# observation
 
 
 
