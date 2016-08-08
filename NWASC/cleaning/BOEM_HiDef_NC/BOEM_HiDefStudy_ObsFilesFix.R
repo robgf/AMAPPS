@@ -263,12 +263,11 @@ rm(df)
 
 # --------------------------- # 
 # CREW
-fieldData$crew = sub("^\\s+", "", tolower(paste(fieldData$obs_first_name, fieldData$obs_last_name, sep = "_")))
-fieldData$crew[fieldData$crew == "allison_mac connell"] = "allison_macconnell"
-fieldData$crew[fieldData$crew == "mary jo_barkaszi"] = "maryjo_barkaszi"
-fieldData$crew[fieldData$crew == "na_na"] = NA
+fieldData$observers = sub("^\\s+", "", tolower(paste(fieldData$obs_first_name, fieldData$obs_last_name, sep = "_")))
+fieldData$observers[fieldData$observers == "allison_mac connell"] = "allison_macconnell"
+fieldData$observers[fieldData$observers == "mary jo_barkaszi"] = "maryjo_barkaszi"
+fieldData$observers[fieldData$observers == "na_na"] = NA
 #fieldData$crew[fieldData$crew == "erik_haney"] = "eric_haney" # probably???????????????????????
-fieldData = fieldData %>% select(-obs_first_name, -obs_last_name)
 # --------------------------- # 
 
 # --------------------------- # 
@@ -283,7 +282,12 @@ names(fieldData)[names(fieldData) == "number_individuals"] = "count"
 
 # --------------------------- # 
 # remove unneccessary fields
-fieldData = fieldData %>% select(-Observers, missing_sp, -F26,-obs_time_rd,
-                                 -cue_type_start_stop,-start_time_sheet,
-                                 -end_time_sheet,-page_number,-page_total)
+names(fieldData)[names(fieldData) == "Data-sheet ID"] = "DataSheet_ID"
+names(fieldData)[names(fieldData) == "Start Transect"] = "Stransect"
+names(fieldData)[names(fieldData) == "End Transect"] = "Etransect"
+fieldData = fieldData %>% select(-Observers, -missing_sp, -F26, -obs_time_rd,
+                                 -cue_type_start_stop, -start_time_sheet,
+                                 -end_time_sheet, -page_number, -page_total,
+                                 -DataSheet_ID, -Stransect, -Etransect,
+                                 -obs_first_name, -obs_last_name)
 #
