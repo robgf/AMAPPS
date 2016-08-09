@@ -137,9 +137,6 @@ spplist = ifelse(spplist == "SoPo", "SPSK", spplist)
 spplist = ifelse(spplist == "WiSt", "WISP", spplist)
 spplist = ifelse(spplist == "DoCo", "DCCO", spplist)
 
-# change correct code to uppercase
-spplist = toupper(spplist)
-
 # --------------------- #
 # added to database
 # --------------------- #
@@ -165,16 +162,23 @@ spplist = toupper(spplist)
 
 # might need to split up Thalasseus and Sterna (UNTE)
 
+spplist = toupper(spplist) # change correct code to uppercase
 fieldData$species = tolower(fieldData$species)
 
 fieldData = data.frame(cbind(species = common_name, spp_type = spplist), stringsAsFactors = FALSE) %>% distinct %>%
   left_join(fieldData, ., by = "species") %>% rowwise %>% mutate(type = replace(type, is.na(type), spp_type)) %>%
-  select(-spp_type) %>% as.data.frame
+  as.data.frame
+# fix 'type' where wrongfully coded as BEG/END count due to key words in comments
+fieldData$type[which(fieldData$type != fieldData$spp_type)] = fieldData$spp_type[which(fieldData$type != fieldData$spp_type)]
 rm(common_name,spplist, Species_Information, name)
+fieldData = fieldData %>% select(-spp_type)
+
+# from comments 
+fieldData$type[fieldData$ID == "1994"] = "BAIT"
 
 # fixed mixed
 toAdd = fieldData[fieldData$ID %in% c("3059"),] 
-toAdd$ID = 3059.5 
+toAdd$ID = "3059.5" 
 toAdd$type = "BODO"
 toAdd$species = "bottlenose dolphin"
 toAdd$behavior = ""
@@ -188,18 +192,40 @@ fieldData = rbind(fieldData, toAdd); rm(toAdd)
 # --------------------------- #
 
 # errors (some were in the middle of transects, rather than at the end)
+# some of these will have already been fixed by the addition of more words in the starts/ends queries
 fieldData$type[fieldData$ID %in% c("590","678","702","710","717","725","731","735",
                                    "733","855","901","999","1060","1076","1191",
-                                   "1213", "1297","2873","2911")] = "ENDCNT"
+                                   "1213", "1297","2873","2911","2061","2075")] = "ENDCNT"
 fieldData$type[fieldData$ID %in% c("679","703","711","718","726","732","736","856",
                                    "902","910","1000","1061","1298","1360","2925")] = "BEGCNT"
 fieldData$type[fieldData$ID %in% c("1788","2878","2881","2882","2953","3009","3032",
-                                   "3033","3034","3035","3036","3037","3038","3039")] = "COMMENT"
+                                   "3033","3034","3035","3036","3037","3038","3039",
+                                   "2516", "2522","2114","2517","2523","2518","2524",
+                                   "2133","2519","2520","2525","2526","2521","2527",
+                                   "2533","2145","2255","2256","2467","2470","2483",
+                                   "2502","2528","2529","2530","2531","2532","2534",
+                                   "2535","2536","2537","2538","2539","2540","2541",
+                                   "2542","2544","2545","2546","2547","2548","2549",
+                                   "2550","2551","2552","2553","2554","2555","2556",
+                                   "2557","2558","2559","2560","2561","2563","2564",
+                                   "2565","2568","2569","2571","2572","2573","2574",
+                                   "2576","2577","2579","2580","2581","2582","2584",
+                                   "2585","2586","2587","2588","2631","2632","2633",
+                                   "2634","2635","2636","2637","2639","2640","2641",
+                                   "2642","2643","2646","2647","2648","2652","2658",
+                                   "2659","2663","2664","2669","2670","2671","2672",
+                                   "2676","2677","2680","2681","2683","2799","2800",
+                                   "2801","2802","2803","2804","2654","2655","2656",
+                                   "2657","1802","1803","1805","1812","1813","1820",
+                                   "1831","1834","1914","1951","1952","1955","1962",
+                                   "1984","728","729","756","757","773")] = "COMMENT"
+
+
 # contact provider about ID 3009 (Chon), missing_sp marked yes
 
 # add begin count for pause in transect
 toAdd = fieldData[fieldData$ID %in% c("2874"),] 
-toAdd$ID = 2873.5     
+toAdd$ID = "2873.5"     
 toAdd$type = "BEGCNT"
 toAdd$species = ""
 toAdd$behavior = ""
@@ -208,7 +234,7 @@ toAdd$comments = "added BEGCNT after transect pause"
 fieldData = rbind(fieldData, toAdd); rm(toAdd)
 
 toAdd = fieldData[fieldData$ID %in% c("2912"),] 
-toAdd$ID = 2911.5 
+toAdd$ID = "2911.5" 
 toAdd$type = "BEGCNT"
 toAdd$species = ""
 toAdd$behavior = ""
@@ -217,7 +243,7 @@ toAdd$comments = "added BEGCNT after transect pause"
 fieldData = rbind(fieldData, toAdd); rm(toAdd)
 
 toAdd = fieldData[fieldData$ID %in% c("3032"),] 
-toAdd$ID = 3031.5 
+toAdd$ID = "3031.5" 
 toAdd$type = "BEGCNT"
 toAdd$species = ""
 toAdd$behavior = ""
@@ -226,7 +252,7 @@ toAdd$comments = "added BEGCNT for chum flyover"
 fieldData = rbind(fieldData, toAdd); rm(toAdd)
 
 toAdd = fieldData[fieldData$ID %in% c("3049"),] 
-toAdd$ID = 3049.5 
+toAdd$ID = "3049.5" 
 toAdd$type = "ENDCNT"
 toAdd$species = ""
 toAdd$behavior = ""
@@ -251,7 +277,7 @@ df <- data.frame(date = fieldData$obs_time_rd, #satellite_GPS_time,
                  hr = as.numeric(format(fieldData$obs_time_rd, format = "%H")),
                  min = as.numeric(format(fieldData$obs_time_rd, format = "%M")),
                  sec = as.numeric(format(fieldData$obs_time_rd, format = "%S")))
-fieldData$date = ISOdatetime(fieldData$year_, fieldData$month_, fieldData$day, df$hr, df$min, df$sec) #Y m d H M S
+fieldData$obs_dt = ISOdatetime(fieldData$year_, fieldData$month_, fieldData$day, df$hr, df$min, df$sec) #Y m d H M S
 rm(df)
 #df <- data.frame(date = GPSdata$GPS_time_rd,
 #                 hr = as.numeric(format(GPSdata$GPS_time_rd , format = "%H")),
@@ -281,13 +307,22 @@ names(fieldData)[names(fieldData) == "number_individuals"] = "count"
 # --------------------------- # 
 
 # --------------------------- # 
-# remove unneccessary fields
+# remove unneccessary and/or unused fields
 names(fieldData)[names(fieldData) == "Data-sheet ID"] = "DataSheet_ID"
 names(fieldData)[names(fieldData) == "Start Transect"] = "Stransect"
 names(fieldData)[names(fieldData) == "End Transect"] = "Etransect"
+names(fieldData)[names(fieldData) == "Transect ID"] = "source_transect_id"
 fieldData = fieldData %>% select(-Observers, -missing_sp, -F26, -obs_time_rd,
                                  -cue_type_start_stop, -start_time_sheet,
                                  -end_time_sheet, -page_number, -page_total,
                                  -DataSheet_ID, -Stransect, -Etransect,
                                  -obs_first_name, -obs_last_name)
-#
+# --------------------------- # 
+# split data before fixing transects
+boatObs = fieldData[fieldData$platform=="voyager",] %>% arrange(ID, obs_dt)
+planeObs = fieldData[fieldData$platform=="vplane",] %>% arrange(ID, obs_dt)
+
+# --------------------------- # 
+# fix transects where NA
+#fieldData$source_transect_id[fieldData$type == "BEGCNT"]
+#fieldData$source_transect_id[fieldData$type == "ENDCNT"]
