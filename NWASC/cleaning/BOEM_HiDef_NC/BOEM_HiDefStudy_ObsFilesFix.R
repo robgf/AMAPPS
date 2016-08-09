@@ -193,37 +193,70 @@ fieldData = rbind(fieldData, toAdd); rm(toAdd)
 
 # errors (some were in the middle of transects, rather than at the end)
 # some of these will have already been fixed by the addition of more words in the starts/ends queries
-fieldData$type[fieldData$ID %in% c("590","678","702","710","717","725","731","735",
-                                   "733","855","901","999","1060","1076","1191",
-                                   "1213", "1297","2873","2911","2061","2075")] = "ENDCNT"
-fieldData$type[fieldData$ID %in% c("679","703","711","718","726","732","736","856",
-                                   "902","910","1000","1061","1298","1360","2925")] = "BEGCNT"
-fieldData$type[fieldData$ID %in% c("1788","2878","2881","2882","2953","3009","3032",
-                                   "3033","3034","3035","3036","3037","3038","3039",
-                                   "2516", "2522","2114","2517","2523","2518","2524",
-                                   "2133","2519","2520","2525","2526","2521","2527",
-                                   "2533","2145","2255","2256","2467","2470","2483",
-                                   "2502","2528","2529","2530","2531","2532","2534",
-                                   "2535","2536","2537","2538","2539","2540","2541",
-                                   "2542","2544","2545","2546","2547","2548","2549",
-                                   "2550","2551","2552","2553","2554","2555","2556",
-                                   "2557","2558","2559","2560","2561","2563","2564",
-                                   "2565","2568","2569","2571","2572","2573","2574",
-                                   "2576","2577","2579","2580","2581","2582","2584",
-                                   "2585","2586","2587","2588","2631","2632","2633",
-                                   "2634","2635","2636","2637","2639","2640","2641",
-                                   "2642","2643","2646","2647","2648","2652","2658",
-                                   "2659","2663","2664","2669","2670","2671","2672",
-                                   "2676","2677","2680","2681","2683","2799","2800",
-                                   "2801","2802","2803","2804","2654","2655","2656",
-                                   "2657","1802","1803","1805","1812","1813","1820",
-                                   "1831","1834","1914","1951","1952","1955","1962",
-                                   "1984","728","729","756","757","773")] = "COMMENT"
+fieldData$type[fieldData$ID %in% c("590","678","702","710","717","725","731","733","735","855","901","999",
+                                   "1060","1076","1191","1213","1297","2061","2075","2483",
+                                   "2517","2519","2521","2523","2525","2527","2530","2532",
+                                   "2532","2534","2534","2536","2538","2540","2544","2546",
+                                   "2546","2548","2548","2550","2550","2552","2552","2554",
+                                   "2554","2556","2556","2558","2560","2560","2564","2568",
+                                   "2571","2573","2576","2579","2581","2584","2586","2588",
+                                   "2632","2634","2636","2639","2641","2643","2646","2652",
+                                   "2654","2656","2658","2663","2669","2671","2676","2680","2683",
+                                   "2873","2911")] = "ENDCNT"
+fieldData$type[fieldData$ID %in% c("679","703","711","718","726","732","736","856","902","910",
+                                   "1000","1061","1298","1360","2145","2467","2551","2565",
+                                   "2574","2582","2631","2652","2925")] = "BEGCNT"
+fieldData$type[fieldData$ID %in% c("728","729","756","757","773","1788","1802","1803","1805",
+                                   "1812","1813","1820","1831","1834","1914","1951","1952",
+                                   "1955","1962","1984","2114","2133","2255","2256","2470",
+                                   "2502","2516","2518","2520","2522","2524","2526","2528",
+                                   "2529","2531","2533","2535","2537","2539","2541","2542",
+                                   "2545","2547","2549","2553","2555","2557","2559","2561",
+                                   "2563","2565","2569","2572","2577","2580","2585","2586",
+                                   "2587","2633","2635","2637","2640","2642","2647","2648",
+                                   "2652","2655","2657","2659","2664","2670","2672","2677","2681",
+                                   "2683","2799","2800","2801","2802","2803","2804","2878",
+                                   "2881","2882","2953","3009","3032","3033","3034","3035",
+                                   "3036","3037","3038","3039")] = "COMMENT"
 
 
 # contact provider about ID 3009 (Chon), missing_sp marked yes
 
+# check if event #1 == BEGCNT
+#unique(sort(fieldData$type[fieldData$event_number == 1]))
+fieldData$type[fieldData$event_number == 1 & fieldData$type == "COMMENT"] = "BEGCNT" # correct comments that should be BEGCNT
+#fieldData[fieldData$event_number == 1 & fieldData$type != "BEGCNT",]
+                                        
 # add begin count for pause in transect
+toAdd = fieldData[fieldData$ID %in% c("2023"),] 
+toAdd$ID = "2022.5"     
+toAdd$type = "BEGCNT"
+toAdd$species = ""
+toAdd$behavior = ""
+toAdd$number_individuals = ""
+toAdd$comments = "added BEGCNT"
+toAdd$offline = 1
+fieldData = rbind(fieldData, toAdd); rm(toAdd)
+
+toAdd = fieldData[fieldData$ID %in% c("2026"),] 
+toAdd$ID = "2026.5"     
+toAdd$type = "ENDCNT"
+toAdd$species = ""
+toAdd$behavior = ""
+toAdd$number_individuals = ""
+toAdd$comments = "added ENDCNT"
+toAdd$offline = 1
+fieldData = rbind(fieldData, toAdd); rm(toAdd)
+
+toAdd = fieldData[fieldData$ID %in% c("2644"),] 
+toAdd$ID = "2643.5"     
+toAdd$type = "BEGCNT"
+toAdd$species = ""
+toAdd$behavior = ""
+toAdd$number_individuals = ""
+toAdd$comments = "added BEGCNT"
+fieldData = rbind(fieldData, toAdd); rm(toAdd)
+
 toAdd = fieldData[fieldData$ID %in% c("2874"),] 
 toAdd$ID = "2873.5"     
 toAdd$type = "BEGCNT"
@@ -242,14 +275,14 @@ toAdd$number_individuals = ""
 toAdd$comments = "added BEGCNT after transect pause"
 fieldData = rbind(fieldData, toAdd); rm(toAdd)
 
-toAdd = fieldData[fieldData$ID %in% c("3032"),] 
-toAdd$ID = "3031.5" 
-toAdd$type = "BEGCNT"
-toAdd$species = ""
-toAdd$behavior = ""
-toAdd$number_individuals = ""
-toAdd$comments = "added BEGCNT for chum flyover"
-fieldData = rbind(fieldData, toAdd); rm(toAdd)
+#toAdd = fieldData[fieldData$ID %in% c("3032"),] 
+#toAdd$ID = "3031.5" 
+#toAdd$type = "BEGCNT"
+#toAdd$species = ""
+#toAdd$behavior = ""
+#toAdd$number_individuals = ""
+#toAdd$comments = "added BEGCNT for chum flyover"
+#fieldData = rbind(fieldData, toAdd); rm(toAdd)
 
 toAdd = fieldData[fieldData$ID %in% c("3049"),] 
 toAdd$ID = "3049.5" 
@@ -260,11 +293,38 @@ toAdd$number_individuals = ""
 toAdd$comments = "added ENDCNT for chum flyover"
 fieldData = rbind(fieldData, toAdd); rm(toAdd)
 
+toAdd = fieldData[fieldData$ID %in% c("2131"),] 
+toAdd$ID = "2131.5" 
+toAdd$type = "ENDCNT"
+toAdd$species = ""
+toAdd$behavior = ""
+toAdd$number_individuals = ""
+toAdd$comments = "added ENDCNT"
+fieldData = rbind(fieldData, toAdd); rm(toAdd)
+
+toAdd = fieldData[fieldData$ID %in% c("2562"),] 
+toAdd$ID = "2562.5" 
+toAdd$type = "ENDCNT"
+toAdd$species = ""
+toAdd$behavior = ""
+toAdd$number_individuals = ""
+toAdd$comments = "added ENDCNT"
+fieldData = rbind(fieldData, toAdd); rm(toAdd)
+
+toAdd = fieldData[fieldData$ID %in% c("2653"),] 
+toAdd$ID = "2652.5" 
+toAdd$type = "BEGCNT"
+toAdd$species = ""
+toAdd$behavior = ""
+toAdd$number_individuals = ""
+toAdd$comments = "added BEGCNT"
+fieldData = rbind(fieldData, toAdd); rm(toAdd)
+
 # --------------------------- #
 ## GPS
 names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/@lat"] = "lat"
 names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/@lon"] = "long"
-names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/time"] = "date"
+names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/time"] = "track_dt"
 GPSdata$platform = tolower(GPSdata$platform)
 # --------------------------- # 
 
@@ -321,8 +381,40 @@ fieldData = fieldData %>% select(-Observers, -missing_sp, -F26, -obs_time_rd,
 # split data before fixing transects
 boatObs = fieldData[fieldData$platform=="voyager",] %>% arrange(ID, obs_dt)
 planeObs = fieldData[fieldData$platform=="vplane",] %>% arrange(ID, obs_dt)
+rm(fieldData)
 
 # --------------------------- # 
 # fix transects where NA
-#fieldData$source_transect_id[fieldData$type == "BEGCNT"]
-#fieldData$source_transect_id[fieldData$type == "ENDCNT"]
+boatObs$source_transect_id[boatObs$type == "BEGCNT"]
+boatObs$source_transect_id[boatObs$type == "ENDCNT"]
+
+# all happened in the same month and year so can sort by day since date has time
+boatObs %>% mutate(key = paste(day,observers,sep="_")) %>% 
+                     select(key, day,observers,type,source_transect_id,comments,ID,obs_dt) %>% group_by(key) #%>% 
+                     #summarise(tran = median(source_transect_id, na.rm = TRUE))
+
+boatObs = boatObs[-(which(boatObs$ID %in% c(2114,2528))),] # remove duplicate
+
+
+# Cant use fill since most of the BEGCNTs are NA
+old = boatObs$source_transect_id
+boatObs$source_transect_id[boatObs$ID %in% c(2118:2121,2124,2522:2524,2516:2518)] = 9
+boatObs$source_transect_id[boatObs$ID %in% c(2132:2136,2519:2520,2525,2526:2527,2521)] = 10
+boatObs$source_transect_id[boatObs$ID %in% c(2160:2178,2534,2535,2536,2529,2530)] = 20
+boatObs$source_transect_id[boatObs$ID %in% c(2179:2182,2537,2531)] = 21
+boatObs$source_transect_id[boatObs$ID %in% c(2565,2568,2559,2560)] = 32
+boatObs$source_transect_id[boatObs$ID %in% c(2569:2570,2561,2499:2511)] = 33
+boatObs$source_transect_id[boatObs$ID %in% c(2574,2582)] = 38
+boatObs$source_transect_id[boatObs$ID %in% c(2467:2482)] = 39
+boatObs$source_transect_id[boatObs$ID %in% c(2869,2914)] = 48
+boatObs$source_transect_id[boatObs$ID %in% c(2894)] = 49
+boatObs$source_transect_id[boatObs$ID %in% c(2659,2663,2672,2676)] = 52
+boatObs$source_transect_id[boatObs$ID %in% c(2670,2681)] = 53
+
+#boatObs$comments[boatObs$source_transect_id != old] = paste(boatObs$comments[boatObs$source_transect_id != old],
+#                                                            "; changed TRANSECT from ",
+#                                                            old[boatObs$source_transect_id != old], sep = "")
+
+# possibly???????
+boatObs$offline[boatObs$ID %in% c(2791:2805,2656,2657,2648,2877:2893,3049.5,3032:3039,2677:2680,2664:2669,
+                                  2188:2253)] = 1
