@@ -319,13 +319,6 @@ toAdd$behavior = ""
 toAdd$number_individuals = ""
 toAdd$comments = "added BEGCNT"
 fieldData = rbind(fieldData, toAdd); rm(toAdd)
-
-# --------------------------- #
-## GPS
-names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/@lat"] = "lat"
-names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/@lon"] = "long"
-names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/time"] = "track_dt"
-GPSdata$platform = tolower(GPSdata$platform)
 # --------------------------- # 
 
 # --------------------------- #
@@ -381,16 +374,16 @@ fieldData = fieldData %>% select(-Observers, -missing_sp, -F26, -obs_time_rd,
 # split data before fixing transects
 boatObs = fieldData[fieldData$platform=="voyager",] %>% arrange(ID, obs_dt)
 planeObs = fieldData[fieldData$platform=="vplane",] %>% arrange(ID, obs_dt)
-rm(fieldData)
+#rm(fieldData)
 
 # --------------------------- # 
 # fix transects where NA
-boatObs$source_transect_id[boatObs$type == "BEGCNT"]
-boatObs$source_transect_id[boatObs$type == "ENDCNT"]
+#boatObs$source_transect_id[boatObs$type == "BEGCNT"]
+#boatObs$source_transect_id[boatObs$type == "ENDCNT"]
 
 # all happened in the same month and year so can sort by day since date has time
-boatObs %>% mutate(key = paste(day,observers,sep="_")) %>% 
-                     select(key, day,observers,type,source_transect_id,comments,ID,obs_dt) %>% group_by(key) #%>% 
+#boatObs %>% mutate(key = paste(day,observers,sep="_")) %>% 
+#                     select(key, day,observers,type,source_transect_id,comments,ID,obs_dt) %>% group_by(key) #%>% 
                      #summarise(tran = median(source_transect_id, na.rm = TRUE))
 
 boatObs = boatObs[-(which(boatObs$ID %in% c(2114,2528))),] # remove duplicate
@@ -418,3 +411,25 @@ boatObs$source_transect_id[boatObs$ID %in% c(2670,2681)] = 53
 # possibly???????
 boatObs$offline[boatObs$ID %in% c(2791:2805,2656,2657,2648,2877:2893,3049.5,3032:3039,2677:2680,2664:2669,
                                   2188:2253)] = 1
+
+# --------------------------- #
+## GPS
+names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/@lat"] = "lat"
+names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/@lon"] = "long"
+names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/time"] = "track_dt"
+GPSdata$platform = tolower(GPSdata$platform)
+
+df <- data.frame(date = GPSdata$GPS_time_rd, #satellite_GPS_time,
+                 hr = as.numeric(format(GPSdata$GPS_time_rd, format = "%H")),
+                 min = as.numeric(format(GPSdata$GPS_time_rd, format = "%M")),
+                 sec = as.numeric(format(GPSdata$GPS_time_rd, format = "%S")))
+GPSdata$obs_dt = ISOdatetime(GPSdata$year_, GPSdata$month_, GPSdata$day, df$hr, df$min, df$sec) #Y m d H M S
+rm(df)
+
+# take lat and lon from GPS
+GPSdata2 = GPSdata %>% filter(platform=="voyager") %>% select(lat,long,obs_dt) 
+test = inner_join(boatObs,GPSdata2,by="obs_dt")
+#test = right_join(GPSdata2,boatObs,by="obs_dt")
+
+GPSdata2 = GPSdata %>% filter(platform=="vplane") %>% select(lat,long,obs_dt) 
+test = inner_join(planeObs,GPSdata2,by="obs_dt")
