@@ -16,7 +16,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# Modified 07-25-16 after dplyr 0.5.0 update
+# Modified 08-12-16 after dplyr 0.5.0 update
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -31,7 +31,7 @@ options(dplyr.show_progress = FALSE)
 # read in observation and track tables
 load("Q:/Kyle_Working_Folder/Segmentation/Atlantic_Coast_Surveys/Data/AMAPPS.RData")
 
-segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, seg.min = seg.length * seg.tol,
+segmentAMAPPS = function(observations, tracks, seg.length = 2.5/0.926, seg.tol = 0.5, seg.min = seg.length * seg.tol,
                          centroids = FALSE, maxDist = NA, occurences = FALSE) {
   
   if(seg.length <= 0) stop("seg.length > 0 is FALSE")
@@ -115,7 +115,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
            transect_id = paste(SurveyNbr, Transect, Replicate, Obs, sep = "-")) %>%
     group_by(SurveyNbr, Transect, Replicate) %>% select(-Piece) %>%
     mutate(Year = min(Year, na.rm = TRUE), Month = min(Month, na.rm = TRUE), Day = min(Day, na.rm = TRUE)) %>%
-    group_by(transect_id) %>% mutate(Condition = na.locf(Condition)) %>%
+    group_by(transect_id) %>% mutate(Condition = na.locf(Condition), Seat = na.locf(Seat)) %>%
     group_by(id) %>% mutate(dist = dist_cuml - lag(dist_cuml, default = first(dist_cuml)),
                             Condition = round(sum(Condition * dist) / sum(dist), 2)) %>% select(-c(dist, dist_cuml)) %>%
     filter(seg_dist >= seg.min, seg_dist > 0) %>% ungroup
@@ -204,9 +204,10 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5, seg.tol = 0.5, 
   
   # join segment midpoints and observations
   segmented = full_join(seg.mids, seg.obs, by = c("SurveyNbr", "Transect", "Replicate", "Obs", "Year", "Month", "seg_num")) %>%
-    mutate(FlockSize = replace(FlockSize, is.na(FlockSize), 0), Species = replace(Species, is.na(Species), "NONE"),
+    mutate(FlockSize = replace(FlockSize, is.na(FlockSize), 0),
+           Species = replace(Species, is.na(Species), "NONE"),
            SurveyNbr = factor(SurveyNbr), Transect = factor(Transect), Replicate = factor(Replicate)) %>%
-    group_by(SurveyNbr, Transect, Replicate, Obs, Year, Month, Condition, seg_num, seg_dist, mid_long, mid_lat, Species)
+    group_by(SurveyNbr, Transect, Replicate, Obs, Seat, Year, Month, Condition, seg_num, seg_dist, mid_long, mid_lat, Species)
   
   # -------- summarize species data by segment and convert to wide form -----------------------------------------------------------
     if (!occurences) {
