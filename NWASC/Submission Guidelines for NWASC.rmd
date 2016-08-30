@@ -1,24 +1,25 @@
 **Guidelines for submitting data to the Northwest Atlantic Seabird Catalog (NWASC)**   
 ===
 
-1) The data must be accompanied by a metadata file or some sort of documentation describing how the data was collected and describing 
-variable names  
+1) The data must be accompanied by a metadata file or some sort of documentation (e.g., a final report or proposed work/design for the project) describing how the data was collected and describing 
+variable names.  
 *    a. Metadata for spatial data should conform to FGDC [guidelines](https://www.fgdc.gov/metadata/geospatial-metadata-standards)  
 *    b. At a minimum metadata for bird observations should contain the following fields  
     *   i. Source of data including contact information  
     *   ii. Dates inclusive of all surveys submitted  
     *   iii. Type of platform used for observations (boat, aircraft, etc.)  
     *   iv. Preferred citation if data are made public  
-    *   v. Definition of fields transferred to NWASC including range of values    
+    *   v. Definition of fields transferred to NWASC including range of values and units     
     *   vi. If species codes were used, please include documentation describing the codes  
 
-2) The observation data should be accompanied by a transect/ effort file. The survey effort would be a record of when and where the observer was counting birds. If survey effort was not accounted for, please include the survey design, the location of the transects, or the beginning and end points of the transects surveyed.   
+2) The observation data should be accompanied by a transect design and,/ if available, an effort file. . Effort files are usually the locations where the survey actually took place since sometimes an observation might not exactly be on the transect line or there might be a break in effort when an observer is not observing on a transect line. The effort helps clarify if there were no birds seen in an area verses if the observer was not observing for a segment on a transect.  
 *    a. Please provide this information in WGS84 datum or provide information on projection. Coordinates would be in decimal degrees 
     (not UTMs)  
 *    b. Please provide beginning and ending points of transects  
+*    c. If effort is available please indicate the start and stop locations of when the observer was on or off effort and if an observation was off of the transect line (such as if observations were made in transit to the transect line)  
    
 3) Ideally the observation data would be in an easily accessible format that can be read into R (e.g., .txt, .csv, MS Excel, MS Access
-database, ArcGIS shapefile). Track (effort) files will be stored in a geographic information system part of the database; therefor if 
+database, ArcGIS shapefile or geodatabase). Track (effort) files will be stored in a geographic information system part of the database; therefor if 
 possible ArcGIS shapefiles would be appreciated.  
 *    a. Descriptions of variables that are included in the observation table of the [database](http://www.nodc.noaa.gov/archive/arc0070/0115356/1.1/data/0-data/seabird_data_structure_NODC_30Dec2013.csv)  
 
