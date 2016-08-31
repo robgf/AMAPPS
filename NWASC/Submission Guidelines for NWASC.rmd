@@ -7,30 +7,34 @@ variable names.
 *    b. At a minimum metadata for bird observations should contain the following fields  
     *   i. Source of data including contact information  
     *   ii. Dates inclusive of all surveys submitted  
-    *   iii. Type of platform used for observations (boat, aircraft, etc.)  
+    *   iii. Type of platform used for observations: boat, aircraft, camera, fixed point ground survey, area-wide ground survey  
     *   iv. Preferred citation if data are made public  
     *   v. Definition of fields transferred to NWASC including range of values and units     
-    *   vi. If species codes were used, please include documentation describing the codes  
+    *   vi. Please list the survey method: Christmas bird count, bycatch, continuous time strip, discrete time horizon, discrete time strip, general observation, or targeted species survey.  
+    *   vii. Please indicate whether the survey was derived effort, an original general observation, or original transect.  
 
-2) The observation data should be accompanied by a transect design and,/ if available, an effort file. . Effort files are usually the locations where the survey actually took place since sometimes an observation might not exactly be on the transect line or there might be a break in effort when an observer is not observing on a transect line. The effort helps clarify if there were no birds seen in an area verses if the observer was not observing for a segment on a transect.  
+2) If species codes were used, please include documentation describing the codes. For example, a separate column or spreadsheet defining COTE means common tern.  If you would like a list of our species codes we can supply one. We do accept observations for other marine fauna other than birds and boats.   
+
+3) The observation data should be accompanied by a transect design and,/ if available, an effort file. . Effort files are usually the locations where the survey actually took place since sometimes an observation might not exactly be on the transect line or there might be a break in effort when an observer is not observing on a transect line. The effort helps clarify if there were no birds seen in an area verses if the observer was not observing for a segment on a transect.  
 *    a. Please provide this information in WGS84 datum or provide information on projection. Coordinates would be in decimal degrees 
     (not UTMs)  
 *    b. Please provide beginning and ending points of transects  
 *    c. If effort is available please indicate the start and stop locations of when the observer was on or off effort and if an observation was off of the transect line (such as if observations were made in transit to the transect line)  
    
-3) Ideally the observation data would be in an easily accessible format that can be read into R (e.g., .txt, .csv, MS Excel, MS Access
+4) Ideally the observation data would be in an easily accessible format that can be read into R (e.g., .txt, .csv, MS Excel, MS Access
 database, ArcGIS shapefile or geodatabase). Track (effort) files will be stored in a geographic information system part of the database; therefor if 
 possible ArcGIS shapefiles would be appreciated.  
 *    a. Descriptions of variables that are included in the observation table of the [database](http://www.nodc.noaa.gov/archive/arc0070/0115356/1.1/data/0-data/seabird_data_structure_NODC_30Dec2013.csv)  
 
-4) The data should be free of basic errors (e.g., typos, date errors, mislabeled transects)  
+5) The data should be free of basic errors (e.g., typos, date errors, mislabeled transects)  
 
-5) The data would not require any processing on our end, such as if we had to back calculate a provider defined count per unit 
+6) The data would not require any processing on our end, such as if we had to back calculate a provider defined count per unit 
 effort to define observation count.  
 
-6) No personal information (e.g., phone number or email) should be included in the data file (but see metadata requirements).  
+7) No personal information (e.g., phone number or email) should be included in the data file (but see metadata requirements).  Any personally identifiable information will be stripped from the data before being loaded into the NWASC.  
 *    a. Observer codes are OK.  
-*    b. Any personally identifiable information will be stripped from the data before being loaded into the NWASC.  
 
-7) Data should be submitted via email to Kaycee Coleman, kaycee_coleman@fws.gov. If the attachment is too large to transfer via 
+8) Please indicate the share level at which you would like the data to be listed as: not shared, limited use (there are 3 levels for limited use), or full data available for public use.  If you would not like the data to be made public, we can discuss these options in more detail.  
+
+9) Data should be submitted via email to Kaycee Coleman, kaycee_coleman@fws.gov. If the attachment is too large to transfer via 
 email, we can discuss further options.  
