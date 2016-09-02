@@ -34,29 +34,29 @@ obs$behavior=gsub("\\s", "", obs$behavior)
 # ------------------------# 
 
 # SPECIES
-obs$type[obs$type=="ATLANTIC WHITE-SIDED DOLPHIN"] = "WSDO"
-obs$type[obs$type=="DEAD COEI"] = "COEI"
-obs$type[obs$type=="DEAD GULL"] = "UNGU"
-obs$type[obs$type=="DEADFLOATING ALCID"] = "UNAL"
-obs$type[obs$type=="FIN WHALE"] = "FIWH"
-obs$type[obs$type=="HARBOR PORPOISE"] = "HAPO"
-obs$type[obs$type=="HARBOR SEAL"] = "HASE"
-obs$type[obs$type=="HUMPBACK WHALE"] = "HUWH"
-obs$type[obs$type=="MINKE WHALE"] = "MIWH"
-obs$type[obs$type=="MONARCH BUTTERFLY"] = "MONA"
-obs$type[obs$type %in% c("UN-ID SHARK","UN-ID SHARK")] = "SHAR"
-obs$type[obs$type=="UNID DOLPHIN"] = "UNDO"
-obs$type[obs$type=="LARGE WHALE"] = "UNLW"
-obs$type[obs$type %in% c("UNID WHALE","WHALE")]="UNWH"
+obs$type[obs$type=="ATLANTICWHITE-SIDEDDOLPHIN"] = "WSDO"
+obs$type[obs$type %in% c("UNMG","UNIDENTIFIEDMERG")] = "UNME"
+obs$type[obs$type=="DEADCOEI"] = "COEI"
+obs$type[obs$type=="DEADGULL"] = "UNGU"
+obs$type[obs$type=="DEADFLOATINGALCID"] = "UNAL"
+obs$type[obs$type=="FINWHALE"] = "FIWH"
+obs$type[obs$type=="HARBORPORPOISE"] = "HAPO"
+obs$type[obs$type=="HARBORSEAL"] = "HASE"
+obs$type[obs$type=="HUMPBACKWHALE"] = "HUWH"
+obs$type[obs$type=="MINKEWHALE"] = "MIWH"
+obs$type[obs$type=="MONARCHBUTTERFLY"] = "MONA"
+obs$type[obs$type %in% c("UN-IDSHARK","UN-IDSHARK")] = "SHAR"
+obs$type[obs$type=="UNIDDOLPHIN"] = "UNDO"
+obs$type[obs$type=="LARGEWHALE"] = "UNLW"
+obs$type[obs$type %in% c("UNIDWHALE","WHALE")]="UNWH"
 
-#guesses
+#guesses since contact listed with data no longer available
 obs$type[obs$type=="BLDU"] = "ABDU"
 obs$type[obs$type=="CAGO"] = "CANG"
-obs$type[obs$type %in% c("DEAD ULGU","ULGU")] = "UNLG"
-obs$type[obs$type=="LSTP"] = ""
-obs$type[obs$type=="UNGE"] = ""
-obs$type[obs$type=="UNID"] = ""
-obs$type[obs$type=="UNMG"] = ""
+obs$type[obs$type %in% c("DEADULGU","ULGU")] = "UNLG"
+obs$type[obs$type=="LSTP"] = "LEAS"
+obs$type[obs$type=="UNGE"] = "UNGR"
+obs$type[obs$type=="UNID"] = "UNKN"
 	
 #dates
 obs$gps_date = as.Date(obs$gps_date)
