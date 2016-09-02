@@ -5,12 +5,9 @@
 # --------------------------------- #
 
 require(geosphere) # used in fixSeconds function
-require(parallel) # used to make a cluster
 require(rgdal) # for writeOGR
 require(zoo) # fill in missing points
-require(xlsx) # read excel file
 require(dplyr) # 
-require(data.table) # combine lists into dataframe, when not equal
 require(RODBC) # odbcConnect
 
 # DEFINE SURVEY, CHANGE THIS!!!
@@ -49,9 +46,12 @@ sf <- readOGR(dsn = file.path(paste(dir.in,"/To BOEM_Statoil_20140115/Hywind_Mai
               layer = "Statoil_BioSightings_2012_2013")
 sfdf=as.data.frame(sf)
 names(sfdf)[names(sfdf) == "X__in_Flock"] <- "__in_Flock"
-sfdf = sfdf %>% select(-F25,-F26,-F27,-Cor_infloc,-coords.x1,-coords.x2)  
-obs = rbind(obs, sfdf); rm(sfdf)
+sfdf = sfdf %>% select(-F25,-F26,-F27,-Cor_infloc,-coords.x1,-coords.x2) 
+obs = rbind(obs, sfdf) 
+rm(sfdf)
 names(obs)[names(obs) == "SpeciesCor"] <- "type"
+obs$type[!is.na(obs$Species__t) & is.na(obs$type)] = obs$Species__t[!is.na(obs$Species__t) & is.na(obs$type)]
+obs$type[obs$type == ""] = obs$Species__t[obs$type==""]
 obs = obs[!is.na(obs$type),]
 # ---------------------------------------------------------------------------- #
 
@@ -69,11 +69,13 @@ if (!file.exists(errfix.file)) {
 
 # ---------------------------------------------------------------------------- #
 # STEP 3: build transect
-plot(obs$lon,obs$lat, xlim = c(-69.59,-69.47), ylim = c(43.48,43.55))
-test = obs %>% select(lon, lat) %>% mutate(lon = as.numeric(lon), lat = as.numeric(lat))
-test = test[test$lat>=43.48 & test$lat<=43.55,]
-test = test$lon>c(-69.59) & test$lon<=c(-69.47)
-approx(test$lon, test$lat, method="constant")
+trans = cbind(c(-69.471,-69.49,-69.5086,-69.535,-69.5537,-69.5744,-69.5888),
+              c(43.557,43.512,43.556,43.487,43.541,43.4885,43.541))
+trans = as.data.frame(trans)
+names(trans) = c("lon","lat")
+
+plot(obs$lon,obs$lat, xlim = c(-69.59,-69.47), ylim = c(43.48,43.56))
+lines(trans$lon,trans$lat,col="red",lwd=3)
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
