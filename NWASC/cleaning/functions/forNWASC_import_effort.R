@@ -56,7 +56,7 @@ forNWASC_import_effort <- function(id, data_track, data_transect) {
   dat_track$source_transect_id = data_track[,which(colnames(data_track) %in% c("transect","transect_id"))]
   
   # if the transect information needs to be pulled from the track files
-  if(missing(data_transect) {
+  if(missing(data_transect)) {
    
     # group by transect and day
     # pieces in transect
@@ -66,7 +66,7 @@ forNWASC_import_effort <- function(id, data_track, data_transect) {
     transect_pieces = dat_track %>% select(track_lat, track_lon, track_dt, source_transect_id, piece, point_type) %>% 
       filter(point_type %in% c("BEGTRAN","BEGCNT","ENDTRAN","ENDCNT")) %>%
       mutate(source_transect_id = factor(source_transect_id)) %>% 
-      group_by(track_dt, source_transect_id, piece) %>%
+      group_by(source_transect_id, piece, track_dt) %>%
       arrange(point_type) %>%
       summarize(start_lon = first(track_lon), start_lat = first(track_lat), end_lon = last(track_lon), end_lat = last(track_lat)) %>%
       rowwise %>% 
