@@ -69,14 +69,70 @@ if (!file.exists(errfix.file)) {
 
 # ---------------------------------------------------------------------------- #
 # STEP 3: build transect
+
+## what transect should look like based on mean points
+#trans = cbind(c(-69.471,-69.49,-69.5086,-69.535,-69.5537,-69.5744,-69.5888),
+#              c(43.557,43.512,43.556,43.487,43.541,43.4885,43.541))
+
+## what transect should look like based on reports
 trans = cbind(c(-69.471,-69.49,-69.5086,-69.535,-69.5537,-69.5744,-69.5888),
-              c(43.557,43.512,43.556,43.487,43.541,43.4885,43.541))
+              c(43.556,43.5,43.556,43.487,43.541,43.4885,43.541))
+
 trans = as.data.frame(trans)
 names(trans) = c("lon","lat")
 
-plot(obs$lon,obs$lat, xlim = c(-69.59,-69.47), ylim = c(43.48,43.56))
-lines(trans$lon,trans$lat,col="red",lwd=3)
+#plot(obs$lon,obs$lat, xlim = c(-69.59,-69.47), ylim = c(43.48,43.56))
+#lines(trans$lon,trans$lat,col="red",lwd=3)
+
+# spatial line shapefile
+L1 = Line(cbind(trans$lon, trans$lat))
+Ls1 = Lines(list(L1), ID = "1")
+latlong = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+SL = SpatialLines(list(Ls1), proj4string = CRS(latlong))
+SLDF = SpatialLinesDataFrame(SL, data.frame(piece = c("transect"), row.names = c("1")))
+writeOGR(SLDF, dir.out, "StatOil", "ESRI Shapefile", morphToESRI = TRUE)
 # ---------------------------------------------------------------------------- #
+
+# ---------------------------------------------------------------------------- #
+# Define estimates start are end points of the transect
+# ---------------------------------------------------------------------------- #
+## did they always fly one way?
+# split up into keys
+obs$time = as.character(obs$time)
+obs$time[is.na(obs$time)] = as.character(obs$gps_time[is.na(obs$time)])
+obs$date_time = as.POSIXct(strptime(paste(obs$gps_date,obs$time,sep=" "),"%Y-%m-%d %I:%M:%S%p"))
+#test = obs %>% select(gps_date, date_time, lon, lat) %>% filter(lat<43.6) %>% group_by(gps_date) %>% 
+#  summarise(min_time = min(date_time), max_time = max(date_time)) 
+## find lat/long
+#for(a in 1:39){
+#  test$min_lat[a] = obs$lat[obs$date_time == test$min_time[a]] 
+#  test$max_lat[a] = obs$lat[obs$date_time == test$max_time[a]]
+#  test$min_lon[a] = obs$lon[obs$date_time == test$min_time[a]] 
+#  test$max_lon[a] = obs$lon[obs$date_time == test$max_time[a]]
+#}
+
+# match closest obs. point or add begin/end trans
+# sort by date
+start_lon = -69.471
+start_lat = 43.556
+end_lon = -69.5888
+end_lat = 43.541
+
+XX = obs %>% select(gps_date, date_time, lon, lat) %>% rowwise %>% 
+  mutate(s.distance =  distm(c(start_lat, start_lon), c(as.numeric(lat), as.numeric(lon)), fun = distHaversine)) %>% 
+  mutate(e.distance =  distm(c(end_lat, end_lon), c(as.numeric(lat), as.numeric(lon)), fun = distHaversine)) %>% 
+  group_by(gps_date) %>% summarise(s.lat = lat[min(abs(s.distance))], 
+                                   s.lon = lon[min(abs(s.distance))], 
+                                   s.time = date_time[min(abs(s.distance))],
+                                   e.lat = lat[min(abs(e.distance))], 
+                                   e.lon = lon[min(abs(e.distance))], 
+                                   e.time = date_time[min(abs(e.distance))])
+
+# find which one is earlier in time to find direction
+X = XX %>% summarise(min_time = min(date_time), max_time = max(date_time)) 
+
+# ---------------------------------------------------------------------------- #
+
 
 # ---------------------------------------------------------------------------- #
 # STEP 5: OUTPUT DATA 
