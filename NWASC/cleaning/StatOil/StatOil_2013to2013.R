@@ -97,40 +97,60 @@ writeOGR(SLDF, dir.out, "StatOil", "ESRI Shapefile", morphToESRI = TRUE)
 # Define estimates start are end points of the transect
 # ---------------------------------------------------------------------------- #
 ## did they always fly one way?
-# split up into keys
+# No they did not...
+
+# create a date_time index
+# "gps time" and "time" are not always the same, which is an issue but we need time for each record
 obs$time = as.character(obs$time)
 obs$time[is.na(obs$time)] = as.character(obs$gps_time[is.na(obs$time)])
 obs$date_time = as.POSIXct(strptime(paste(obs$gps_date,obs$time,sep=" "),"%Y-%m-%d %I:%M:%S%p"))
-#test = obs %>% select(gps_date, date_time, lon, lat) %>% filter(lat<43.6) %>% group_by(gps_date) %>% 
-#  summarise(min_time = min(date_time), max_time = max(date_time)) 
-## find lat/long
-#for(a in 1:39){
-#  test$min_lat[a] = obs$lat[obs$date_time == test$min_time[a]] 
-#  test$max_lat[a] = obs$lat[obs$date_time == test$max_time[a]]
-#  test$min_lon[a] = obs$lon[obs$date_time == test$min_time[a]] 
-#  test$max_lon[a] = obs$lon[obs$date_time == test$max_time[a]]
-#}
 
-# match closest obs. point or add begin/end trans
+# sort by time
+obs = obs %>% arrange(date_time)
+# assign an index
+obs$index = row.names(obs)
+
+# match closest obs. point to the beg/end of the transect
 # sort by date
-start_lon = -69.471
-start_lat = 43.556
-end_lon = -69.5888
-end_lat = 43.541
+# find which one is earlier in time to find direction for flight to assign beg/end of transect
+e_lon = -69.471 # east
+e_lat = 43.556
+w_lon = -69.5888 # west
+w_lat = 43.541
 
-XX = obs %>% select(gps_date, date_time, lon, lat) %>% rowwise %>% 
-  mutate(s.distance =  distm(c(start_lat, start_lon), c(as.numeric(lat), as.numeric(lon)), fun = distHaversine)) %>% 
-  mutate(e.distance =  distm(c(end_lat, end_lon), c(as.numeric(lat), as.numeric(lon)), fun = distHaversine)) %>% 
-  group_by(gps_date) %>% summarise(s.lat = lat[min(abs(s.distance))], 
-                                   s.lon = lon[min(abs(s.distance))], 
-                                   s.time = date_time[min(abs(s.distance))],
-                                   e.lat = lat[min(abs(e.distance))], 
-                                   e.lon = lon[min(abs(e.distance))], 
-                                   e.time = date_time[min(abs(e.distance))])
-
-# find which one is earlier in time to find direction
-X = XX %>% summarise(min_time = min(date_time), max_time = max(date_time)) 
-
+XX = obs %>% select(gps_date, date_time, lon, lat, index) %>% filter(lat != "") %>% rowwise %>% 
+  mutate(e.distance =  distm(c(e_lat, e_lon), c(as.numeric(lat), as.numeric(lon)), fun = distHaversine)) %>% 
+  mutate(w.distance =  distm(c(w_lat, w_lon), c(as.numeric(lat), as.numeric(lon)), fun = distHaversine)) %>% 
+  as.data.frame %>% 
+  group_by(gps_date) %>% 
+  summarise(e.lat = lat[which.min(abs(e.distance))], 
+            e.lon = lon[which.min(abs(e.distance))], 
+            e.time = date_time[which.min(abs(e.distance))],
+            w.lat = lat[which.min(abs(w.distance))], 
+            w.lon = lon[which.min(abs(w.distance))], 
+            w.time = date_time[which.min(abs(w.distance))],
+            w.index = index[which.min(abs(w.distance))],
+            e.index = index[which.min(abs(e.distance))]) %>% 
+  ungroup %>% rowwise %>%
+  mutate(start.side = ifelse(e.time < w.time, "east", "west")) %>% 
+  mutate(add.to.index = ifelse(e.lat[start.side == "east"] <= e_lat, "-0.1", "0.1")) %>% 
+  mutate(add.to.index1 = ifelse(w.lat[start.side == "west"] <= w_lat, "-0.1", "0.1")) %>% 
+  mutate(index.for.start = replace(add.to.index, is.na(add.to.index), add.to.index1)) %>% 
+  select(-add.to.index,-add.to.index1) %>% 
+  mutate(add.to.index = ifelse(e.lat[start.side == "west"] <= e_lat, "-0.1", "0.1")) %>% 
+  mutate(add.to.index1 = ifelse(w.lat[start.side == "east"] <= w_lat, "-0.1", "0.1")) %>% 
+  mutate(index.for.end = replace(add.to.index, is.na(add.to.index), add.to.index1)) %>% 
+  select(-add.to.index,-add.to.index1) %>% 
+  mutate(start.lat = ifelse(start.side == "east", e_lat, w_lat)) %>% 
+  mutate(start.lon = ifelse(start.side == "east", e_lon, w_lon)) %>% 
+  mutate(end.lat = ifelse(start.side == "east", w_lat, e_lat)) %>% 
+  mutate(end.lon = ifelse(start.side == "east", w_lon, e_lon)) %>% 
+  #mutate(index.for.end = as.numeric(index.for.end) + as.numeric(e.index)) %>% 
+  #mutate(index.for.start = as.numeric(index.for.start) + as.numeric(e.index)) %>% 
+  #mutate(index.for.end = as.numeric(index.for.end) + as.numeric(w.index)) %>% 
+  #mutate(index.for.start = as.numeric(index.for.start) + as.numeric(w.index)) %>% 
+  #select() %>% as.data.frame 
+obs = rbind(obs, xx)
 # ---------------------------------------------------------------------------- #
 
 
@@ -139,6 +159,7 @@ X = XX %>% summarise(min_time = min(date_time), max_time = max(date_time))
 # ---------------------------------------------------------------------------- #
 save.image(paste(dir.out, "/", yearLabel, ".Rdata",sep=""))
 write.csv(obs, file=paste(dir.out,"/", yearLabel,".csv", sep=""), row.names=FALSE)
+write.csv(trans, file=paste(dir.out,"/", yearLabel,"_transect.csv", sep=""), row.names=FALSE)
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
