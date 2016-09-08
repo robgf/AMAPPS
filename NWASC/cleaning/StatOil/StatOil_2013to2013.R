@@ -145,12 +145,27 @@ XX = obs %>% select(gps_date, date_time, lon, lat, index) %>% filter(lat != "") 
   mutate(start.lon = ifelse(start.side == "east", e_lon, w_lon)) %>% 
   mutate(end.lat = ifelse(start.side == "east", w_lat, e_lat)) %>% 
   mutate(end.lon = ifelse(start.side == "east", w_lon, e_lon)) %>% 
-  #mutate(index.for.end = as.numeric(index.for.end) + as.numeric(e.index)) %>% 
-  #mutate(index.for.start = as.numeric(index.for.start) + as.numeric(e.index)) %>% 
-  #mutate(index.for.end = as.numeric(index.for.end) + as.numeric(w.index)) %>% 
-  #mutate(index.for.start = as.numeric(index.for.start) + as.numeric(w.index)) %>% 
-  #select() %>% as.data.frame 
-obs = rbind(obs, xx)
+  mutate(index.for.start = ifelse(start.side == "east",
+                                as.numeric(index.for.start) + as.numeric(e.index),
+                                as.numeric(index.for.start) + as.numeric(w.index))) %>% 
+  mutate(index.for.end = ifelse(start.side == "east",
+                                as.numeric(index.for.end) + as.numeric(e.index),
+                                as.numeric(index.for.end) + as.numeric(w.index))) %>% 
+  select(-w.lat,-w.lon,-e.lat,-e.lon,-w.time,-e.time,-w.index,-e.index,-start.side) %>% as.data.frame 
+
+# split starts from end data, reformat
+starts = XX %>% select(gps_date, contains("start")) 
+ends = XX %>% select(gps_date, contains("end")) 
+starts$type = "BEGTRAN"
+ends$type = "ENDTRAN"
+names(starts) = c("gps_date","index","lat","lon","type")
+names(ends) = c("gps_date","index","lat","lon","type")
+to.add = rbind(starts, ends)
+to.add$index = as.character(to.add$index)
+to.add$lat = as.character(to.add$lat)
+to.add$lon = as.character(to.add$lon)
+obs = bind_rows(obs, to.add)
+rm(XX, to.add, ends, starts)
 # ---------------------------------------------------------------------------- #
 
 
