@@ -90,7 +90,7 @@ Ls1 = Lines(list(L1), ID = "1")
 latlong = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
 SL = SpatialLines(list(Ls1), proj4string = CRS(latlong))
 SLDF = SpatialLinesDataFrame(SL, data.frame(piece = c("transect"), row.names = c("1")))
-writeOGR(SLDF, dir.out, "StatOil", "ESRI Shapefile", morphToESRI = TRUE)
+writeOGR(SLDF, dir.out, "StatOil_transect", "ESRI Shapefile", morphToESRI = TRUE)
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
@@ -137,8 +137,8 @@ XX = obs %>% select(gps_date, date_time, lon, lat, index) %>% filter(lat != "") 
   mutate(add.to.index1 = ifelse(w.lat[start.side == "west"] <= w_lat, "-0.1", "0.1")) %>% 
   mutate(index.for.start = replace(add.to.index, is.na(add.to.index), add.to.index1)) %>% 
   select(-add.to.index,-add.to.index1) %>% 
-  mutate(add.to.index = ifelse(e.lat[start.side == "west"] <= e_lat, "-0.1", "0.1")) %>% 
-  mutate(add.to.index1 = ifelse(w.lat[start.side == "east"] <= w_lat, "-0.1", "0.1")) %>% 
+  mutate(add.to.index = ifelse(e.lat[start.side == "west"] <= e_lat, "0.1", "-0.1")) %>% 
+  mutate(add.to.index1 = ifelse(w.lat[start.side == "east"] <= w_lat, "0.1", "-0.1")) %>% 
   mutate(index.for.end = replace(add.to.index, is.na(add.to.index), add.to.index1)) %>% 
   select(-add.to.index,-add.to.index1) %>% 
   mutate(start.lat = ifelse(start.side == "east", e_lat, w_lat)) %>% 
@@ -149,8 +149,8 @@ XX = obs %>% select(gps_date, date_time, lon, lat, index) %>% filter(lat != "") 
                                 as.numeric(index.for.start) + as.numeric(e.index),
                                 as.numeric(index.for.start) + as.numeric(w.index))) %>% 
   mutate(index.for.end = ifelse(start.side == "east",
-                                as.numeric(index.for.end) + as.numeric(e.index),
-                                as.numeric(index.for.end) + as.numeric(w.index))) %>% 
+                                as.numeric(index.for.end) + as.numeric(w.index),
+                                as.numeric(index.for.end) + as.numeric(e.index))) %>% 
   select(-w.lat,-w.lon,-e.lat,-e.lon,-w.time,-e.time,-w.index,-e.index,-start.side) %>% as.data.frame 
 
 # split starts from end data, reformat
@@ -160,12 +160,9 @@ starts$type = "BEGTRAN"
 ends$type = "ENDTRAN"
 names(starts) = c("gps_date","index","lat","lon","type")
 names(ends) = c("gps_date","index","lat","lon","type")
-to.add = rbind(starts, ends)
-to.add$index = as.character(to.add$index)
-to.add$lat = as.character(to.add$lat)
-to.add$lon = as.character(to.add$lon)
-obs = bind_rows(obs, to.add)
-rm(XX, to.add, ends, starts)
+track = rbind(starts, ends)
+track$transect = 1
+rm(XX, ends, starts)
 # ---------------------------------------------------------------------------- #
 
 
@@ -174,7 +171,8 @@ rm(XX, to.add, ends, starts)
 # ---------------------------------------------------------------------------- #
 save.image(paste(dir.out, "/", yearLabel, ".Rdata",sep=""))
 write.csv(obs, file=paste(dir.out,"/", yearLabel,".csv", sep=""), row.names=FALSE)
-write.csv(trans, file=paste(dir.out,"/", yearLabel,"_transect.csv", sep=""), row.names=FALSE)
+write.csv(trans, file=paste(dir.out,"/", yearLabel,"_estimated_transect.csv", sep=""), row.names=FALSE)
+write.csv(track, file=paste(dir.out,"/", yearLabel,"_estimated_track.csv", sep=""), row.names=FALSE)
 # ---------------------------------------------------------------------------- #
 
 # ---------------------------------------------------------------------------- #
