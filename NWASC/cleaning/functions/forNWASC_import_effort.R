@@ -52,8 +52,9 @@ forNWASC_import_effort <- function(id, data_track, data_transect) {
   dat_track$track_lon = data_track[,which(colnames(data_track) %in% c("lon", "longitude", "long"))]
   dat_track$track_lat = data_track[,which(colnames(data_track) %in% c("lat", "latitude"))]    
   dat_track$point_type = data_track[,which(colnames(data_track) %in% c("type"))]
-  dat_track$track_dt = format(as.Date(data_track[,which(colnames(data_track) %in% c("date","start_dt","start_date"))]),'%m/%d/%Y')
+  dat_track$track_dt = format(as.Date(data_track[,which(colnames(data_track) %in% c("date","start_dt","start_date","gps_date"))]),'%m/%d/%Y')
   dat_track$source_transect_id = data_track[,which(colnames(data_track) %in% c("transect","transect_id"))]
+  dat_track$source_track_id = data_track[,which(colnames(data_track) %in% c("index"))]
   
   # if the transect information needs to be pulled from the track files
   if(missing(data_transect)) {
