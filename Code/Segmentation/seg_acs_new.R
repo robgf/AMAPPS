@@ -57,7 +57,7 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5/0.926, seg.tol =
            # number segments with waypoints
            seg_num = ifelse(dist_cuml <= seg.length | nseg == 1, 1,
                             ifelse(dist_cuml <= seg.length * nseg, ceiling(dist_cuml / seg.length), nseg)),
-           # determine number of segments without waypoints
+           # number of segments without waypoints
            tot_empty = as.integer(nseg - n_distinct(seg_num)))
   
   # create rows for segments without waypoints  
