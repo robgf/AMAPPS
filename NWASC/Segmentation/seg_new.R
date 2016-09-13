@@ -64,7 +64,7 @@ segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol
   
   # create rows for segments without waypoints  
   seg.empty = seg %>% ungroup %>% select(piece, dataset_id, transect_id, dist_total, nseg, dist_odd, seg_odd, tot_empty) %>%
-    distinct() %>%  filter(tot_empty > 0) %>% slice(rep(row_number(), tot_empty)) %>% select(-tot_empty) %>%
+    distinct %>%  filter(tot_empty > 0) %>% slice(rep(row_number(), tot_empty)) %>% select(-tot_empty) %>%
     mutate(empty_seg = 1)
   
   # combine segments with and without waypoints
