@@ -1,7 +1,8 @@
 # ------------------------# 
 # change names
 #names(obs)[names(obs) == "__in_Flock"] <- "count"
-names(obs)[names(obs) == "flock_cor"] <- "count"
+names(obs)[names(obs) == "Flock_COR"] <- "count"
+obs$original_species_tx = obs$type
 obs$type = toupper(obs$type)
 # ------------------------# 
 
@@ -33,6 +34,8 @@ colnames(obs) = tolower(colnames(obs))
 obs$behavior=gsub("\\s", "", obs$behavior)
 # ------------------------# 
 
+
+# ------------------------# 
 # SPECIES
 obs$type[obs$type=="ATLANTICWHITE-SIDEDDOLPHIN"] = "WSDO"
 obs$type[obs$type %in% c("UNMG","UNIDENTIFIEDMERG")] = "UNME"
@@ -50,15 +53,16 @@ obs$type[obs$type=="UNIDDOLPHIN"] = "UNDO"
 obs$type[obs$type=="LARGEWHALE"] = "UNLW"
 obs$type[obs$type %in% c("UNIDWHALE","WHALE")]="UNWH"
 
-#guesses since contact listed with data no longer available
+# guesses since contact listed with data no longer available
 obs$type[obs$type=="BLDU"] = "ABDU"
 obs$type[obs$type=="CAGO"] = "CANG"
 obs$type[obs$type %in% c("DEADULGU","ULGU")] = "UNLG"
 obs$type[obs$type=="LSTP"] = "LEAS"
 obs$type[obs$type=="UNGE"] = "UNGR"
 obs$type[obs$type=="UNID"] = "UNKN"
-	
-#dates
-obs$gps_date = as.Date(obs$gps_date)
-	
-	
+# ------------------------# 
+
+# ------------------------# 
+# TIME
+obs$gps_date = as.Date(obs$gps_date)	
+# ------------------------# 
