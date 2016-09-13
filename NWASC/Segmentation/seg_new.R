@@ -59,7 +59,7 @@ segmentCTS = function(observations, tracks, transects, seg.length = 2.5, seg.tol
                             ifelse(dist_cuml <= seg.length * (seg_odd - 1), ceiling(dist_cuml / seg.length),
                                    ifelse(dist_cuml > seg.length * (seg_odd - 1) + dist_odd,
                                           ceiling(1 + (dist_cuml - dist_odd) / seg.length), seg_odd))),
-           # determine number of segments without waypoints
+           # number of segments without waypoints
            tot_empty = as.integer(nseg - n_distinct(seg_num))) %>% select(-dist_extra)
   
   # create rows for segments without waypoints  
