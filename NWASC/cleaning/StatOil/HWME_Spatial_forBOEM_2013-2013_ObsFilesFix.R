@@ -6,6 +6,21 @@ obs$original_species_tx = obs$type
 obs$type = toupper(obs$type)
 # ------------------------# 
 
+
+# ------------------------# 
+# Fix flock count
+obs$dataChange = ""
+obs$dataChange[is.na(obs$count)] = paste("Changed COUNT from ",obs$count[is.na(obs$count)])
+obs$dataChange[obs$count==0] = paste("Changed COUNT from 0")
+obs$count[is.na(obs$count)] = obs$"__in_Flock"[is.na(obs$count)]
+obs$count[obs$count==0] = obs$"__in_Flock"[obs$count==0]
+obs$count[obs$count=="500+"] = 500
+obs$count[obs$"__in_Flock"=="HERG"] = 10
+obs$type[obs$"__in_Flock"=="HERG"] = "HERG"
+obs$count[obs$count=="?"] = NA
+# ------------------------# 
+
+
 # ------------------------# 
 # convert units to latlong
 #utm_zone = "19T"
