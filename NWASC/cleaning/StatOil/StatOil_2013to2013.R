@@ -163,6 +163,17 @@ names(ends) = c("gps_date","index","lat","lon","type")
 track = rbind(starts, ends)
 track$transect = 1
 rm(XX, ends, starts)
+
+# define transect/offline for observation points
+obs$index = as.numeric(obs$index)
+obs$lat = as.numeric(obs$lat)
+obs$lon = as.numeric(obs$lon)
+obs = bind_rows(obs,track)
+obs = obs %>% arrange(index) %>% group_by(gps_date) %>% 
+  mutate(offline = ifelse(index >= index[which(type == "BEGTRAN")] & 
+                           index <= index[which(type == "ENDTRAN")], 0, 1)) %>% 
+  mutate(transect = ifelse(offline == 0, 1, NA))
+obs = obs %>% filter(!type %in% c("BEGTRAN","ENDTRAN")) %>% as.data.frame
 # ---------------------------------------------------------------------------- #
 
 
