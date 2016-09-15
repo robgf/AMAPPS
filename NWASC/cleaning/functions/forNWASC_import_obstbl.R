@@ -2,17 +2,18 @@
 #
 # ------------------------------- #
 
-forNWASC_import_obstbl <- function(data, id, data_name) {
+forNWASC_import_obstbl <- function(data, id) {
   
   # load dataset descriptions
   library(RODBC)
   db <- odbcConnectAccess2007("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
+  data.in.db = sqlFetch(db, "dataset")
   obs.in.db = sqlFetch(db, "observation")
   #transects.in.db = sqlFetch(db, "transect")
   dat = as.data.frame(matrix(ncol = dim(obs.in.db)[2], nrow = dim(data)[1], data=NA))
   colnames(dat) = colnames(obs.in.db)
   dat$dataset_id = id
-  dat$source_dataset_id = data_name
+  dat$source_dataset_id = as.character(data.in.db$source_dataset_id[data.in.db$dataset_id==id])
   
   # move those variables over that have the same name
   same_nm = colnames(data[colnames(data) %in% colnames(dat)])
