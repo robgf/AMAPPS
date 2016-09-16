@@ -47,11 +47,13 @@ sf <- readOGR(dsn = file.path(paste(dir.in,"/To BOEM_Statoil_20140115/Hywind_Mai
 sfdf=as.data.frame(sf)
 names(sfdf)[names(sfdf) == "X__in_Flock"] <- "__in_Flock"
 sfdf = sfdf %>% select(-F25,-F26,-F27,-Cor_infloc,-coords.x1,-coords.x2) 
+obs$Comments = as.character(obs$Comments)
 obs = rbind(obs, sfdf) 
 rm(sfdf)
 names(obs)[names(obs) == "SpeciesCor"] <- "type"
+obs$type = as.character(obs$type)
+obs$Species__t = as.character(obs$Species__t)
 obs$type[!is.na(obs$Species__t) & is.na(obs$type)] = obs$Species__t[!is.na(obs$Species__t) & is.na(obs$type)]
-obs$type[obs$type == ""] = obs$Species__t[obs$type==""]
 obs = obs[!is.na(obs$type),]
 # ---------------------------------------------------------------------------- #
 
@@ -81,6 +83,12 @@ trans = cbind(c(-69.471,-69.49,-69.5086,-69.535,-69.5537,-69.5744,-69.5888),
 trans = as.data.frame(trans)
 names(trans) = c("lon","lat")
 
+## total distance
+# test = cbind(trans[1:6,],trans[2:7,])
+# names(test) = c("start_lon","start_lat","end_lon","end_lat")
+# test %>%  rowwise %>% mutate(distance =  distm(c(start_lat, start_lon), c(end_lat, end_lon), fun = distHaversine)) 
+# sum(test$distance)
+
 #plot(obs$lon,obs$lat, xlim = c(-69.59,-69.47), ylim = c(43.48,43.56))
 #lines(trans$lon,trans$lat,col="red",lwd=3)
 
@@ -104,6 +112,7 @@ writeOGR(SLDF, dir.out, "StatOil_transect", "ESRI Shapefile", morphToESRI = TRUE
 obs$time = as.character(obs$time)
 obs$time[is.na(obs$time)] = as.character(obs$gps_time[is.na(obs$time)])
 obs$date_time = as.POSIXct(strptime(paste(obs$gps_date,obs$time,sep=" "),"%Y-%m-%d %I:%M:%S%p"))
+obs$time = sapply(strsplit(as.character(obs$date_time)," "), tail, 1) #removes am/pm and changes to 24h
 
 # sort by time
 obs = obs %>% arrange(date_time)
@@ -151,24 +160,44 @@ XX = obs %>% select(gps_date, date_time, lon, lat, index) %>% filter(lat != "") 
   mutate(index.for.end = ifelse(start.side == "east",
                                 as.numeric(index.for.end) + as.numeric(w.index),
                                 as.numeric(index.for.end) + as.numeric(e.index))) %>% 
-  select(-w.lat,-w.lon,-e.lat,-e.lon,-w.time,-e.time,-w.index,-e.index,-start.side) %>% as.data.frame 
+  select(-w.lat,-w.lon,-e.lat,-e.lon,-w.time,-e.time,-w.index,-e.index) %>% as.data.frame 
 
 # split starts from end data, reformat
 starts = XX %>% select(gps_date, contains("start")) 
-ends = XX %>% select(gps_date, contains("end")) 
 starts$type = "BEGTRAN"
+# add waypoints
+east.start = trans[2:6,]
+west.start = cbind(rev(trans[[1]]),rev(trans[[2]]))
+west.start = as.data.frame(west.start[2:6,])
+names(west.start) = c("lon","lat")
+east.start$type = "WAYPNT"
+west.start$type = "WAYPNT"
+east.start$order = 2:6
+west.start$order = 2:6
+starts$order = 1
+names(starts) = c("gps_date","start.side","index","lat","lon","type","order")
+
+for (a in 1:40) {
+  if(starts$start.side[a]=="east") {new = east.start} else new = west.start
+  new$gps_date = rep(starts$gps_date[a],5)
+  starts = bind_rows(starts, new)
+  rm(new)
+}
+
+ends = XX %>% select(gps_date, contains("end")) 
 ends$type = "ENDTRAN"
-names(starts) = c("gps_date","index","lat","lon","type")
 names(ends) = c("gps_date","index","lat","lon","type")
-track = rbind(starts, ends)
-track$transect = 1
+track = bind_rows(starts, ends)
 rm(XX, ends, starts)
+track$order[track$type=="ENDTRAN"] = 7
+track$transect = 1
+track=track %>% arrange(gps_date,order) %>% select(-start.side)
 
 # define transect/offline for observation points
 obs$index = as.numeric(obs$index)
 obs$lat = as.numeric(obs$lat)
 obs$lon = as.numeric(obs$lon)
-obs = bind_rows(obs,track)
+obs = bind_rows(obs,track[type %in% c("BEGTRAN","ENDTRAN"),])
 obs = obs %>% arrange(index) %>% group_by(gps_date) %>% 
   mutate(offline = ifelse(index >= index[which(type == "BEGTRAN")] & 
                            index <= index[which(type == "ENDTRAN")], 0, 1)) %>% 
