@@ -6,36 +6,32 @@
 # ------------------------------------------------------------------------- #
 
 # load necessary functions (generic for all surveys)
-# CHECK WHICH COMPUTER: LAPTOP OR FWS DESKTOP
-cpu = if (file.exists("M:/")) "work" else "home"
-
-# SET PATH TO DATA DIRECTORY
-dir = if (cpu == "work") file.path("M:/seabird_database/Kaycee_Working_Folder") else 
-  file.path("C:/Users/KColeman/Documents/seabird_database/Kaycee_Working_Folder")
+# SET INPUT/OUTPUT DIRECTORY PATHS
+dir <- "//IFW9mbm-fs1/SeaDuck/seabird_database/datasets_received"
 setwd(dir)
-rm(cpu)
+surveyFolder = "NOAA NMFS"
+yearLabel = "NOAA ship 2015"
 
-source(file.path(dir, "RProfile.R"))
+dbpath <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/DataBase"
+dir.in <- paste(dir, surveyFolder, yearLabel, sep = "/") 
+dir.out <- paste(gsub("datasets_received", paste("data_import/in_progress", surveyFolder, yearLabel, sep="/"), dir), sep = "/") 
+speciesPath <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/DataProcessing/"
 
+# SOURCE R FUNCTIONS
+source(file.path("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/_Rfunctions/sourceDir.R"))
+sourceDir(file.path("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/_Rfunctions"))
 # ------------------------------------------------------------------------- #
-#
-# SET PATH TO DATA DIRECTORY
-yearlab = "NOAAship_2015"
-path = file.path(dir, "DataProcessing/Surveys/MiscSurveys/NOAAship", yearlab)
-inpath = file.path(gsub("DataProcessing/Surveys", "SurveyData", path))
-speciesPath = file.path(dir,"Database") 
 
 # ------------------------------------------------------------------------- #
 # LOAD DATA
 
 require(lubridate)
 require(rgdal)
-library(plyr)
-
-
-database = odbcConnectExcel2007(file.path(inpath, "HB1503birdsight.xls")) 
-spp = sqlFetch(database, "Export Worksheet")
-odbcClose(database)
+library(dplyr)
+ 
+db = odbcConnectExcel2007(file.path(dir.in, "HB1503birdsight.xls")) 
+spp = sqlFetch(db, "data")
+odbcClose(db)
 
 # FIX TIME
 times = cbind(substr(spp$SIGHTDATETIMELOCAL, 1, 2),
@@ -74,7 +70,7 @@ spp$SPECIES = as.character(spp$SPECIES)
 spp$SPECIES[spp$SPECIES == "PASS"] = "UNPA"
 
 # READ IN EFFORT FILE
-track = readOGR(inpath,"HB1503birdeffort")
+track = readOGR(dir.in,"HB1503birdeffort")
 # print(proj4string(track)) # check that projection is lat, lon instead of something else
 # plot(track, axes = TRUE)
 # points(spp$LON, spp$LAT, col = "red")
@@ -165,25 +161,36 @@ track.df = track.df[,!names(track.df) %in% c("ENDTIME","BEGINTIME")]
 
 ## change names for import
 # NOTE LEG but not TRANSECT in spp BUT both TRANSECT and LEG in track
-spp = rename(spp,c("SPECIES" = "spp_cd", "GROUPSIZE" = "obs_count_general_nb", "AGE" = "animal_age_tx", 
-                   "BEHAVIORDESC" = "behavior_tx", "ANGLE" = "angle_from_observer_nb", "HEIGHTRANGE" = "flight_height_tx",
-                   "DISTDESC" ="distance_to_animal_tx", "COMMENTS" = "comments_tx", "LEG" = "local_transect_id",
-                   "ID" = "observation_id", "LAT" = "lat", "LON" = "lon"))
+spp = rename(spp, spp_cd = SPECIES, 
+                   obs_count_general_nb = GROUPSIZE, 
+                   animal_age_tx = AGE, 
+                   behavior_tx = BEHAVIORDESC, 
+                   angle_from_observer_nb = ANGLE, 
+                   flight_height_tx = HEIGHTRANGE,
+                   distance_to_animal_tx = DISTDESC, 
+                   comments_tx = COMMENTS, 
+                   local_transect_id = LEG,
+                   observation_id = ID)
+names(spp) = tolower(names(spp))
 
+track.df = rename(track.df, transect_distance_nb = LENGTH_KM, 
+                  seastate_beaufort_nb = BEAUFORT,
+                  comments_tx = COMMENTS, 
+                  local_transect_id = LEG)
+names(track.df) = tolower(names(track.df))
 
-track.df = rename(track.df,c("LENGTH_KM" = "transect_distance_nb", "BEAUFORT" = "seastate_beaufort_nb",
-                             "COMMENTS" = "comments_tx", "LEG" = "local_transect_id"))
 spp$source_dataset_id = "AMAPPS_NOAA/NMFS_NEFSCBoat2015"
+track.df$source_dataset_id = "AMAPPS_NOAA/NMFS_NEFSCBoat2015"
 
 # pull out species info
-species = cbind(spp$spp_cd, as.character(spp$COMNAME), as.character(spp$SCINAME))
-colnames(species) = c("spp_cd", "commonName", "scientificName")
-species = species[!duplicated(species),]
-out = c("COMNAME", "SCINAME")
-spp = spp[,!names(spp) %in% out]
-rm(out)
+#species = cbind(spp$spp_cd, as.character(spp$comname), as.character(spp$sciname))
+#colnames(species) = c("spp_cd", "commonName", "scientificName")
+#species = species[!duplicated(species),]
+#out = c("COMNAME", "SCINAME")
+#spp = spp[,!names(spp) %in% out]
+#rm(out)
 
-track.LatLon = spp[,!names(LatLon) %in% "row.names"]
+#track.LatLon = spp[,!names(LatLon) %in% "row.names"]
 
 #library(oce)
 #data(coastlineWorld)
@@ -191,12 +198,19 @@ track.LatLon = spp[,!names(LatLon) %in% "row.names"]
 #plot(coastlineWorld, clatitude=40, clongitude=-72, span=2000, bg = "light blue")
 #points(track.LatLon$lon, track.LatLon$lat, col = "blue", pch = 19)
 
-# Export for Kyle
-#write.csv(spp, file = "NOAAship2015_obs.csv", row.names = F)
-#write.csv(species, file = "NOAAship2015_spp.csv", row.names = F)
-#write.csv(track.LatLon, file = "NOAAship2015_trackLatLon.csv", row.names = F)
-#write.csv(track.df, file = "NOAAship2015_trackData.csv", row.names = F)
-write.csv(dataChange, file = paste(path,"NOAAship2015_dataChange.csv", sep="/"), row.names = F)
+transect = track.df
+track = track.LatLon
+rm(track.df,track.LatLon)
+
+# add BEG/END
+track$type = 
+
+# Export 
+write.csv(spp, file = paste(dir.out, "NOAAship2015_obs.csv", sep = "/"), row.names = F)
+#write.csv(species, file = paste(dir.out, "NOAAship2015_spp.csv", sep="/") row.names = F)
+write.csv(track, file = paste(dir.out, "NOAAship2015_track.csv", sep="/"), row.names = F)
+write.csv(transect, file = paste(dir.out, "NOAAship2015_transect.csv", sep="/"), row.names = F)
+write.csv(dataChange, file = paste(dir.out,"NOAAship2015_dataChange.csv", sep="/"), row.names = F)
 
 
 # ------------------------------------------------------------------------- #
@@ -227,6 +241,6 @@ dataset_list$keywords = paste("seabirds", "NOAA","NMFS","Georges Bank", sep = ",
 dataset_list$resp_party = "63" ##### NEW ENTRY/ CHECK? ##### Elizabeth (Beth) Josephson
 dataset_list$coordsys = "Lat/Long"
 dataset_list$numrecords = dim(spp)[1]
-write.csv(dataset_list, file = paste(path,"NOAAship2015_dataset_list.csv", sep="/"), row.names = F, na = "")
+write.csv(dataset_list, file = paste(dir.out,"NOAAship2015_dataset_list.csv", sep="/"), row.names = F, na = "")
 
 
