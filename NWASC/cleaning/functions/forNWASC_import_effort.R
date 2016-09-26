@@ -7,39 +7,19 @@
 # ------------------------------- #
 
 forNWASC_import_effort <- function(id, data_track, data_transect, estimated_effort_turning_points) {
+
+  # ------------------------ #
   # load dataset descriptions
+  # ------------------------ #
   library(RODBC)
   db <- odbcConnectAccess2007("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
   transects.in.db = sqlFetch(db, "transect")
   tracks.in.db = sqlFetch(db, "track")
   data.in.db = sqlFetch(db, "dataset")
   obs.in.db = sqlFetch(db, "observation")
+  # ------------------------ #
   
-  # ------------------------ #
-  # transect
-  # ------------------------ #
-  # reformat, create, and/or rename
-  if(!missing(data_transect)) {
-    dat_transect = as.data.frame(matrix(ncol=dim(transects.in.db)[2], nrow=dim(data_transect)[1], data=NA))
-    colnames(dat_transect) = colnames(transects.in.db)
     
-    # move those variables over that have the same name
-    same_nm = colnames(data_transect[colnames(data_transect) %in% colnames(dat_transect)])
-    dat[,colnames(dat) %in% same_nm] = data[,colnames(data) %in% same_nm]
-    
-    dat_transect$dataset_id = id
-    dat_transect$transect_id = c((max(dat_design$transect_id)+1):(max(dat_design$transect_id)+dim(design)[1]))
-    dat_track$source_transect_id = data_transect[,which(colnames(data_transect) %in% c("transect","transect_id"))]
-    dat_transect$temp_start_lon = data_transect[,which(colnames(data_transect) %in% c("start_lon", "begin_lon","start_longitude", "begin_longitude","start_long", "begin_long"))]
-    dat_transect$temp_start_lat = data_transect[,which(colnames(data_transect) %in% c("start_lat", "begin_lat","start_latitude", "begin_latitude"))]
-    dat_transect$temp_stop_lon = data_transect[,which(colnames(data_transect) %in% c("end_lon", "stop_lon","end_longitude", "stop_longitude","end_long", "stop_long"))]
-    dat_transect$temp_stop_lat = data_transect[,which(colnames(data_transect) %in% c("end_lat", "stop_lat","end_latitude", "stop_latitude"))]
-    dat_transect$start_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","start_dt","start_date"))]),'%m/%d/%Y')
-    dat_transect$end_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","end_dt","end_date"))]),'%m/%d/%Y')
-  }
-  # ------------------------ #
-  
-  
   # ------------------------ #
   # track
   # ------------------------ #
@@ -82,6 +62,29 @@ forNWASC_import_effort <- function(id, data_track, data_transect, estimated_effo
                        source_track_id = as.numeric(source_track_id))
   
   
+  # ------------------------ #
+  # transect
+  # ------------------------ #
+  # reformat, create, and/or rename
+  if(!missing(data_transect)) {
+    dat_transect = as.data.frame(matrix(ncol=dim(transects.in.db)[2], nrow=dim(data_transect)[1], data=NA))
+    colnames(dat_transect) = colnames(transects.in.db)
+    
+    # move those variables over that have the same name
+    same_nm = colnames(data_transect[colnames(data_transect) %in% colnames(dat_transect)])
+    dat[,colnames(dat) %in% same_nm] = data[,colnames(data) %in% same_nm]
+    
+    dat_transect$dataset_id = id
+    dat_transect$transect_id = c((max(dat_design$transect_id)+1):(max(dat_design$transect_id)+dim(design)[1]))
+    dat_track$source_transect_id = data_transect[,which(colnames(data_transect) %in% c("transect","transect_id"))]
+    dat_transect$temp_start_lon = data_transect[,which(colnames(data_transect) %in% c("start_lon", "begin_lon","start_longitude", "begin_longitude","start_long", "begin_long"))]
+    dat_transect$temp_start_lat = data_transect[,which(colnames(data_transect) %in% c("start_lat", "begin_lat","start_latitude", "begin_latitude"))]
+    dat_transect$temp_stop_lon = data_transect[,which(colnames(data_transect) %in% c("end_lon", "stop_lon","end_longitude", "stop_longitude","end_long", "stop_long"))]
+    dat_transect$temp_stop_lat = data_transect[,which(colnames(data_transect) %in% c("end_lat", "stop_lat","end_latitude", "stop_latitude"))]
+    dat_transect$start_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","start_dt","start_date"))]),'%m/%d/%Y')
+    dat_transect$end_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","end_dt","end_date"))]),'%m/%d/%Y')
+  }
+  
   # if the transect information needs to be pulled from the track files
   if(missing(data_transect)) {
    
@@ -100,9 +103,6 @@ forNWASC_import_effort <- function(id, data_track, data_transect, estimated_effo
       mutate(distance =  distm(c(start_lat, start_lon), c(end_lat, end_lon), fun = distHaversine)) %>% 
       ungroup %>% as.data.frame
     
-    #estimated_effort_turning_points
-    
-    
     #summarize pieces to transects
     transects = transect_pieces %>% 
       mutate(source_transect_id = factor(source_transect_id)) %>% 
@@ -117,9 +117,7 @@ forNWASC_import_effort <- function(id, data_track, data_transect, estimated_effo
     dat_transect[,same_nm] = transects[,same_nm]
     dat_transect$dataset_id = id
     dat_transect$transect_id = c((max(transects.in.db$transect_id)+1):(max(transects.in.db$transect_id)+dim(dat_transect)[1]))
-    dat_transect$source_dataset_id = as.character(data.in.db$source_dataset_id[data.in.db$dataset_id==id])
-    
-    
+    dat_transect$source_dataset_id = as.character(data.in.db$source_dataset_id[data.in.db$dataset_id==id])   
     dat_transect = dat_transect %>% 
       mutate(temp_start_lat = transect_pieces$start_lat[transect_pieces$track_dt == start_dt]) %>%
       mutate(temp_start_lon = transect_pieces$start_lon[transect_pieces$track_dt == start_dt]) %>%
@@ -171,37 +169,33 @@ forNWASC_import_effort <- function(id, data_track, data_transect, estimated_effo
                                            survey_type = as.character(survey_type),
                                            temp_end_lat = as.character(temp_end_lat))
     
- }
+  }
   
   # ------------------------ #
   # join transect numbers to both track and observations tables based on date
-  dat_transect = dat_transect %>% 
-    mutate(temp_start_lat = transect_pieces$start_lat[transect_pieces$track_dt == start_dt]) %>%
   # ------------------------ #
-  
-  
-  # ------------------------ #
-  
+  if (length(unique(dat_transect$start_dt)) == dim(dat_transect)[1]) {
+    temp = dat_transect
+    temp = rename(temp, track_dt = start_dt) %>% select(track_dt, transect_id)
+    dat_track$transect_id = full_join(dat_track, temp, by = "track_dt") %>% select(transect_id.y) %>% as.vector()
+    # track_transect_id = full_join(dat_track, temp, by = "track_dt") %>% select(transect_id.y, track_id) %>% as.data.frame()
+    # names(track_transect_id) = c("transect_id","track_id")
     
+    temp = rename(temp, obs_dt = track_dt) 
+    obs_transect_id = full_join(obs.in.db, temp, by = "obs_dt") %>% select(transect_id.y, observation_id) %>% as.data.frame() 
+    names(obs_transect_id) = c("transect_id","observation_id")
+  }
+      
+  sqlUpdate(db, obs_transect_id, tablename = "observation", index = "observation_id") 
+  # sqlUpdate(db, track_transect_id, tablename = "track", index = "track_id") # if already done
+  # ------------------------ #
+  
+
   # ------------------------ #
   # add to NWASC temporary db
   # ------------------------ #
-  add = c("Yes, I would like to add this track dataset to the temporary database", 
-          "No, I do not wish to add this track dataset to the temporary database") 
-  to_add = select.list(add, preselect = NULL, multiple = FALSE, title = NULL)
-  if(substr(to_add,1,1)=="Y") {
-    # need to have the same column names 
-    sqlSave(db, dat_track, tablename = "track", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)
-  }
-  add2 = c("Yes, I would like to add this transect dataset to the temporary database", 
-          "No, I do not wish to add this transect dataset to the temporary database") 
-  to_add2 = select.list(add2, preselect = NULL, multiple = FALSE, title = NULL)
-  if(substr(to_add2,1,1)=="Y") {
-    # need to have the same column names 
-    sqlSave(db, dat_transect, tablename = "transect", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)
-  }
-  
-  
+  sqlSave(db, dat_track, tablename = "track", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)
+  sqlSave(db, dat_transect, tablename = "transect", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)
+ 
   odbcClose(db) 
-  return(dat_track)
 }
