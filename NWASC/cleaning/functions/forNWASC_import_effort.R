@@ -6,7 +6,7 @@
 # matching by date
 # ------------------------------- #
 
-forNWASC_import_effort <- function(id, data_track, data_transect, estimated_effort_turning_points) {
+forNWASC_import_effort <- function(id, data_track, data_transect) {
 
   # ------------------------ #
   # load dataset descriptions
@@ -60,7 +60,8 @@ forNWASC_import_effort <- function(id, data_track, data_transect, estimated_effo
                        track_gs = as.character(track_gs),            
                        piece = as.numeric(piece),                 
                        source_track_id = as.numeric(source_track_id))
-  
+  # ------------------------ #
+
   
   # ------------------------ #
   # transect
