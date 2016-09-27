@@ -163,15 +163,16 @@ track.df = track.df[,!names(track.df) %in% c("ENDTIME","BEGINTIME")]
 ## change names for import
 # NOTE LEG but not TRANSECT in spp BUT both TRANSECT and LEG in track
 spp = rename(spp, spp_cd = SPECIES, 
-                   obs_count_general_nb = GROUPSIZE, 
-                   animal_age_tx = AGE, 
-                   behavior_tx = BEHAVIORDESC, 
-                   angle_from_observer_nb = ANGLE, 
-                   flight_height_tx = HEIGHTRANGE,
-                   distance_to_animal_tx = DISTDESC, 
-                   comments_tx = COMMENTS, 
-                   source_transect_id = LEG,
-                   source_obs_id = ID)
+             obs_count_general_nb = GROUPSIZE, 
+             animal_age_tx = AGE, 
+             behavior_tx = BEHAVIORDESC, 
+             angle_from_observer_nb = ANGLE, 
+             flight_height_tx = HEIGHTRANGE,
+             distance_to_animal_tx = DISTDESC, 
+             comments_tx = COMMENTS, 
+             source_transect_id = LEG,
+             source_obs_id = ID,
+             heading_tx = fltdir)
 names(spp) = tolower(names(spp))
 
 track.df = rename(track.df, transect_distance_nb = LENGTH_KM, 
