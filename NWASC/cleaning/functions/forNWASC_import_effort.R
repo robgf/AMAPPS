@@ -34,13 +34,28 @@ forNWASC_import_effort <- function(id, data_track, data_transect) {
   dat_track[,same_nm] = data_track[,same_nm]
   
   dat_track$dataset_id = id
-  dat_track$track_lon = data_track[,which(colnames(data_track) %in% c("lon", "longitude", "long"))]
-  dat_track$track_lat = data_track[,which(colnames(data_track) %in% c("lat", "latitude"))]    
-  dat_track$point_type = data_track[,which(colnames(data_track) %in% c("type"))]
-  dat_track$track_dt = format(as.Date(data_track[,which(colnames(data_track) %in% c("date","start_dt","start_date","gps_date"))]),'%m/%d/%Y')
-  dat_track$source_transect_id = data_track[,which(colnames(data_track) %in% c("transect","transect_id"))]
-  dat_track$source_track_id = data_track[,which(colnames(data_track) %in% c("index"))]
   dat_track$track_id = c((max(tracks.in.db$track_id)+1):(max(tracks.in.db$track_id)+dim(data_track)[1]))
+  
+  # fill in unmatched variables
+  if(any(colnames(data_track) %in% c("lon", "longitude", "long"))) {
+    dat_track$track_lon = data_track[,which(colnames(data_track) %in% c("lon", "longitude", "long"))]
+  }
+  if(any(colnames(data_track) %in% c("lat", "latitude"))) {
+    dat_track$track_lat = data_track[,which(colnames(data_track) %in% c("lat", "latitude"))]
+  }
+  if(any(colnames(data_track) %in% c("type"))) {dat_track$point_type = data_track[,which(colnames(data_track) %in% c("type"))]}
+  if(any(colnames(data_track) %in% c("date","start_dt","start_date","gps_date","track_dt"))) {
+    dat_track$track_dt = format(as.Date(data_track[,which(colnames(data_track) %in% c("date","start_dt","start_date","gps_date","track_dt"))]),'%m/%d/%Y')
+  }
+  if(any(colnames(data_track) %in% c("time"))) {
+    dat_track$track_tm = data_track[,which(colnames(data_track) %in% c("time"))]
+  }
+  if(any(colnames(data_track) %in% c("transect","transect_id"))) {
+    dat_track$source_transect_id = data_track[,which(colnames(data_track) %in% c("transect","transect_id"))]
+  }
+  if(any(colnames(data_track) %in% c("index"))) {
+    dat_track$source_track_id = data_track[,which(colnames(data_track) %in% c("index"))]
+  } else dat_track$source_track_id = 1:dim(data_track)[1]
   
   dat_track = dat_track %>% mutate(track_id = as.numeric(track_id),           
                        track_dt = as.character(track_dt),           
@@ -61,7 +76,7 @@ forNWASC_import_effort <- function(id, data_track, data_transect) {
                        piece = as.numeric(piece),                 
                        source_track_id = as.numeric(source_track_id))
   # ------------------------ #
-
+    
   
   # ------------------------ #
   # transect
@@ -73,22 +88,50 @@ forNWASC_import_effort <- function(id, data_track, data_transect) {
     
     # move those variables over that have the same name
     same_nm = colnames(data_transect[colnames(data_transect) %in% colnames(dat_transect)])
-    dat[,colnames(dat) %in% same_nm] = data[,colnames(data) %in% same_nm]
+    dat_transect[,same_nm] = data_transect[,same_nm]
     
     dat_transect$dataset_id = id
-    dat_transect$transect_id = c((max(dat_design$transect_id)+1):(max(dat_design$transect_id)+dim(design)[1]))
-    dat_track$source_transect_id = data_transect[,which(colnames(data_transect) %in% c("transect","transect_id"))]
-    dat_transect$temp_start_lon = data_transect[,which(colnames(data_transect) %in% c("start_lon", "begin_lon","start_longitude", "begin_longitude","start_long", "begin_long"))]
-    dat_transect$temp_start_lat = data_transect[,which(colnames(data_transect) %in% c("start_lat", "begin_lat","start_latitude", "begin_latitude"))]
-    dat_transect$temp_stop_lon = data_transect[,which(colnames(data_transect) %in% c("end_lon", "stop_lon","end_longitude", "stop_longitude","end_long", "stop_long"))]
-    dat_transect$temp_stop_lat = data_transect[,which(colnames(data_transect) %in% c("end_lat", "stop_lat","end_latitude", "stop_latitude"))]
-    dat_transect$start_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","start_dt","start_date"))]),'%m/%d/%Y')
-    dat_transect$end_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","end_dt","end_date"))]),'%m/%d/%Y')
+    dat_transect$transect_id = c((max(transects.in.db$transect_id)+1):(max(transects.in.db$transect_id)+dim(dat_transect)[1]))
+    dat_transect$source_dataset_id = as.character(data.in.db$source_dataset_id[data.in.db$dataset_id==id])   
+        
+    if(any(colnames(data_transect) %in% c("transect","transect_id"))) {
+      dat_track$source_transect_id = data_transect[,which(colnames(data_transect) %in% c("transect","transect_id"))]
+    }
+    if(any(colnames(data_transect) %in% c("start_lon", "begin_lon","start_longitude", "begin_longitude","start_long", "begin_long"))) {
+      dat_transect$temp_start_lon = data_transect[,which(colnames(data_transect) %in% c("start_lon", "begin_lon","start_longitude", "begin_longitude","start_long", "begin_long"))]
+    }
+    if(any(colnames(data_transect) %in% c("start_lat", "begin_lat","start_latitude", "begin_latitude"))) {
+      dat_transect$temp_start_lat = data_transect[,which(colnames(data_transect) %in% c("start_lat", "begin_lat","start_latitude", "begin_latitude"))]
+    }
+    if(any(colnames(data_transect) %in% c("end_lon", "stop_lon","end_longitude", "stop_longitude","end_long", "stop_long"))) {
+      dat_transect$temp_stop_lon = data_transect[,which(colnames(data_transect) %in% c("end_lon", "stop_lon","end_longitude", "stop_longitude","end_long", "stop_long"))]
+    }
+    if(any(colnames(data_transect) %in% c("end_lat", "stop_lat","end_latitude", "stop_latitude"))) {
+      dat_transect$temp_stop_lat = data_transect[,which(colnames(data_transect) %in% c("end_lat", "stop_lat","end_latitude", "stop_latitude"))]
+    }
+    if(any(colnames(data_transect) %in% c("date","start_dt","start_date"))) {
+      dat_transect$start_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","start_dt","start_date"))]),'%m/%d/%Y')
+    }
+    if(any(colnames(data_transect) %in% c("date","end_dt","end_date"))) {
+      dat_transect$end_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","end_dt","end_date"))]),'%m/%d/%Y')
+    }
+    if(any(colnames(data_transect) %in% c("time","start_time","start_tm"))) {
+      dat_transect$start_tm = data_transect[,which(colnames(data_transect) %in% c("time","start_time","start_tm"))]
+    }
+    if(any(colnames(data_transect) %in% c("time","end_time","end_tm"))) {
+      dat_transect$end_tm = data_transect[,which(colnames(data_transect) %in% c("time","end_time","end_tm"))]
+    }
+    if(any(colnames(data_transect) %in% c("observer","observers","observer_tx"))) {
+      dat_transect$observers_tx = data_transect[,which(colnames(data_transect) %in% c("observer","observers","observer_tx"))]
+    }
+    # calculations
+    dat_transect$transect_time_min_nb = difftime(as.POSIXct(paste(dat_transect$end_dt, dat_transect$end_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
+                                               as.POSIXct(paste(dat_transect$start_dt, dat_transect$start_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
+                                               units = "mins")
   }
   
   # if the transect information needs to be pulled from the track files
   if(missing(data_transect)) {
-   
     # group by transect and day
     # pieces in transect
     # only works if there is a Beg and End
@@ -124,8 +167,16 @@ forNWASC_import_effort <- function(id, data_track, data_transect) {
       mutate(temp_start_lon = transect_pieces$start_lon[transect_pieces$track_dt == start_dt]) %>%
       mutate(temp_stop_lat = transect_pieces$end_lat[transect_pieces$track_dt == end_dt]) %>%
       mutate(temp_stop_lat = transect_pieces$end_lon[transect_pieces$track_dt == end_dt])
+    
+    # calculations
+    dat_transect$transect_time_min_nb = difftime(as.POSIXct(paste(dat_transect$end_dt, dat_transect$end_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
+                                                 as.POSIXct(paste(dat_transect$start_dt, dat_transect$start_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
+                                                 units = "mins")
+    
+  }
 
-    dat_transect = dat_transect %>% mutate(transect_id = as.numeric(transect_id),
+  # format class names
+  dat_transect = dat_transect %>% mutate(transect_id = as.numeric(transect_id),
                                            dataset_id = as.numeric(dataset_id),
                                            source_transect_id = as.character(source_transect_id),
                                            source_dataset_id = as.character(source_dataset_id),
@@ -167,28 +218,23 @@ forNWASC_import_effort <- function(id, data_track, data_transect) {
                                            date_imported = as.character(date_imported),
                                            local_survey_id = as.character(local_survey_id),
                                            local_transect_id2 = as.character(local_transect_id2),
-                                           survey_type = as.character(survey_type),
-                                           temp_end_lat = as.character(temp_end_lat))
-    
-  }
+                                           survey_type = as.character(survey_type))
+  # ------------------------ #
+  
   
   # ------------------------ #
   # join transect numbers to both track and observations tables based on date
   # ------------------------ #
-  if (length(unique(dat_transect$start_dt)) == dim(dat_transect)[1]) {
-    temp = dat_transect
-    temp = rename(temp, track_dt = start_dt) %>% select(track_dt, transect_id)
-    dat_track$transect_id = full_join(dat_track, temp, by = "track_dt") %>% select(transect_id.y) %>% as.vector()
-    # track_transect_id = full_join(dat_track, temp, by = "track_dt") %>% select(transect_id.y, track_id) %>% as.data.frame()
-    # names(track_transect_id) = c("transect_id","track_id")
-    
-    temp = rename(temp, obs_dt = track_dt) 
-    obs_transect_id = full_join(obs.in.db, temp, by = "obs_dt") %>% select(transect_id.y, observation_id) %>% as.data.frame() 
-    names(obs_transect_id) = c("transect_id","observation_id")
-  }
-      
+  dat_track = full_join(dat_track, select(dat_transect, dataset_id, source_transect_id, transect_id), 
+                        by=c("dataset_id","source_transect_id"))
+  dat_transect$source_transect_id = as.numeric(dat_transect$source_transect_id)
+  dat_transect$transect_id = as.numeric(dat_transect$transect_id)
+  obs_transect_id = full_join(obs.in.db, select(dat_transect, dataset_id, source_transect_id, transect_id), 
+                        by=c("dataset_id","source_transect_id")) %>% select(transect_id.y, observation_id) %>%
+    rename(transect_id = transect_id.y)
+  
   sqlUpdate(db, obs_transect_id, tablename = "observation", index = "observation_id") 
-  # sqlUpdate(db, track_transect_id, tablename = "track", index = "track_id") # if already done
+  # sqlUpdate(db, track_transect_id, tablename = "track", index = "track_id") # if already created
   # ------------------------ #
   
 
@@ -199,4 +245,5 @@ forNWASC_import_effort <- function(id, data_track, data_transect) {
   sqlSave(db, dat_transect, tablename = "transect", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)
  
   odbcClose(db) 
+  # ------------------------ #
 }
