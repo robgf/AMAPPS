@@ -172,7 +172,7 @@ spp = rename(spp, spp_cd = SPECIES,
              comments_tx = COMMENTS, 
              source_transect_id = LEG,
              source_obs_id = ID,
-             heading_tx = fltdir)
+             heading_tx = FLTDIR)
 names(spp) = tolower(names(spp))
 
 track.df = rename(track.df, transect_distance_nb = LENGTH_KM, 
