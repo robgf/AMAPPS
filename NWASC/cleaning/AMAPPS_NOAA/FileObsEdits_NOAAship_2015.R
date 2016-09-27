@@ -236,6 +236,9 @@ track_summary = track %>% group_by(source_transect_id) %>%
   ungroup %>% as.data.frame
 transect = left_join(transect, track_summary, by = "source_transect_id")
 
+# rename transect since not sure how to match to others, matched by leg
+transect = rename(transect, local_transect_id = transect)
+
 # ------------------------------------------------------------------------- #
 # Export to csv's
 # ------------------------------------------------------------------------- #
