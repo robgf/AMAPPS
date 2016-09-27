@@ -27,7 +27,8 @@ sourceDir(file.path("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working
 
 require(lubridate)
 require(rgdal)
-library(dplyr)
+require(dplyr)
+require(RODBC)
  
 db = odbcConnectExcel2007(file.path(dir.in, "HB1503birdsight.xls")) 
 spp = sqlFetch(db, "data")
@@ -169,14 +170,14 @@ spp = rename(spp, spp_cd = SPECIES,
                    flight_height_tx = HEIGHTRANGE,
                    distance_to_animal_tx = DISTDESC, 
                    comments_tx = COMMENTS, 
-                   local_transect_id = LEG,
-                   observation_id = ID)
+                   source_transect_id = LEG,
+                   source_obs_id = ID)
 names(spp) = tolower(names(spp))
 
 track.df = rename(track.df, transect_distance_nb = LENGTH_KM, 
                   seastate_beaufort_nb = BEAUFORT,
                   comments_tx = COMMENTS, 
-                  local_transect_id = LEG)
+                  source_transect_id = LEG)
 names(track.df) = tolower(names(track.df))
 
 spp$source_dataset_id = "AMAPPS_NOAA/NMFS_NEFSCBoat2015"
@@ -201,9 +202,24 @@ track.df$source_dataset_id = "AMAPPS_NOAA/NMFS_NEFSCBoat2015"
 transect = track.df
 track = track.LatLon
 rm(track.df,track.LatLon)
+transect = rename(transect, observer_tx = observer1)
+transect$dateset_id = 160 
 
 # add BEG/END
-track$type = 
+# add date through join
+track = rename(track, source_transect_id = LEG)
+track = track %>% mutate(type = "WAYPNT") %>% group_by(source_transect_id) %>%
+  mutate(type = replace(type, row_number()==1, "BEGTRAN")) %>% 
+  mutate(type = replace(type, row_number()==n(),"ENDTRAN")) %>% ungroup() %>% as.data.frame() 
+track = left_join(track, select(transect, source_transect_id, start_date, start_time, end_date, end_time), 
+            by = "source_transect_id")  
+track$track_tm = NA
+track$track_tm[track$type == "BEGTRAN"] = track$start_time[track$type == "BEGTRAN"]
+track$track_tm[track$type == "ENDTRAN"] = track$end_time[track$type == "ENDTRAN"]
+# any(track$start_date != track$end_date)
+track$track_dt = track$start_date
+track = track %>% select(-start_time,-end_time,-start_date,-end_date)
+track$dateset_id = 160 
 
 # Export 
 write.csv(spp, file = paste(dir.out, "NOAAship2015_obs.csv", sep = "/"), row.names = F)
@@ -233,12 +249,12 @@ dataset_list$survey_method_cd = "cts" # continuous
 dataset_list$dataset_type_cd = "ot" # original transect
 dataset_list$source_dataset_id = "NOAA/NMFS_NEFSCBoat2015"
 dataset_list$title = paste(dataset_list$source_dataset_id,"Georges Bank", sep = "; ")
-dataset_list$startdate = min(track.df$start_dt)
-dataset_list$enddate = max(track.df$end_dt)
+dataset_list$startdate = min(transect$start_date)
+dataset_list$enddate = max(transect$end_date)
 dataset_list$sponsors = "NOAA" 
 dataset_list$subject = "seabird and marine mammals survey"
 dataset_list$keywords = paste("seabirds", "NOAA","NMFS","Georges Bank", sep = ", ")
-dataset_list$resp_party = "63" ##### NEW ENTRY/ CHECK? ##### Elizabeth (Beth) Josephson
+dataset_list$resp_party = "52" ##### NEW ENTRY/ CHECK? ##### Elizabeth (Beth) Josephson
 dataset_list$coordsys = "Lat/Long"
 dataset_list$numrecords = dim(spp)[1]
 write.csv(dataset_list, file = paste(dir.out,"NOAAship2015_dataset_list.csv", sep="/"), row.names = F, na = "")
