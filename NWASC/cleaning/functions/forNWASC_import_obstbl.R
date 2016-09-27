@@ -9,7 +9,7 @@ forNWASC_import_obstbl <- function(data, id) {
   db <- odbcConnectAccess2007("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
   data.in.db = sqlFetch(db, "dataset")
   obs.in.db = sqlFetch(db, "observation")
-  #transects.in.db = sqlFetch(db, "transect")
+  
   dat = as.data.frame(matrix(ncol = dim(obs.in.db)[2], nrow = dim(data)[1], data=NA))
   colnames(dat) = colnames(obs.in.db)
   dat$dataset_id = id
@@ -17,38 +17,50 @@ forNWASC_import_obstbl <- function(data, id) {
   
   # move those variables over that have the same name
   same_nm = colnames(data[colnames(data) %in% colnames(dat)])
-  dat[,colnames(dat) %in% same_nm] = data[,colnames(data) %in% same_nm]
+  dat[,same_nm] = data[,same_nm] 
+  
+  # assign observation id based on what is already in the temp db
+  dat$observation_id = c((max(obs.in.db$observation_id)+1):(max(obs.in.db$observation_id)+dim(data)[1]))
   
   # reformat, create, and/or rename
-  dat$spp_cd = data$type
-  dat$observation_id = c((max(obs.in.db$observation_id)+1):(max(obs.in.db$observation_id)+dim(data)[1]))
+  if(any(colnames(data) %in% c("spp","type"))) {dat$spp_cd = data[,which(colnames(data) %in% c("spp","type"))]}  
   if(any(colnames(data) %in% c("index"))) {dat$source_obs_id = data$index} else dat$source_obs_id = 1:dim(data)[1]
   if(any(colnames(data) %in% c("transect"))) {dat$source_transect_id = data$transect}
   if(length(dat$source_transect_id)==0 & any(colnames(data) %in% c("offline")) & any(!colnames(data) %in% c("transect"))) {
     dat$source_transect_id[data$offline==0] = 1
   }
-  if(any(colnames(data) %in% c("date","start_date","gps_date"))) {
-    dat$obs_dt = format(as.Date(data[,which(colnames(data) %in% c("date","start_date","gps_date"))]),'%m/%d/%Y') # month/ day/ year
+  if(any(colnames(data) %in% c("date","start_date","gps_date","obs_date","start_dt","gps_dt","obs_dt"))) {
+    dat$obs_dt = format(as.Date(data[,which(colnames(data) %in% c("date","start_date","gps_date","obs_date","start_dt","gps_dt","obs_dt"))]),'%m/%d/%Y') # month/ day/ year
   }
-  if(any(!colnames(data) %in% c("date","start_date","gps_date")) & all(colnames(data) %in% c("year","month","day"))) {
+  if(any(!colnames(data) %in% c("date","start_date","gps_date","obs_date","start_dt","gps_dt","obs_dt")) & all(colnames(data) %in% c("year","month","day"))) {
     dat$obs_dt = paste(data$month,data$day,data$year,sep="/")
   }
-  if(any(colnames(data) %in% c("time"))) {
-    dat$obs_start_tm = data$time
+  if(any(colnames(data) %in% c("time","obs_time","obs_tm"))) {
+    dat$obs_start_tm = data[,which(colnames(data) %in% c("time","obs_time","obs_tm"))]
     #dat$obs_start_tm[!is.na(data$time)] = format(data$time[!is.na(data$time)], "%I:%M:%S %p") # hours (1-12): min: sec space am/pm
+  }
+  if(any(colnames(data) %in% c("association","assocdesc"))) {
+    dat$association_tx = data[,which(colnames(data) %in% c("association","assocdesc"))]
   }
   if(any(colnames(data) %in% c("behavior"))) {dat$behavior_tx = data$behavior}
   if(any(colnames(data) %in% c("age"))) {dat$animal_age_tx = data$age}
   if(any(colnames(data) %in% c("flight_hei"))) {dat$flight_height_tx = data$flight_hei}
   if(any(colnames(data) %in% c("distance"))) {dat$distance_to_animal_tx = data$distance}
-  if(any(colnames(data) %in% c("flight_dir"))) {dat$travel_direction_tx = data$flight_dir}
+  if(any(colnames(data) %in% c("heading"))) {dat$heading_tx = data[,which(colnames(data) %in% c("heading"))]}
+  if(any(colnames(data) %in% c("flight_dir,flidir","fltdir"))) {
+    dat$travel_direction_tx = data[,which(colnames(data) %in% c("flight_dir,flidir","fltdir"))]
+  }
   if(any(colnames(data) %in% c("lon", "long", "longitude"))) {dat$temp_lon = data[,which(colnames(data) %in% c("lon", "long", "longitude"))]} 
   if(any(colnames(data) %in% c("lat", "latitude"))) {dat$temp_lat = data[,which(colnames(data) %in% c("lat", "latitude"))]}
   if(any(colnames(data) %in% c("comments"))) { #, "dataChange", "datachange"))) {
     dat$comments_tx = data[,which(colnames(data) %in% c("comments"))]
     #dat$comments_tx = data[,which(colnames(data) %in% c("comments", "dataChange", "datachange"))]
   }
-  if(any(colnames(data) %in% c("count"))) {dat$obs_count_general_nb = data$count}
+  if(any(colnames(data) %in% c("count","obs_count_general_nb"))) {
+    dat$obs_count_general_nb = data[,which(colnames(data) %in% c("count","obs_count_general_nb"))]
+    dat$obs_count_intrans_nb = data[,which(colnames(data) %in% c("count","obs_count_general_nb"))]
+  }
+  # if there is a definition of where they were off effort, make the intransect counts for off effort NA
   if(any(colnames(data) %in% c("offline"))) {
     dat$obs_count_intrans_nb = data$count
     dat$obs_count_intrans_nb[data$offline == 1] = NA
@@ -107,14 +119,7 @@ forNWASC_import_obstbl <- function(data, id) {
                        obs_end_tm = as.character(obs_end_tm))
   
   # add to NWASC temporary db
-  add = c("Yes, I would like to add this observation dataset to the temporary database", 
-          "No, I do not wish to add this observation dataset to the temporary database") 
-  to_add = select.list(add, preselect = NULL, multiple = FALSE, title = NULL)
-  if(substr(to_add,1,1)=="Y") {
-    # need to have the same column names 
-    sqlSave(db, dat, tablename = "observation", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)
-  }
+  sqlSave(db, dat, tablename = "observation", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)
   
   odbcClose(db) 
-  #return(dat)
 }
