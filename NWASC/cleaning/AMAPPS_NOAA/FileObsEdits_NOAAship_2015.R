@@ -217,12 +217,28 @@ track = left_join(track, select(transect, source_transect_id, start_date, start_
 track$track_tm = NA
 track$track_tm[track$type == "BEGTRAN"] = track$start_time[track$type == "BEGTRAN"]
 track$track_tm[track$type == "ENDTRAN"] = track$end_time[track$type == "ENDTRAN"]
+
+# check for duplicates then combined dates
 # any(track$start_date != track$end_date)
 track$track_dt = track$start_date
 track = track %>% select(-start_time,-end_time,-start_date,-end_date)
 track$dateset_id = 160 
 
-# Export 
+# add LAT/LON to transects from track
+
+# summarise
+track_summary = track %>% group_by(source_transect_id) %>% 
+  mutate(start_lat = lat[type=="BEGTRAN"],
+         start_lon = lon[type=="BEGTRAN"],
+         end_lon = lon[type=="ENDTRAN"],
+         end_lat = lat[type=="ENDTRAN"]) %>%
+  filter(row_number()==1) %>% select(source_transect_id,start_lat,start_lon,end_lon,end_lat) %>% 
+  ungroup %>% as.data.frame
+transect = left_join(transect, track_summary, by = "source_transect_id")
+
+# ------------------------------------------------------------------------- #
+# Export to csv's
+# ------------------------------------------------------------------------- #
 write.csv(spp, file = paste(dir.out, "NOAAship2015_obs.csv", sep = "/"), row.names = F)
 #write.csv(species, file = paste(dir.out, "NOAAship2015_spp.csv", sep="/") row.names = F)
 write.csv(track, file = paste(dir.out, "NOAAship2015_track.csv", sep="/"), row.names = F)
