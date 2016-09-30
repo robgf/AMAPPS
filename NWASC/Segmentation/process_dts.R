@@ -72,7 +72,7 @@ segmentDTS = function(observations, transects, v.spd = 10, occurences = FALSE) {
     
   ### get midpoints of spatial points
   midpoints.point = transects %>% filter(grepl("POINT", st_astext), !is.na(heading_tx))
-    if(nrow(midpoints.point) != 0) {
+    if (nrow(midpoints.point) != 0) {
       midpoints.point = midpoints.point %>% bind_cols(., as.data.frame(do.call(rbind, lapply(.$st_astext, readWKT)))) %>%
         select(-st_astext) %>% rename(long = x, lat = y) %>%
         mutate(half_dist_m = transect_time_min_nb * traversal_speed_nb * 1852 / 120) %>%
@@ -84,7 +84,7 @@ segmentDTS = function(observations, transects, v.spd = 10, occurences = FALSE) {
   
   ### get midpoints of spatial lines
   midpoints.line = transects %>% filter(grepl("LINE", st_astext))
-    if(nrow(midpoints.line) != 0) {
+    if (nrow(midpoints.line) != 0) {
       lineframe = lapply(midpoints.line$st_astext, readWKT, p4s = CRS("+proj=longlat"))
       # apply Hotine Oblique Mercator projection
       lineframe = lapply(lineframe, spTransform, CRS("+proj=omerc +lonc=-75 +lat_0=35 +alpha=40 +k_0=0.9996 +ellps=GRS80 +datum=NAD83"))
