@@ -79,7 +79,6 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect) {
   }
   # if there is a definition of where they were off effort, make the intransect counts for off effort NA
   if(any(colnames(data) %in% c("offline"))) {
-    dat$obs_count_intrans_nb = data$count
     dat$obs_count_intrans_nb[data$offline == 1] = NA
   }
   
@@ -344,8 +343,9 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect) {
     # ------------------------ #
     # join transect numbers to both track and observations tables based on date
     # ------------------------ #
-    dat_track = full_join(dat_track, select(dat_transect, source_transect_id, transect_id), by=c("source_transect_id"))
-    dat = full_join(dat, select(dat_transect, source_transect_id, transect_id), by=c("source_transect_id")) %>%
+    dat_track = left_join(dat_track, select(dat_transect, source_transect_id, transect_id), by=c("source_transect_id")) %>%
+      mutate(transect_id.x = transect_id.y) %>% rename(transect_id = transect_id.x) %>% select(-transect_id.y)
+    dat = left_join(dat, select(dat_transect, source_transect_id, transect_id), by=c("source_transect_id")) %>%
       mutate(transect_id.x = transect_id.y) %>% rename(transect_id = transect_id.x) %>% select(-transect_id.y)
   }
   # ------------------------ #
