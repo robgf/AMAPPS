@@ -184,6 +184,12 @@ names(track.df) = tolower(names(track.df))
 spp$source_dataset_id = "AMAPPS_NOAA/NMFS_NEFSCBoat2015"
 track.df$source_dataset_id = "AMAPPS_NOAA/NMFS_NEFSCBoat2015"
 
+# label offline obs
+spp$offline = 0
+spp$offline[spp$source_transect_id == 0 | spp$distance_to_animal_tx == "outside 300m"] = 1
+
+
+
 # pull out species info
 #species = cbind(spp$spp_cd, as.character(spp$comname), as.character(spp$sciname))
 #colnames(species) = c("spp_cd", "commonName", "scientificName")
