@@ -1,4 +1,4 @@
-# Function to segment continuous survey data in flat file form
+# Function to segment continuous survey data in AMAPPS database
 # Returns wide-form dataframe with segmented data
 
 # Requires observation table with lat/long for each sighting and spatial lines shapefile containing survey effort
@@ -16,7 +16,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# Modified 09-13-16
+# Modified 08-12-16 after dplyr 0.5.0 update
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -54,22 +54,14 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5/0.926, seg.tol =
     mutate(nseg = ifelse(dist_total <= seg.length, 1,
                          ifelse(dist_total / seg.length - floor(dist_total / seg.length) >= seg.tol,
                                 floor(dist_total / seg.length) + 1, floor(dist_total / seg.length))),
-           # calculate length of odd segment
-           dist_extra = dist_total - seg.length * floor(dist_total / seg.length),
-           dist_odd = ifelse(nseg == 1, 0, ifelse(dist_extra < seg.length * seg.tol,
-                                                  dist_extra + seg.length, dist_extra)),
-           # randomly determine which segment will be assigned odd length
-           seg_odd = ifelse(dist_odd == 0, 0, ceiling(runif(1, 0, nseg))),
            # number segments with waypoints
-           seg_num = ifelse(nseg == 1 | dist_cuml == 0, 1,
-                            ifelse(dist_cuml <= seg.length * (seg_odd - 1), ceiling(dist_cuml / seg.length),
-                                   ifelse(dist_cuml > seg.length * (seg_odd - 1) + dist_odd,
-                                          ceiling(1 + round((dist_cuml - dist_odd) / seg.length, 10)), seg_odd))),
+           seg_num = ifelse(dist_cuml <= seg.length | nseg == 1, 1,
+                            ifelse(dist_cuml <= seg.length * nseg, ceiling(dist_cuml / seg.length), nseg)),
            # number of segments without waypoints
-           tot_empty = as.integer(nseg - n_distinct(seg_num))) %>% select(-dist_extra)
+           tot_empty = as.integer(nseg - n_distinct(seg_num)))
   
   # create rows for segments without waypoints  
-  seg.empty = seg %>% ungroup %>% select(SurveyNbr, Transect, Replicate, Obs, Piece, dist_total, nseg, dist_odd, seg_odd, tot_empty) %>%
+  seg.empty = seg %>% ungroup %>% select(SurveyNbr, Transect, Replicate, Obs, Piece, dist_total, nseg, tot_empty) %>%
     distinct %>% filter(tot_empty > 0) %>% slice(rep(row_number(), tot_empty)) %>% select(-tot_empty) %>%
     mutate(empty_seg = 1)
   
@@ -78,11 +70,13 @@ segmentAMAPPS = function(observations, tracks, seg.length = 2.5/0.926, seg.tol =
     # number segments without waypoints
     mutate(seg_num = replace(seg_num, is.na(seg_num), setdiff(1:first(nseg), seg_num)),
            # calculate segment lengths
-           seg_dist = ifelse(nseg == 1, dist_total, ifelse(seg_num == seg_odd, dist_odd, seg.length)),
+           seg_dist = ifelse(nseg == 1, dist_total,
+                             ifelse(seg_num < nseg, seg.length,
+                                    ifelse(seg_num == nseg, dist_total - seg.length * (nseg - 1),
+                                           seg.length + dist_total - nseg * seg.length))),
            # calculate cumulative segment distance
-           seg_dist_cuml = ifelse(nseg == 1, seg_dist,
-                                  ifelse(seg_num >= seg_odd, seg.length * (seg_num - 1) + dist_odd, seg.length * seg_num))) %>%
-    select(-c(dist_total, dist_odd, seg_odd)) %>%
+           seg_dist_cuml = ifelse(seg_num == nseg, dist_total, seg.length * seg_num)) %>%
+    select(-dist_total) %>%
     ungroup %>% arrange(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num, dist_cuml) %>%
     group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>% mutate(dist_cuml = na.locf(dist_cuml)) %>%
     group_by(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num) %>%
