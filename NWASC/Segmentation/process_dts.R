@@ -9,7 +9,7 @@
 # Distances are in nautical miles
 
 # Kyle Dettloff
-# Modified 07-25-16
+# Modified 09-30-16
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -71,25 +71,29 @@ segmentDTS = function(observations, transects, v.spd = 10, occurences = FALSE) {
   if(nrow(transects) == 0) stop("no valid transects")
     
   ### get midpoints of spatial points
-  midpoints.point = transects %>% filter(grepl("POINT", st_astext), !is.na(heading_tx)) %>%
-    bind_cols(., as.data.frame(do.call(rbind, lapply(.$st_astext, readWKT)))) %>%
-    select(-st_astext) %>% rename(long = x, lat = y) %>%
-    mutate(half_dist_m = transect_time_min_nb * traversal_speed_nb * 1852 / 120) %>%
-    rowwise %>% mutate(coords_mid = list(destPoint(c(long, lat), heading_tx, half_dist_m))) %>%
-    ungroup %>% mutate(mid_long = unlist(lapply(coords_mid, `[[`, 1)), mid_lat = unlist(lapply(coords_mid, `[[`, 2))) %>%
-    select(source_dataset_id, segmented_transect_id, transect_id, start_dt, survey_type_cd, survey_method_cd,
-           transect_width_nb, seg_dist, mid_long, mid_lat)
+  midpoints.point = transects %>% filter(grepl("POINT", st_astext), !is.na(heading_tx))
+    if(nrow(midpoints.point) != 0) {
+      midpoints.point = midpoints.point %>% bind_cols(., as.data.frame(do.call(rbind, lapply(.$st_astext, readWKT)))) %>%
+        select(-st_astext) %>% rename(long = x, lat = y) %>%
+        mutate(half_dist_m = transect_time_min_nb * traversal_speed_nb * 1852 / 120) %>%
+        rowwise %>% mutate(coords_mid = list(destPoint(c(long, lat), heading_tx, half_dist_m))) %>%
+        ungroup %>% mutate(mid_long = unlist(lapply(coords_mid, `[[`, 1)), mid_lat = unlist(lapply(coords_mid, `[[`, 2))) %>%
+        select(source_dataset_id, segmented_transect_id, transect_id, start_dt, survey_type_cd, survey_method_cd,
+               transect_width_nb, seg_dist, mid_long, mid_lat)
+    }
   
   ### get midpoints of spatial lines
-  dts.line = transects %>% filter(grepl("LINE", st_astext))
-  lineframe = lapply(dts.line$st_astext, readWKT, p4s = CRS("+proj=longlat"))
-  # apply Hotine Oblique Mercator projection
-  lineframe = lapply(lineframe, spTransform, CRS("+proj=omerc +lonc=-75 +lat_0=35 +alpha=40 +k_0=0.9996 +ellps=GRS80 +datum=NAD83"))
-  # calculate geographic centroids of projected segments and convert back to lat/long
-  midpoints.line = do.call(rbind, lapply(lineframe, gCentroid, byid = TRUE)) %>% spTransform(CRS("+proj=longlat")) %>%
-    as.data.frame %>% rename(mid_long = x, mid_lat = y) %>%
-    bind_cols(select(dts.line, source_dataset_id, segmented_transect_id, transect_id, start_dt,
-                     survey_type_cd, survey_method_cd, transect_width_nb, seg_dist), .)
+  midpoints.line = transects %>% filter(grepl("LINE", st_astext))
+    if(nrow(midpoints.line) != 0) {
+      lineframe = lapply(midpoints.line$st_astext, readWKT, p4s = CRS("+proj=longlat"))
+      # apply Hotine Oblique Mercator projection
+      lineframe = lapply(lineframe, spTransform, CRS("+proj=omerc +lonc=-75 +lat_0=35 +alpha=40 +k_0=0.9996 +ellps=GRS80 +datum=NAD83"))
+      # calculate geographic centroids of projected segments and convert back to lat/long
+      midpoints.line = do.call(rbind, lapply(lineframe, gCentroid, byid = TRUE)) %>% spTransform(CRS("+proj=longlat")) %>%
+        as.data.frame %>% rename(mid_long = x, mid_lat = y) %>%
+        bind_cols(select(midpoints.line, source_dataset_id, segmented_transect_id, transect_id, start_dt,
+                         survey_type_cd, survey_method_cd, transect_width_nb, seg_dist), .)
+    }
   
   # combine midpoints of points and lines
   midpoints = bind_rows(midpoints.point, midpoints.line)
