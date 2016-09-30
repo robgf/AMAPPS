@@ -8,6 +8,7 @@
 # seg.tol sets threshold for creation of a new segment from extra transect distance (0 <= extra < seg.length)
 # as a proportion of target segment length (0 <= seg.tol < 1)
 
+# Keeps odd-length segment at end of transect by default; set randomize = TRUE to randomize location on transect
 # Calculates species counts by default; set occurences = TRUE for number of flock sightings
 # maxDist sets maximum allowable distance (approx. meters) between an observation and its nearest segment line
 # Segment midpoints fall on track line by default; set centroids = TRUE to use geographic centroid
@@ -17,6 +18,7 @@
 
 # Kyle Dettloff
 # Modified 08-12-16 after dplyr 0.5.0 update
+# Randomize argument added 09-30-16
 
 suppressMessages(library(maptools))
 suppressMessages(library(rgeos))
@@ -32,71 +34,141 @@ options(dplyr.show_progress = FALSE)
 load("Q:/Kyle_Working_Folder/Segmentation/Atlantic_Coast_Surveys/Data/AMAPPS.RData")
 
 segmentAMAPPS = function(observations, tracks, seg.length = 2.5/0.926, seg.tol = 0.5, seg.min = seg.length * seg.tol,
-                         centroids = FALSE, maxDist = NA, occurences = FALSE) {
+                         randomize = FALSE, centroids = FALSE, maxDist = NA, occurences = FALSE) {
   
   if(seg.length <= 0) stop("seg.length > 0 is FALSE")
   if(seg.tol < 0 | seg.tol >= 1) stop("0 <= seg.tol < 1 is FALSE")
   if(seg.min < 0) stop("seg.min >= 0 is FALSE")
 
   # -------- segment track data ---------------------------------------------------------------------------------------------------
-  seg = tracks %>% arrange(SurveyNbr, Transect, Replicate, Obs, Year, Month, Day, Sec) %>%
-    mutate(Piece = ifelse(Type %in% c("BEGTRAN", "BEGCNT"), 1, 0)) %>% select(-Type) %>%
-    group_by(SurveyNbr, Transect, Replicate, Obs) %>% mutate(Piece = cumsum(Piece)) %>%
-    distinct(Long, Lat, Piece, Replicate, Obs, Transect, SurveyNbr, .keep_all = TRUE) %>%
-    group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
-    mutate(long_i = lag(Long, default = first(Long), order_by = Sec),
-           lat_i = lag(Lat, default = first(Lat), order_by = Sec)) %>%
-    rowwise %>% mutate(dist = distVincentySphere(c(long_i, lat_i), c(Long, Lat)) / 1852) %>%
-    select(-c(long_i, lat_i, Sec)) %>% ungroup %>% group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
-    # calculate cumulative distance traveled between waypoints
-    mutate(dist_cuml = cumsum(dist), dist_total = max(dist_cuml)) %>% select(-dist) %>%
-    # calculate number of segments for each transect
-    mutate(nseg = ifelse(dist_total <= seg.length, 1,
-                         ifelse(dist_total / seg.length - floor(dist_total / seg.length) >= seg.tol,
-                                floor(dist_total / seg.length) + 1, floor(dist_total / seg.length))),
-           # number segments with waypoints
-           seg_num = ifelse(dist_cuml <= seg.length | nseg == 1, 1,
-                            ifelse(dist_cuml <= seg.length * nseg, ceiling(dist_cuml / seg.length), nseg)),
-           # number of segments without waypoints
-           tot_empty = as.integer(nseg - n_distinct(seg_num)))
-  
-  # create rows for segments without waypoints  
-  seg.empty = seg %>% ungroup %>% select(SurveyNbr, Transect, Replicate, Obs, Piece, dist_total, nseg, tot_empty) %>%
-    distinct %>% filter(tot_empty > 0) %>% slice(rep(row_number(), tot_empty)) %>% select(-tot_empty) %>%
-    mutate(empty_seg = 1)
-  
-  # combine segments with and without waypoints
-  seg.all = seg %>% select(-tot_empty) %>% bind_rows(., seg.empty) %>% group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
-    # number segments without waypoints
-    mutate(seg_num = replace(seg_num, is.na(seg_num), setdiff(1:first(nseg), seg_num)),
-           # calculate segment lengths
-           seg_dist = ifelse(nseg == 1, dist_total,
-                             ifelse(seg_num < nseg, seg.length,
-                                    ifelse(seg_num == nseg, dist_total - seg.length * (nseg - 1),
-                                           seg.length + dist_total - nseg * seg.length))),
-           # calculate cumulative segment distance
-           seg_dist_cuml = ifelse(seg_num == nseg, dist_total, seg.length * seg_num)) %>%
-    select(-dist_total) %>%
-    ungroup %>% arrange(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num, dist_cuml) %>%
-    group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>% mutate(dist_cuml = na.locf(dist_cuml)) %>%
-    group_by(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num) %>%
-    mutate(seg_brk = as.integer(ifelse(row_number() == n() & seg_num != nseg, 1, 0))) %>%
-    select(-nseg) %>% group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
-    mutate(Long = na.locf(Long), Lat = na.locf(Lat),
-           long_lead = na.locf(lead(Long), na.rm = FALSE, fromLast = TRUE),
-           lat_lead = na.locf(lead(Lat), na.rm = FALSE, fromLast = TRUE)) %>%
-    rowwise %>%
-    # calculate heading between last waypoint and segment endpoint
-    mutate(heading = as.numeric(ifelse(seg_brk == 0, NA, bearing(c(Long, Lat), c(long_lead, lat_lead), f = 0)))) %>%
-    select(-c(seg_brk, long_lead, lat_lead)) %>% ungroup %>%
-    group_by(SurveyNbr, Transect, Replicate, Obs, Piece, dist_cuml) %>% mutate(heading = last(heading)) %>%
-    group_by(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num) %>%
-    # calculate distance between last waypoint and segment endpoint
-    mutate(dist_shy = as.numeric(ifelse(is.na(heading), NA, seg_dist_cuml - dist_cuml))) %>%
-    rowwise %>%
-    # calculate coordinates of segment endpoints
-    mutate(coords_end = ifelse(is.na(heading), list(NA), list(destPoint(c(Long, Lat), heading, dist_shy * 1852, f = 0)))) %>%
-    select(-c(heading, dist_shy)) %>% ungroup
+  if (!randomize) {
+    # keep odd-length segment at end
+    seg = tracks %>% arrange(SurveyNbr, Transect, Replicate, Obs, Year, Month, Day, Sec) %>%
+      mutate(Piece = ifelse(Type %in% c("BEGTRAN", "BEGCNT"), 1, 0)) %>% select(-Type) %>%
+      group_by(SurveyNbr, Transect, Replicate, Obs) %>% mutate(Piece = cumsum(Piece)) %>%
+      distinct(Long, Lat, Piece, Replicate, Obs, Transect, SurveyNbr, .keep_all = TRUE) %>%
+      group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
+      mutate(long_i = lag(Long, default = first(Long), order_by = Sec),
+             lat_i = lag(Lat, default = first(Lat), order_by = Sec)) %>%
+      rowwise %>% mutate(dist = distVincentySphere(c(long_i, lat_i), c(Long, Lat)) / 1852) %>%
+      select(-c(long_i, lat_i, Sec)) %>% ungroup %>% group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
+      # calculate cumulative distance traveled between waypoints
+      mutate(dist_cuml = cumsum(dist), dist_total = max(dist_cuml)) %>% select(-dist) %>%
+      # calculate number of segments for each transect
+      mutate(nseg = ifelse(dist_total <= seg.length, 1,
+                           ifelse(dist_total / seg.length - floor(dist_total / seg.length) >= seg.tol,
+                                  floor(dist_total / seg.length) + 1, floor(dist_total / seg.length))),
+             # number segments with waypoints
+             seg_num = ifelse(dist_cuml <= seg.length | nseg == 1, 1,
+                              ifelse(dist_cuml <= seg.length * nseg, ceiling(dist_cuml / seg.length), nseg)),
+             # number of segments without waypoints
+             tot_empty = as.integer(nseg - n_distinct(seg_num)))
+    
+    # create rows for segments without waypoints  
+    seg.empty = seg %>% ungroup %>% select(SurveyNbr, Transect, Replicate, Obs, Piece, dist_total, nseg, tot_empty) %>%
+      distinct %>% filter(tot_empty > 0) %>% slice(rep(row_number(), tot_empty)) %>% select(-tot_empty) %>%
+      mutate(empty_seg = 1)
+    
+    # combine segments with and without waypoints
+    seg.all = seg %>% select(-tot_empty) %>% bind_rows(., seg.empty) %>% group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
+      # number segments without waypoints
+      mutate(seg_num = replace(seg_num, is.na(seg_num), setdiff(1:first(nseg), seg_num)),
+             # calculate segment lengths
+             seg_dist = ifelse(nseg == 1, dist_total,
+                               ifelse(seg_num < nseg, seg.length,
+                                      ifelse(seg_num == nseg, dist_total - seg.length * (nseg - 1),
+                                             seg.length + dist_total - nseg * seg.length))),
+             # calculate cumulative segment distance
+             seg_dist_cuml = ifelse(seg_num == nseg, dist_total, seg.length * seg_num)) %>%
+      select(-dist_total) %>%
+      ungroup %>% arrange(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num, dist_cuml) %>%
+      group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>% mutate(dist_cuml = na.locf(dist_cuml)) %>%
+      group_by(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num) %>%
+      mutate(seg_brk = as.integer(ifelse(row_number() == n() & seg_num != nseg, 1, 0))) %>%
+      select(-nseg) %>% group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
+      mutate(Long = na.locf(Long), Lat = na.locf(Lat),
+             long_lead = na.locf(lead(Long), na.rm = FALSE, fromLast = TRUE),
+             lat_lead = na.locf(lead(Lat), na.rm = FALSE, fromLast = TRUE)) %>%
+      rowwise %>%
+      # calculate heading between last waypoint and segment endpoint
+      mutate(heading = as.numeric(ifelse(seg_brk == 0, NA, bearing(c(Long, Lat), c(long_lead, lat_lead), f = 0)))) %>%
+      select(-c(seg_brk, long_lead, lat_lead)) %>% ungroup %>%
+      group_by(SurveyNbr, Transect, Replicate, Obs, Piece, dist_cuml) %>% mutate(heading = last(heading)) %>%
+      group_by(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num) %>%
+      # calculate distance between last waypoint and segment endpoint
+      mutate(dist_shy = as.numeric(ifelse(is.na(heading), NA, seg_dist_cuml - dist_cuml))) %>%
+      rowwise %>%
+      # calculate coordinates of segment endpoints
+      mutate(coords_end = ifelse(is.na(heading), list(NA), list(destPoint(c(Long, Lat), heading, dist_shy * 1852, f = 0)))) %>%
+      select(-c(heading, dist_shy)) %>% ungroup
+  }
+  if (randomize) {
+    # randomize location of odd-length segment
+    seg = tracks %>% arrange(SurveyNbr, Transect, Replicate, Obs, Year, Month, Day, Sec) %>%
+      mutate(Piece = ifelse(Type %in% c("BEGTRAN", "BEGCNT"), 1, 0)) %>% select(-Type) %>%
+      group_by(SurveyNbr, Transect, Replicate, Obs) %>% mutate(Piece = cumsum(Piece)) %>%
+      distinct(Long, Lat, Piece, Replicate, Obs, Transect, SurveyNbr, .keep_all = TRUE) %>%
+      group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
+      mutate(long_i = lag(Long, default = first(Long), order_by = Sec),
+             lat_i = lag(Lat, default = first(Lat), order_by = Sec)) %>%
+      rowwise %>% mutate(dist = distVincentySphere(c(long_i, lat_i), c(Long, Lat)) / 1852) %>%
+      select(-c(long_i, lat_i, Sec)) %>% ungroup %>% group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
+      # calculate cumulative distance traveled between waypoints
+      mutate(dist_cuml = cumsum(dist), dist_total = max(dist_cuml)) %>% select(-dist) %>%
+      # calculate number of segments for each transect
+      mutate(nseg = ifelse(dist_total <= seg.length, 1,
+                           ifelse(dist_total / seg.length - floor(dist_total / seg.length) >= seg.tol,
+                                  floor(dist_total / seg.length) + 1, floor(dist_total / seg.length))),
+             # calculate length of odd segment
+             dist_extra = dist_total - seg.length * floor(dist_total / seg.length),
+             dist_odd = ifelse(nseg == 1, 0, ifelse(dist_extra < seg.length * seg.tol,
+                                                    dist_extra + seg.length, dist_extra)),
+             # randomly determine which segment will be assigned odd length
+             seg_odd = ifelse(dist_odd == 0, 0, ceiling(runif(1, 0, nseg))),
+             # number segments with waypoints
+             seg_num = ifelse(nseg == 1 | dist_cuml == 0, 1,
+                              ifelse(dist_cuml <= seg.length * (seg_odd - 1), ceiling(dist_cuml / seg.length),
+                                     ifelse(dist_cuml > seg.length * (seg_odd - 1) + dist_odd,
+                                            ceiling(1 + round((dist_cuml - dist_odd) / seg.length, 10)), seg_odd))),
+             # number of segments without waypoints
+             tot_empty = as.integer(nseg - n_distinct(seg_num))) %>% select(-dist_extra)
+    
+    # create rows for segments without waypoints  
+    seg.empty = seg %>% ungroup %>% select(SurveyNbr, Transect, Replicate, Obs, Piece, dist_total, nseg, dist_odd, seg_odd, tot_empty) %>%
+      distinct %>% filter(tot_empty > 0) %>% slice(rep(row_number(), tot_empty)) %>% select(-tot_empty) %>%
+      mutate(empty_seg = 1)
+    
+    # combine segments with and without waypoints
+    seg.all = seg %>% select(-tot_empty) %>% bind_rows(., seg.empty) %>% group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
+      # number segments without waypoints
+      mutate(seg_num = replace(seg_num, is.na(seg_num), setdiff(1:first(nseg), seg_num)),
+             # calculate segment lengths
+             seg_dist = ifelse(nseg == 1, dist_total, ifelse(seg_num == seg_odd, dist_odd, seg.length)),
+             # calculate cumulative segment distance
+             seg_dist_cuml = ifelse(nseg == 1, seg_dist,
+                                    ifelse(seg_num >= seg_odd, seg.length * (seg_num - 1) + dist_odd, seg.length * seg_num))) %>%
+      select(-c(dist_total, dist_odd, seg_odd)) %>%
+      ungroup %>% arrange(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num, dist_cuml) %>%
+      group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>% mutate(dist_cuml = na.locf(dist_cuml)) %>%
+      group_by(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num) %>%
+      mutate(seg_brk = as.integer(ifelse(row_number() == n() & seg_num != nseg, 1, 0))) %>%
+      select(-nseg) %>% group_by(SurveyNbr, Transect, Replicate, Obs, Piece) %>%
+      mutate(Long = na.locf(Long), Lat = na.locf(Lat),
+             long_lead = na.locf(lead(Long), na.rm = FALSE, fromLast = TRUE),
+             lat_lead = na.locf(lead(Lat), na.rm = FALSE, fromLast = TRUE)) %>%
+      rowwise %>%
+      # calculate heading between last waypoint and segment endpoint
+      mutate(heading = as.numeric(ifelse(seg_brk == 0, NA, bearing(c(Long, Lat), c(long_lead, lat_lead), f = 0)))) %>%
+      select(-c(seg_brk, long_lead, lat_lead)) %>% ungroup %>%
+      group_by(SurveyNbr, Transect, Replicate, Obs, Piece, dist_cuml) %>% mutate(heading = last(heading)) %>%
+      group_by(SurveyNbr, Transect, Replicate, Obs, Piece, seg_num) %>%
+      # calculate distance between last waypoint and segment endpoint
+      mutate(dist_shy = as.numeric(ifelse(is.na(heading), NA, seg_dist_cuml - dist_cuml))) %>%
+      rowwise %>%
+      # calculate coordinates of segment endpoints
+      mutate(coords_end = ifelse(is.na(heading), list(NA), list(destPoint(c(Long, Lat), heading, dist_shy * 1852, f = 0)))) %>%
+      select(-c(heading, dist_shy)) %>% ungroup
+  }
   
   # create rows for segment endpoints
   end.pts = seg.all %>% select(-empty_seg) %>% filter(!is.na(coords_end)) %>%
