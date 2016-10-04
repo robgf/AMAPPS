@@ -69,7 +69,7 @@ obs =  obs %>% as.data.frame() %>% mutate(original_species_tx = ID_Category) %>%
          comments_tx = Comments, observer = Identifier) %>% 
   select(-coords.x1, -coords.x2)
 stripey = as.data.frame(stripey)
-trans = as.data.frame(trans)
+transsect = as.data.frame(transect)
 
 # check species codes
 db <- odbcConnectAccess2007("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
@@ -103,10 +103,6 @@ obs$type[obs$type == "UNRS"] = "UNRA"
   
 # add count
 obs$count = 1
-
-# fix time
-obs = obs %>% mutate(obs_dt = sapply(strsplit(as.character(Corrected_Date), " "), head, n=1),
-                     obs_tm = sapply(strsplit(as.character(GMT), " "), tail, n=1))
 # --------------- #
 
 
@@ -124,6 +120,10 @@ track = bind_rows(track.start, track.end) %>% arrange(track_dt, source_transect_
   mutate(track_dt = sapply(strsplit(as.character(track_dt), " "), head, n=1), 
          track_tm = sapply(strsplit(track_tm, " "), tail, n=1), index = row_number())
 rm(track.start, track.end)
+
+# format time
+obs = obs %>% mutate(obs_dt = sapply(strsplit(as.character(Corrected_Date), " "), head, n=1),
+                     obs_tm = sapply(strsplit(as.character(GMT), " "), tail, n=1))
 # --------------- #
 
 
