@@ -69,7 +69,7 @@ obs =  obs %>% as.data.frame() %>% mutate(original_species_tx = ID_Category) %>%
          comments_tx = Comments, observer = Identifier) %>% 
   select(-coords.x1, -coords.x2)
 stripey = as.data.frame(stripey)
-transsect = as.data.frame(transect)
+transect = as.data.frame(transect)
 
 # check species codes
 db <- odbcConnectAccess2007("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
