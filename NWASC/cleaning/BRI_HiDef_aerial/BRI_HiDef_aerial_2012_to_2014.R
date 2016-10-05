@@ -68,8 +68,8 @@ obs =  obs %>% as.data.frame() %>% mutate(original_species_tx = ID_Category) %>%
   rename(type = ID_Code, source_transect_id = HiDefTransect, source_obs_id = ObsID, 
          comments_tx = Comments, observer = Identifier) %>% 
   select(-coords.x1, -coords.x2)
-stripey = as.data.frame(stripey)
-transect = as.data.frame(transect)
+camera = as.data.frame(stripey)
+transsect = as.data.frame(transect)
 
 # check species codes
 db <- odbcConnectAccess2007("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
@@ -103,6 +103,10 @@ obs$type[obs$type == "UNRS"] = "UNRA"
   
 # add count
 obs$count = 1
+
+# fix time
+obs = obs %>% mutate(obs_dt = sapply(strsplit(as.character(Corrected_Date), " "), head, n=1),
+                     obs_tm = sapply(strsplit(as.character(GMT), " "), tail, n=1))
 # --------------- #
 
 
@@ -120,16 +124,15 @@ track = bind_rows(track.start, track.end) %>% arrange(track_dt, source_transect_
   mutate(track_dt = sapply(strsplit(as.character(track_dt), " "), head, n=1), 
          track_tm = sapply(strsplit(track_tm, " "), tail, n=1), index = row_number())
 rm(track.start, track.end)
-
-# format time
-obs = obs %>% mutate(obs_dt = sapply(strsplit(as.character(Corrected_Date), " "), head, n=1),
-                     obs_tm = sapply(strsplit(as.character(GMT), " "), tail, n=1))
 # --------------- #
 
 
 # --------------- #
-# import into database
+# export into dir.out as csv
 # --------------- #
-
+write.csv(obs, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_to_2014_obs.csv", sep = "/"), row.names = F)
+write.csv(track, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_to_2014_track.csv", sep = "/"), row.names = F)
+write.csv(transect, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_to_2014_transect.csv", sep = "/"), row.names = F)
+write.csv(camera, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_to_2014_camera.csv", sep = "/"), row.names = F)
 # --------------- #
 
