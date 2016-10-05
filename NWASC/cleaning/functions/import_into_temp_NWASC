@@ -10,7 +10,7 @@
 # June 2016
 # -------------------------- #
 
-import_into_temp_NWASC <- function(id, data, data_track, data_transect) {
+import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_camera) {
   
   # ------------------------ #
   # load dataset descriptions
@@ -21,6 +21,7 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect) {
   tracks.in.db = sqlFetch(db, "track")
   data.in.db = sqlFetch(db, "dataset")
   obs.in.db = sqlFetch(db, "observation")
+  camera.in.db = sqlFetch(db, "camera_effort")
   # ------------------------ #
   
   
@@ -242,6 +243,10 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect) {
     if(any(colnames(data_transect) %in% c("observer","observers","observer_tx"))) {
       dat_transect$observers_tx = data_transect[,which(colnames(data_transect) %in% c("observer","observers","observer_tx"))]
     }
+    if(any(colnames(data_transect) %in% c("Tranesct_Length", "tranesct_tength", "Tranesct_distance", "distance"))) {
+      dat_transect$transect_distance_nb = data_transect[,which(colnames(data_transect) %in% c("Tranesct_Length", "tranesct_tength", "Tranesct_distance", "distance"))]
+    }
+    
     # calculations
     dat_transect$transect_time_min_nb = difftime(as.POSIXct(paste(dat_transect$end_dt, dat_transect$end_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
                                                  as.POSIXct(paste(dat_transect$start_dt, dat_transect$start_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
@@ -289,11 +294,83 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect) {
     # calculations
     dat_transect$transect_time_min_nb = difftime(as.POSIXct(paste(dat_transect$end_dt, dat_transect$end_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
                                                  as.POSIXct(paste(dat_transect$start_dt, dat_transect$start_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
-                                                 units = "mins")
-    
+                                                 units = "mins")  
   }
   
   
+  # ------------------------ #
+  # Camera
+  # ------------------------ #
+  if(!missing(data_camera)) {
+    dat_camera = as.data.frame(matrix(ncol=dim(camera.in.db)[2], nrow=dim(data_camera)[1], data=NA))
+    colnames(dat_camera) = colnames(camera.in.db)
+    
+    # move those variables over that have the same name
+    same_nm = colnames(data_camera[colnames(data_camera) %in% colnames(dat_camera)])
+    dat_camera[,same_nm] = data_camera[,same_nm]
+    
+    dat_camera$dataset_id = id
+    dat_camera$camera_id = c((max(camera.in.db$camera_id)+1):(max(camera.in.db$camera_id)+dim(dat_camera)[1]))
+    dat_camera$source_dataset_id = as.character(data.in.db$source_dataset_id[data.in.db$dataset_id==id])   
+    
+    if(any(colnames(data_camera) %in% c("transect"))) {
+      dat_camera$source_transect_id = data_camera[,which(colnames(data_transect) %in% c("transect"))]
+    }
+    if(any(colnames(data_camera) %in% c("date"))) {
+      camera_dt = data_camera[,which(colnames(data_transect) %in% c("date"))]
+    }          
+    if(any(colnames(data_camera) %in% c("begin_lon","start_long","begin_long","start_longitude"))) {
+      dat_camera$start_lon = data_camera[,which(colnames(data_transect) %in% c("begin_lon","start_long","begin_long","start_longitude"))]
+    }         
+    if(any(colnames(data_camera) %in% c("begin_lat","start_latitude"))) {
+      dat_camera$start_lat = data_camera[,which(colnames(data_transect) %in% c("begin_lat","start_latitude"))]
+    }          
+    if(any(colnames(data_camera) %in% c("stop_lon","end_longitude","stop_longitude"))) {
+      dat_camera$end_lon = data_camera[,which(colnames(data_transect) %in% c("stop_lon","end_longitude","stop_longitude"))]
+    }            
+    if(any(colnames(data_camera) %in% c("stop_lat","end_latitude","stop_latitude"))) {
+      dat_camera$end_lat = data_camera[,which(colnames(data_transect) %in% c("stop_lat","end_latitude","stop_latitude"))]
+    }            
+    if(any(colnames(data_camera) %in% c("altitude"))) {
+      dat_camera$altitude_m = data_camera[,which(colnames(data_transect) %in% c("altitude"))]
+    }         
+    if(any(colnames(data_camera) %in% c("speed"))) {
+      dat_camera$speed_knots = data_camera[,which(colnames(data_transect) %in% c("speed"))]
+    }        
+    if(any(colnames(data_camera) %in% c("direction"))) {
+      dat_camera$heading = data_camera[,which(colnames(data_transect) %in% c("direction"))]
+    }           
+    if(any(colnames(data_camera) %in% c("area"))) {
+      dat_camera$area_sqkm = data_camera[,which(colnames(data_transect) %in% c("area"))]
+    }          
+    if(any(colnames(data_camera) %in% c("start_time", "begin_time"))) {
+      dat_camera$start_tm = data_camera[,which(colnames(data_transect) %in% c("start_time", "begin_time"))]
+    }           
+    if(any(colnames(data_camera) %in% c("end_time", "stop_time"))) {
+      dat_camera$end_tm = data_camera[,which(colnames(data_transect) %in% c("end_time", "stop_time"))]
+    } 
+    
+    #classes
+    dat_camera = dat_camera %>% mutate(camera_id = as.numeric(camera_id),
+                                       transect_id = as.numeric(transect_id),
+                                       dataset_id = as.numeric(dataset_id),
+                                       source_transect_id = as.character(source_transect_id),
+                                       camera_dt = as.character(camera_dt),
+                                       start_lon = as.numeric(start_lon),
+                                       start_lat = as.numeric(start_lat),
+                                       end_lon = as.numeric(end_lon),  
+                                       end_lat = as.numeric(end_lat),
+                                       altitude_m = as.character(altitude_m),
+                                       speed_knots = as.character(speed_knots),
+                                       heading = as.character(heading), 
+                                       area_sqkm = as.character(area_sqkm),
+                                       start_tm = as.character(start_tm),
+                                       end_tm = as.character(end_tm))  
+  }
+  
+  # ------------------------ #
+  # add transects to other data
+  # ------------------------ #
   if(exists("dat_transect")) {
     # format class names
     dat_transect = dat_transect %>% mutate(transect_id = as.numeric(transect_id),
@@ -347,6 +424,10 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect) {
       mutate(transect_id.x = transect_id.y) %>% rename(transect_id = transect_id.x) %>% select(-transect_id.y)
     dat = left_join(dat, select(dat_transect, source_transect_id, transect_id), by=c("source_transect_id")) %>%
       mutate(transect_id.x = transect_id.y) %>% rename(transect_id = transect_id.x) %>% select(-transect_id.y)
+    if(exists("dat_camera")){
+      dat_camera = left_join(dat_camera, select(dat_transect, source_transect_id, transect_id), by=c("source_transect_id")) %>%
+      mutate(transect_id.x = transect_id.y) %>% rename(transect_id = transect_id.x) %>% select(-transect_id.y)
+    }
   }
   # ------------------------ #
   
@@ -355,8 +436,9 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect) {
   # add to NWASC temporary db
   # ------------------------ #
   sqlSave(db, dat, tablename = "observation", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)
-  sqlSave(db, dat_track, tablename = "track", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)
-  sqlSave(db, dat_transect, tablename = "transect", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)
+  if(exists("dat_track")){sqlSave(db, dat_track, tablename = "track", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)}
+  if(exists("dat_transect")){sqlSave(db, dat_transect, tablename = "transect", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)}
+  if(exists("dat_camera")){sqlSave(db, dat_camera, tablename = "transect", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)}
   odbcClose(db) 
   # ------------------------ #
 }
