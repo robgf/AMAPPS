@@ -60,9 +60,14 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   if(any(colnames(data) %in% c("association","assocdesc"))) {
     dat$association_tx = data[,which(colnames(data) %in% c("association","assocdesc"))]
   }
-  if(any(colnames(data) %in% c("behavior"))) {dat$behavior_tx = data$behavior}
-  if(any(colnames(data) %in% c("age"))) {dat$animal_age_tx = data$age}
-  if(any(colnames(data) %in% c("flight_hei"))) {dat$flight_height_tx = data$flight_hei}
+  if(any(colnames(data) %in% c("behavior","corrected_behavior"))) {
+    dat$behavior_tx = data[,which(colnames(data) %in% c("behavior","corrected_behavior"))]}
+  if(any(colnames(data) %in% c("age","approximate_age"))) {
+    dat$animal_age_tx= data[,which(colnames(data) %in% c("age","approximate_age"))]}
+  if(any(colnames(data) %in% c("flight_hei","flight_height"))) {
+    dat$flight_height_tx = data[,which(colnames(data) %in% c("flight_hei","flight_height"))]}
+  if(any(colnames(data) %in% c("plumage"))) {
+    dat$plumage_tx = data[,which(colnames(data) %in% c("plumage"))]}
   if(any(colnames(data) %in% c("distance"))) {dat$distance_to_animal_tx = data$distance}
   if(any(colnames(data) %in% c("heading"))) {dat$heading_tx = data[,which(colnames(data) %in% c("heading"))]}
   if(any(colnames(data) %in% c("flight_dir,flidir","fltdir"))) {
@@ -214,38 +219,29 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
     dat_transect$source_dataset_id = as.character(data.in.db$source_dataset_id[data.in.db$dataset_id==id])   
     
     if(any(colnames(data_transect) %in% c("transect","transect_id"))) {
-      dat_track$source_transect_id = data_transect[,which(colnames(data_transect) %in% c("transect","transect_id"))]
-    }
-    if(any(colnames(data_transect) %in% c("start_lon", "begin_lon","start_longitude", "begin_longitude","start_long", "begin_long"))) {
-      dat_transect$temp_start_lon = data_transect[,which(colnames(data_transect) %in% c("start_lon", "begin_lon","start_longitude", "begin_longitude","start_long", "begin_long"))]
-    }
-    if(any(colnames(data_transect) %in% c("start_lat", "begin_lat","start_latitude", "begin_latitude"))) {
-      dat_transect$temp_start_lat = data_transect[,which(colnames(data_transect) %in% c("start_lat", "begin_lat","start_latitude", "begin_latitude"))]
-    }
-    if(any(colnames(data_transect) %in% c("end_lon", "stop_lon","end_longitude", "stop_longitude","end_long", "stop_long"))) {
-      dat_transect$temp_stop_lon = data_transect[,which(colnames(data_transect) %in% c("end_lon", "stop_lon","end_longitude", "stop_longitude","end_long", "stop_long"))]
-    }
-    if(any(colnames(data_transect) %in% c("end_lat", "stop_lat","end_latitude", "stop_latitude"))) {
-      dat_transect$temp_stop_lat = data_transect[,which(colnames(data_transect) %in% c("end_lat", "stop_lat","end_latitude", "stop_latitude"))]
-    }
+      dat_track$source_transect_id = data_transect[,which(colnames(data_transect) %in% c("transect","transect_id"))]}
+    if(any(colnames(data_transect) %in% c("startlongdd","start_lon", "begin_lon","start_longitude", "begin_longitude","start_long", "begin_long"))) {
+      dat_transect$temp_start_lon = data_transect[,which(colnames(data_transect) %in% c("startlongdd","start_lon", "begin_lon","start_longitude", "begin_longitude","start_long", "begin_long"))]}
+    if(any(colnames(data_transect) %in% c("startlatdd","start_lat", "begin_lat","start_latitude", "begin_latitude"))) {
+      dat_transect$temp_start_lat = data_transect[,which(colnames(data_transect) %in% c("startlatdd","start_lat", "begin_lat","start_latitude", "begin_latitude"))]}
+    if(any(colnames(data_transect) %in% c("endlongdd","end_lon", "stop_lon","end_longitude", "stop_longitude","end_long", "stop_long"))) {
+      dat_transect$temp_stop_lon = data_transect[,which(colnames(data_transect) %in% c("endlongdd","end_lon", "stop_lon","end_longitude", "stop_longitude","end_long", "stop_long"))]}
+    if(any(colnames(data_transect) %in% c("endlatdd","end_lat", "stop_lat","end_latitude", "stop_latitude"))) {
+      dat_transect$temp_stop_lat = data_transect[,which(colnames(data_transect) %in% c("endlatdd","end_lat", "stop_lat","end_latitude", "stop_latitude"))]}
     if(any(colnames(data_transect) %in% c("date","start_dt","start_date"))) {
-      dat_transect$start_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","start_dt","start_date"))]),'%m/%d/%Y')
-    }
+      dat_transect$start_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","start_dt","start_date"))]),'%m/%d/%Y')}
     if(any(colnames(data_transect) %in% c("date","end_dt","end_date"))) {
-      dat_transect$end_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","end_dt","end_date"))]),'%m/%d/%Y')
-    }
+      dat_transect$end_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","end_dt","end_date"))]),'%m/%d/%Y')}
     if(any(colnames(data_transect) %in% c("time","start_time","start_tm"))) {
-      dat_transect$start_tm = data_transect[,which(colnames(data_transect) %in% c("time","start_time","start_tm"))]
-    }
+      dat_transect$start_tm = data_transect[,which(colnames(data_transect) %in% c("time","start_time","start_tm"))]}
     if(any(colnames(data_transect) %in% c("time","end_time","end_tm"))) {
-      dat_transect$end_tm = data_transect[,which(colnames(data_transect) %in% c("time","end_time","end_tm"))]
-    }
+      dat_transect$end_tm = data_transect[,which(colnames(data_transect) %in% c("time","end_time","end_tm"))]}
     if(any(colnames(data_transect) %in% c("observer","observers","observer_tx"))) {
-      dat_transect$observers_tx = data_transect[,which(colnames(data_transect) %in% c("observer","observers","observer_tx"))]
-    }
-    if(any(colnames(data_transect) %in% c("Tranesct_Length", "tranesct_tength", "Tranesct_distance", "distance"))) {
-      dat_transect$transect_distance_nb = data_transect[,which(colnames(data_transect) %in% c("Tranesct_Length", "tranesct_tength", "Tranesct_distance", "distance"))]
-    }
+      dat_transect$observers_tx = data_transect[,which(colnames(data_transect) %in% c("observer","observers","observer_tx"))]}
+    if(any(colnames(data_transect) %in% c("Tranesct_Length", "transect_length", "Tranesct_distance", "distance"))) {
+      dat_transect$transect_distance_nb = data_transect[,which(colnames(data_transect) %in% c("Tranesct_Length", "transect_length", "Tranesct_distance", "distance"))]}
+    if(any(colnames(data_transect) %in% c("speed","mean_speed","mean_speed_knots"))) {
+      dat_transect$traversal_speed_nb = data_transect[,which(colnames(data_transect) %in% c("speed","mean_speed","mean_speed_knots"))]}
     
     # calculations
     dat_transect$transect_time_min_nb = difftime(as.POSIXct(paste(dat_transect$end_dt, dat_transect$end_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
@@ -313,42 +309,28 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
     dat_camera$camera_id = c((max(camera.in.db$camera_id)+1):(max(camera.in.db$camera_id)+dim(dat_camera)[1]))
     dat_camera$source_dataset_id = as.character(data.in.db$source_dataset_id[data.in.db$dataset_id==id])   
     
-    if(any(colnames(data_camera) %in% c("transect"))) {
-      dat_camera$source_transect_id = data_camera[,which(colnames(data_transect) %in% c("transect"))]
-    }
-    if(any(colnames(data_camera) %in% c("date"))) {
-      camera_dt = data_camera[,which(colnames(data_transect) %in% c("date"))]
-    }          
-    if(any(colnames(data_camera) %in% c("begin_lon","start_long","begin_long","start_longitude"))) {
-      dat_camera$start_lon = data_camera[,which(colnames(data_transect) %in% c("begin_lon","start_long","begin_long","start_longitude"))]
-    }         
-    if(any(colnames(data_camera) %in% c("begin_lat","start_latitude"))) {
-      dat_camera$start_lat = data_camera[,which(colnames(data_transect) %in% c("begin_lat","start_latitude"))]
-    }          
-    if(any(colnames(data_camera) %in% c("stop_lon","end_longitude","stop_longitude"))) {
-      dat_camera$end_lon = data_camera[,which(colnames(data_transect) %in% c("stop_lon","end_longitude","stop_longitude"))]
-    }            
-    if(any(colnames(data_camera) %in% c("stop_lat","end_latitude","stop_latitude"))) {
-      dat_camera$end_lat = data_camera[,which(colnames(data_transect) %in% c("stop_lat","end_latitude","stop_latitude"))]
-    }            
-    if(any(colnames(data_camera) %in% c("altitude"))) {
-      dat_camera$altitude_m = data_camera[,which(colnames(data_transect) %in% c("altitude"))]
-    }         
-    if(any(colnames(data_camera) %in% c("speed"))) {
-      dat_camera$speed_knots = data_camera[,which(colnames(data_transect) %in% c("speed"))]
-    }        
-    if(any(colnames(data_camera) %in% c("direction"))) {
-      dat_camera$heading = data_camera[,which(colnames(data_transect) %in% c("direction"))]
-    }           
-    if(any(colnames(data_camera) %in% c("area"))) {
-      dat_camera$area_sqkm = data_camera[,which(colnames(data_transect) %in% c("area"))]
-    }          
+    if(any(colnames(data_camera) %in% c("transect","hideftransect"))) {
+      dat_camera$source_transect_id = data_camera[,which(colnames(data_camera) %in% c("transect","hideftransect"))]}
+    if(any(colnames(data_camera) %in% c("camera_dt","date","start_dt","start_date"))) {
+      dat_camera$camera_dt = format(as.Date(data_camera[,which(colnames(data_camera) %in% c("camera_dt","date","start_dt","start_date"))]),'%m/%d/%Y')}
+    if(any(colnames(data_camera) %in% c("startlongdd","begin_lon","start_long","begin_long","start_longitude"))) {
+      dat_camera$start_lon = data_camera[,which(colnames(data_camera) %in% c("startlongdd","begin_lon","start_long","begin_long","start_longitude"))]}         
+    if(any(colnames(data_camera) %in% c("startlatdd","begin_lat","start_latitude"))) {
+      dat_camera$start_lat = data_camera[,which(colnames(data_camera) %in% c("startlatdd","begin_lat","start_latitude"))]}          
+    if(any(colnames(data_camera) %in% c("endlongdd","stop_lon","end_longitude","stop_longitude"))) {
+      dat_camera$end_lon = data_camera[,which(colnames(data_camera) %in% c("endlongdd","stop_lon","end_longitude","stop_longitude"))]}            
+    if(any(colnames(data_camera) %in% c("endlatdd","stop_lat","end_latitude","stop_latitude"))) {
+      dat_camera$end_lat = data_camera[,which(colnames(data_camera) %in% c("endlatdd","stop_lat","end_latitude","stop_latitude"))]}            
+    if(any(colnames(data_camera) %in% c("altitude","mean_alt_m"))) {
+      dat_camera$altitude_m = data_camera[,which(colnames(data_camera) %in% c("altitude","mean_alt_m"))]}         
+    if(any(colnames(data_camera) %in% c("speed","mean_speed_knots"))) {
+      dat_camera$speed_knots = data_camera[,which(colnames(data_camera) %in% c("speed","mean_speed_knots"))]}        
+    if(any(colnames(data_camera) %in% c("direction","mean_heading_deg"))) {
+      dat_camera$heading = data_camera[,which(colnames(data_camera) %in% c("direction","mean_heading_deg"))]}           
     if(any(colnames(data_camera) %in% c("start_time", "begin_time"))) {
-      dat_camera$start_tm = data_camera[,which(colnames(data_transect) %in% c("start_time", "begin_time"))]
-    }           
+      dat_camera$start_tm = data_camera[,which(colnames(data_camera) %in% c("start_time", "begin_time"))]}           
     if(any(colnames(data_camera) %in% c("end_time", "stop_time"))) {
-      dat_camera$end_tm = data_camera[,which(colnames(data_transect) %in% c("end_time", "stop_time"))]
-    } 
+      dat_camera$end_tm = data_camera[,which(colnames(data_camera) %in% c("end_time", "stop_time"))]} 
     
     #classes
     dat_camera = dat_camera %>% mutate(camera_id = as.numeric(camera_id),
@@ -365,7 +347,8 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
                                        heading = as.character(heading), 
                                        area_sqkm = as.character(area_sqkm),
                                        start_tm = as.character(start_tm),
-                                       end_tm = as.character(end_tm))  
+                                       end_tm = as.character(end_tm),
+                                       source_dataset_id = as.character(source_dataset_id))  
   }
   
   # ------------------------ #
@@ -420,13 +403,18 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
     # ------------------------ #
     # join transect numbers to both track and observations tables based on date
     # ------------------------ #
-    dat_track = left_join(dat_track, select(dat_transect, source_transect_id, transect_id), by=c("source_transect_id")) %>%
-      mutate(transect_id.x = transect_id.y) %>% rename(transect_id = transect_id.x) %>% select(-transect_id.y)
-    dat = left_join(dat, select(dat_transect, source_transect_id, transect_id), by=c("source_transect_id")) %>%
-      mutate(transect_id.x = transect_id.y) %>% rename(transect_id = transect_id.x) %>% select(-transect_id.y)
+    dat_track = dat_track %>% rename(start_dt = track_dt) 
+    dat_track = left_join(dat_track, select(dat_transect, source_transect_id, transect_id, start_dt), by=c("source_transect_id","start_dt")) %>%
+      mutate(transect_id.x = transect_id.y) %>% rename(transect_id = transect_id.x, track_dt = start_dt) %>% select(-transect_id.y)
+    
+    dat = dat %>% rename(start_dt = obs_dt)
+    dat = left_join(dat, select(dat_transect, source_transect_id, transect_id, start_dt), by=c("source_transect_id","start_dt")) %>%
+      mutate(transect_id.x = transect_id.y) %>% rename(transect_id = transect_id.x, obs_dt = start_dt) %>% select(-transect_id.y)
+    
     if(exists("dat_camera")){
-      dat_camera = left_join(dat_camera, select(dat_transect, source_transect_id, transect_id), by=c("source_transect_id")) %>%
-      mutate(transect_id.x = transect_id.y) %>% rename(transect_id = transect_id.x) %>% select(-transect_id.y)
+      dat_camera = dat_camera %>% rename(start_dt = camera_dt) 
+      dat_camera = left_join(dat_camera, select(dat_transect, source_transect_id, transect_id, start_dt), by=c("source_transect_id","start_dt")) %>%
+        mutate(transect_id.x = transect_id.y) %>% rename(transect_id = transect_id.x, camera_dt = start_dt) %>% select(-transect_id.y)
     }
   }
   # ------------------------ #
