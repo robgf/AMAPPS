@@ -177,24 +177,24 @@ camera_2014 = camera %>% filter(year == 2014) %>% mutate(dataset_id = 168)
 # --------------- #
 # export into dir.out as csv
 # --------------- #
-write.csv(obs, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_obs.csv", sep = "/"), row.names = F)
-write.csv(track, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_track.csv", sep = "/"), row.names = F)
-write.csv(transect, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_transect.csv", sep = "/"), row.names = F)
-write.csv(camera, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_camera.csv", sep = "/"), row.names = F)
+write.csv(obs_2012, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_obs.csv", sep = "/"), row.names = F)
+write.csv(track_2012, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_track.csv", sep = "/"), row.names = F)
+write.csv(transect_2012, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_transect.csv", sep = "/"), row.names = F)
+write.csv(camera_2012, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_camera.csv", sep = "/"), row.names = F)
 
-write.csv(obs_2012, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2013_obs.csv", sep = "/"), row.names = F)
-write.csv(track_2012, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2013_track.csv", sep = "/"), row.names = F)
-write.csv(transect_2012, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2013_transect.csv", sep = "/"), row.names = F)
-write.csv(camera_2012, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2013_camera.csv", sep = "/"), row.names = F)
-
-write.csv(obs_2013, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_to_2014_obs.csv", sep = "/"), row.names = F)
-write.csv(track_2013, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_to_2014_track.csv", sep = "/"), row.names = F)
-write.csv(transect_2013, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_to_2014_transect.csv", sep = "/"), row.names = F)
-write.csv(camera_2013, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_to_2014_camera.csv", sep = "/"), row.names = F)
+write.csv(obs_2013, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2013_obs.csv", sep = "/"), row.names = F)
+write.csv(track_2013, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2013_track.csv", sep = "/"), row.names = F)
+write.csv(transect_2013, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2013_transect.csv", sep = "/"), row.names = F)
+write.csv(camera_2013, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2013_camera.csv", sep = "/"), row.names = F)
 
 write.csv(obs_2014, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2014_obs.csv", sep = "/"), row.names = F)
 write.csv(track_2014, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2014_track.csv", sep = "/"), row.names = F)
 write.csv(transect_2014, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2014_transect.csv", sep = "/"), row.names = F)
 write.csv(camera_2014, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2014_camera.csv", sep = "/"), row.names = F)
+
+write.csv(obs, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_to_2014_obs.csv", sep = "/"), row.names = F)
+write.csv(track, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_to_2014_track.csv", sep = "/"), row.names = F)
+write.csv(transect, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_to_2014_transect.csv", sep = "/"), row.names = F)
+write.csv(camera, file = paste(dir.out, "BRIDOE_HiDef_Aerial_2012_to_2014_camera.csv", sep = "/"), row.names = F)
 # --------------- #
 
