@@ -15,7 +15,7 @@ variable names.
 
 2) If species codes were used, please include documentation describing the codes. For example, a separate column or spreadsheet defining COTE means common tern.  If you would like a list of our species codes we can supply one. We do accept observations for other marine fauna other than birds and boats.   
 
-3) The observation data should be accompanied by a transect design and,/ if available, an effort file. . Effort files are usually the locations where the survey actually took place since sometimes an observation might not exactly be on the transect line or there might be a break in effort when an observer is not observing on a transect line. The effort helps clarify if there were no birds seen in an area verses if the observer was not observing for a segment on a transect.  
+3) The observation data should be accompanied by a transect design and, if available, an effort file. Effort files are usually the locations where the survey actually took place since sometimes an observation might not exactly be on the transect line or there might be a break in effort when an observer is not observing on a transect line. The effort helps clarify if there were no birds seen in an area verses if the observer was not observing for a segment on a transect.  
 *    a. Please provide this information in WGS84 datum or provide information on projection. Coordinates would be in decimal degrees 
     (not UTMs)  
 *    b. Please provide beginning and ending points of transects  
