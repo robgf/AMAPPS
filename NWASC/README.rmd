@@ -27,7 +27,9 @@ After adding data, you should verify that the joins were successful and no exist
   - *Scripts needed:* create_vw_data_output_nodc_dec2013 (SQL file to create NODC view excluding some datasets that shouldn't be public or were not designed for bird counts)
 - OBIS ([Ocean Biogreographic Information System](http://www.iobis.org/))  
 - BISON ([Biodiversity Information Serving Our Nation](http://bison.usgs.ornl.gov/#home))
+  - Conversations about desired format are ongoing, but this will most likely be a segmented product like the one supplied to NOAA, instead of the raw data. We will nail down the details submitting AMAPPS data first, and then move to this larger database.  
 - AKN ([Avian Knowledge Network](http://www.avianknowledge.net/))  
+  - Conversations about desired format are ongoing, but this will most likely be a segmented product like the one supplied to NOAA, instead of the raw data  
 - NOAA [avian modeling effort](http://portal.midatlanticocean.org/static/data_manager/metadata/html/avian_metadata.html) 
   - The NOAA Biogeography branch uses all of the data in the catalog in a predictive distribution model. 
   This involves processing all of the seabird data into segments. ([See segmentation script](https://github.com/USFWS/AMAPPS/tree/master/NWASC/Segmentation)). 
