@@ -1,7 +1,7 @@
 # **Northwest Atlantic Seabird Catalog - Read Me** 
 
-Details can be found at the FWS [website](https://sites.google.com/a/fws.gov/nwasc/), only FWS personnel can view this website. 
-Currently the working version of the database is in PostgreSQL and can only be accessed from non-FWS computers. The long term goal is to create a new database in Microsoft SQL server, which can be run on FWS computers. This might be a simple prigram switch or might involve a database redesign. Other updates on the progress of this endeavor can be read in the BOEM bimonthly progress reports for this project or the [updates tab](https://sites.google.com/a/fws.gov/nwasc/updates?pli=1) on the website.
+For FWS personnel: Details can be found at the FWS NWASC [website](https://sites.google.com/a/fws.gov/nwasc/). 
+Currently the working version of the database is in PostgreSQL and can only be accessed from non-FWS computers. The long term goal is to create an improved database in Microsoft SQL server, which can be run on FWS computers. In the mean time while we redesign the schema, an Access database with the same format of the PostgresSQL schema is where we are aggregating the data (with the addition of track and camera tables). Other updates on the progress of this endeavor can be read in the BOEM bimonthly progress reports for this project or the [updates tab](https://sites.google.com/a/fws.gov/nwasc/updates?pli=1) on the website.
 
 ### **1. Collect datasets**   
 This is an ongoing effort by FWS, NOAA, and BOEM. A progress table can be seen [here](https://sites.google.com/a/fws.gov/nwasc/progress-table). When a data set is recieved, put the data in a new folder named after the data set and year(s) surveyed. If that data set is part of a larger effort there should be a parent folder for that survey name and then folders for each data set within that parent folder. Please include a text document listing a point of contact for that data set and any other pertinent information. If you are able to obtain a report for that data set from the provider, include that in the folder as well. Please see the [data submission guidelines](https://github.com/USFWS/AMAPPS/blob/master/NWASC/Submission%20Guidelines%20for%20NWASC.rmd) for details about what should be requested. 
@@ -30,13 +30,15 @@ After adding data, you should verify that the joins were successful and no exist
 - AKN ([Avian Knowledge Network](http://www.avianknowledge.net/))  
 - NOAA [avian modeling effort](http://portal.midatlanticocean.org/static/data_manager/metadata/html/avian_metadata.html) 
   - The NOAA Biogeography branch uses all of the data in the catalog in a predictive distribution model. 
-  This involves processing all of the seabird data into segments. See segmentation script. 
+  This involves processing all of the seabird data into segments. ([See segmentation script](https://github.com/USFWS/AMAPPS/tree/master/NWASC/Segmentation)). 
 
 ### **6. Handle data requests**  
-Anyone can request the data. These requests will most likely be specific and require querying the database  
-- These can be found in the "files sent" folder in the "seabird_database" folder  
+Anyone can request the data. These requests will most likely be specific and require querying the database.  Make sure that you take note of the share level of the data when filling the request.    
+- These can be found in the "data_requests" and "data_sent" folder in the "seabird_database" folder  
 - They should include:  
-  - a description of the request   
+  - a description of the request  
+  - the date of the request 
+  - the status of the request (filled/not yet filled, if filled the date should be included)
   - the code used to query the data   
   - the exported file that is sent to the requester  
 
