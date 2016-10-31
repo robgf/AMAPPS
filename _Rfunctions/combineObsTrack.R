@@ -20,73 +20,92 @@ combineObsTrack <- function(obsds, trackds, alt.trackds) {
   end <- subset(obsds, type == "ENDCNT", select = c(sec, index))
   if (nrow(beg) != nrow(end)) stop("Error in BEG/END: ", unique(obsds$file))
   if (is.null(trackds) & is.null(alt.trackds)) message("No track file to use: ", unique(obsds$file))
+
+  
+  
+# beginning of for loop  
   for (i in 1:nrow(beg)) {
     obs.i <- subset(obsds, index >= beg$index[i] & index <= end$index[i])
-    if (is.null(trackds)) {
-      track.i <- obs.i[0, ]
-    } else {
-      track.i <- subset(trackds, round(sec, 2) > round(beg$sec[i], 2) & 
-                          round(sec, 2) < round(end$sec[i], 2))
-    }
+      if (is.null(trackds)) {
+        track.i <- obs.i[0, ]
+      } else {
+        track.i <- subset(trackds, round(sec, 2) > round(beg$sec[i], 2) & 
+                            round(sec, 2) < round(end$sec[i], 2))
+      }
     trk.add <- ifelse(any(is.null(trackds), nrow(track.i) == 0 & beg$sec[i] != end$sec[i]), TRUE, FALSE)
     
     # -------------------------------------------------------------------- #
     # ADD TEMPORARY TRACKFILE POINTS TO OBSERVERS WITH MISSING TRACK FILES
     # -------------------------------------------------------------------- #
-    if (trk.add) {
-      sec.diff <- rep(NA, nrow(obs.i))
-      track.i <- alt.trackds
-      if (is.null(track.i)) {
-        track.i <- obs.i[0, ]
-      } else {
-        for (j in 1:nrow(obs.i)) {
-          track.i$dist <- distVincentyEllipsoid(p1 = cbind(track.i$long, track.i$lat), 
-                                                p2 = c(obs.i$long[j], obs.i$lat[j]))
-          track.i <- track.i[order(track.i$dist), ]
-          track.i$flag <- 0
-          track.i$flag[1:5] <- c(2, rep(1, 4))
-          track.i$use <- 0
-          track.i$use[1:2] <- 1
-          min.index <- min(track.i$index[track.i$flag %in% 1:2])
-          max.index <- max(track.i$index[track.i$flag %in% 1:2])
-          fix.i <- subset(track.i, index >= min.index & index <= max.index)
-          fix.i <- fix.i[order(fix.i$index), ]
-          
-          if (nrow(fix.i) > 5 | max(fix.i$dist[fix.i$use == 1]) > 1000) {
+      if (trk.add) {
+        sec.diff <- rep(NA, nrow(obs.i))
+        track.i <- alt.trackds
+        
+        if (is.null(track.i)) {
+          track.i <- obs.i[0, ]
+        } else {
+          for (j in 1:nrow(obs.i)) {
+            # get all the distances between track points and a single obs.i coordinate
+            track.i$dist <- distVincentyEllipsoid(p1 = cbind(track.i$long, track.i$lat), 
+                                                  p2 = c(obs.i$long[j], obs.i$lat[j]))
+            # find the closest track points
+            # mark the closest 5 for investigation
+            track.i <- track.i[order(track.i$dist), ]
+            track.i$flag <- 0
+            track.i$flag[1:5] <- c(2, rep(1, 4))
+            track.i$use <- 0
+            track.i$use[1:2] <- 1
+            
+            # using the index from the closest 5
+            # grab the coordinates with indexes between the max and min of the closest 5 points
+            min.index <- min(track.i$index[track.i$flag %in% 1:2])
+            max.index <- max(track.i$index[track.i$flag %in% 1:2])
+            fix.i <- subset(track.i, index >= min.index & index <= max.index)
+            fix.i <- fix.i[order(fix.i$index), ]
+            
+            # if this list of indexes within the max and min index of the closest points
+            # includes greater than 5 points 
+            # or the distance of the points marked to use is greater than 1,000 meters jump out of the loop  
+            if (nrow(fix.i) > 5 | max(fix.i$dist[fix.i$use == 1]) > 1000) {
+                track.i$dist <- NULL
+                track.i$flag <- NULL
+                track.i$use <- NULL
+                next
+            }
+            
+            # otherwise 
+            dist <- distVincentyEllipsoid(p1 = c(fix.i$long[fix.i$use == 1][1], fix.i$lat[fix.i$use == 1][1]), 
+                                          p2 = c(fix.i$long[fix.i$use == 1][2], fix.i$lat[fix.i$use == 1][2]))
+            s <- dist / (abs(fix.i$sec[fix.i$use == 1][1] - fix.i$sec[fix.i$use == 1][2]))
+            
+            if (fix.i$index[fix.i$flag == 2] == min.index) 
+              newsec <- fix.i$sec[fix.i$flag == 2] - (fix.i$dist[fix.i$flag == 2] / s)
+            if (fix.i$index[fix.i$flag == 2] == max.index) 
+              newsec <- fix.i$sec[fix.i$flag == 2] + (fix.i$dist[fix.i$flag == 2] / s)
+            if (!(fix.i$index[fix.i$flag == 2] %in% c(min.index, max.index))) 
+              newsec <- fix.i$sec[fix.i$use == 1][1] + (fix.i$dist[fix.i$use == 1][1] / s)
+            
+            sec.diff[j] <- newsec - obs.i$sec[j]
             track.i$dist <- NULL
             track.i$flag <- NULL
             track.i$use <- NULL
-            next
           }
           
-          dist <- distVincentyEllipsoid(p1 = c(fix.i$long[fix.i$use == 1][1], 
-                                               fix.i$lat[fix.i$use == 1][1]), 
-                                        p2 = c(fix.i$long[fix.i$use == 1][2], 
-                                               fix.i$lat[fix.i$use == 1][2]))
-          s <- dist / (abs(fix.i$sec[fix.i$use == 1][1] - fix.i$sec[fix.i$use == 1][2]))
-          
-          if (fix.i$index[fix.i$flag == 2] == min.index) 
-            newsec <- fix.i$sec[fix.i$flag == 2] - (fix.i$dist[fix.i$flag == 2] / s)
-          if (fix.i$index[fix.i$flag == 2] == max.index) 
-            newsec <- fix.i$sec[fix.i$flag == 2] + (fix.i$dist[fix.i$flag == 2] / s)
-          if (!(fix.i$index[fix.i$flag == 2] %in% c(min.index, max.index))) 
-            newsec <- fix.i$sec[fix.i$use == 1][1] + (fix.i$dist[fix.i$use == 1][1] / s)
-          
-          sec.diff[j] <- newsec - obs.i$sec[j]
-          track.i$dist <- NULL
-          track.i$flag <- NULL
-          track.i$use <- NULL
-        }
-        if (is.na(median(sec.diff, na.rm = TRUE))) {
-          message("Missing track file and manual seconds fix required: ", unique(obsds$file))
-          track.i <- track.i[0, ]
-        } else {
-          track.i$sec <- track.i$sec - median(sec.diff, na.rm = TRUE)
-          track.i <- subset(track.i, round(sec, 2) > round(beg$sec[i], 2) & 
-                              round(sec, 2) < round(end$sec[i], 2))
+          # if we jumped out of the loop for finding the closest point on the alternate track, we start here
+          # and if we jumped out of the loop sec.diff is still just NAs the length of nrow(obs.i)
+          # therefore we get an error
+          # otherwise change the seconds on the alternative track to match obs.i
+          if (is.na(median(sec.diff, na.rm = TRUE))) {
+            message("Missing track file and manual seconds fix required: ", unique(obsds$file))
+            message("iteration ", i)
+            track.i <- track.i[0, ]
+          } else {
+            track.i$sec <- track.i$sec - median(sec.diff, na.rm = TRUE)
+            track.i <- subset(track.i, round(sec, 2) > round(beg$sec[i], 2) & 
+                                round(sec, 2) < round(end$sec[i], 2))
+          }
         }
       }
-    }
     # -------------------------------------------------------------------- #
     
     out.i <- combineByName(track.i, obs.i)
@@ -164,6 +183,8 @@ combineObsTrack <- function(obsds, trackds, alt.trackds) {
     
     dat <- if (i == 1) out.i else rbind(dat, out.i)
   }
+# end of for loop
+  
   row.names(dat) <- NULL
   dat$index <- as.numeric(row.names(dat))
   
