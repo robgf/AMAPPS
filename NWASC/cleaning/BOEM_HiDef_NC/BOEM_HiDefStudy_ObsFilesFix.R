@@ -1,8 +1,14 @@
+# --------------------------- # 
+# fix errors in BOEM HiDef data
+#
+# created by Kaycee Coleman
+# July 2015
+# --------------------------- # 
+
 # --------------------------- #
 # species errors
 # fix incorrect type codings
 # --------------------------- #
-
 ## Species Information
 # edit the table to consolidate
 Species_Information$scientific_name = as.character(Species_Information$scientific_name)
@@ -136,10 +142,12 @@ spplist = ifelse(spplist == "LoJa", "LTJA", spplist)
 spplist = ifelse(spplist == "SoPo", "SPSK", spplist)
 spplist = ifelse(spplist == "WiSt", "WISP", spplist)
 spplist = ifelse(spplist == "DoCo", "DCCO", spplist)
+# --------------------------- # 
 
-# --------------------- #
+
+# --------------------------- # 
 # added to database
-# --------------------- #
+# --------------------------- # 
 # Piping Plover, "PIPL"
 # Wilson's Plover, "WIPL"
 # Common Moorhen, "COMO"
@@ -187,10 +195,10 @@ toAdd$comments = "added BODO from comments of ID 3059"
 fieldData = rbind(fieldData, toAdd); rm(toAdd)
 # --------------------------- #
 
+
 # --------------------------- #
 # BEG and END errors
 # --------------------------- #
-
 # errors (some were in the middle of transects, rather than at the end)
 # some of these will have already been fixed by the addition of more words in the starts/ends queries
 fieldData$type[fieldData$ID %in% c("590","678","702","710","717","725","731","733","735","855","901","999",
@@ -226,8 +234,12 @@ fieldData$type[fieldData$ID %in% c("728","729","756","757","773","1788","1802","
 #unique(sort(fieldData$type[fieldData$event_number == 1]))
 fieldData$type[fieldData$event_number == 1 & fieldData$type == "COMMENT"] = "BEGCNT" # correct comments that should be BEGCNT
 #fieldData[fieldData$event_number == 1 & fieldData$type != "BEGCNT",]
-                                        
+# --------------------------- # 
+
+
+# --------------------------- # 
 # add begin count for pause in transect
+# --------------------------- # 
 toAdd = fieldData[fieldData$ID %in% c("2023"),] 
 toAdd$ID = "2022.5"     
 toAdd$type = "BEGCNT"
@@ -322,26 +334,24 @@ fieldData = rbind(fieldData, toAdd); rm(toAdd)
 # --------------------------- # 
 
 # --------------------------- #
-# time
-fieldData$year_[fieldData$year_ == 11] = 2011
+# fieldData time
+# --------------------------- # 
+fieldData$"year_"[fieldData$"year_" == 11] = 2011
 # fix time stamps and 
 # add lat and long to observations
-df <- data.frame(date = fieldData$obs_time_rd, #satellite_GPS_time,
+df <- data.frame(date = fieldData$obs_time_rd, 
                  hr = as.numeric(format(fieldData$obs_time_rd, format = "%H")),
                  min = as.numeric(format(fieldData$obs_time_rd, format = "%M")),
-                 sec = as.numeric(format(fieldData$obs_time_rd, format = "%S")))
-fieldData$obs_dt = ISOdatetime(fieldData$year_, fieldData$month_, fieldData$day, df$hr, df$min, df$sec) #Y m d H M S
+                 sec = as.numeric(format(fieldData$obs_time_rd, format = "%S"))) #satellite_GPS_time,
+fieldData = rename(fieldData, year = year_, month = month_)
+fieldData$obs_dt = ISOdatetime(fieldData$year, fieldData$month, fieldData$day, df$hr, df$min, df$sec) #Y m d H M S
 rm(df)
-#df <- data.frame(date = GPSdata$GPS_time_rd,
-#                 hr = as.numeric(format(GPSdata$GPS_time_rd , format = "%H")),
-#                 min = as.numeric(format(GPSdata$GPS_time_rd , format = "%M")),
-#                 sec = as.numeric(format(GPSdata$GPS_time_rd , format = "%S")))
-#GPSdata$date = ISOdatetime(GPSdata$year_, GPSdata$month_, GPSdata$day, df$hr, df$min, df$sec) #Y m d H M S
-#rm(df)
 # --------------------------- # 
+
 
 # --------------------------- # 
 # CREW
+# --------------------------- # 
 fieldData$observers = sub("^\\s+", "", tolower(paste(fieldData$obs_first_name, fieldData$obs_last_name, sep = "_")))
 fieldData$observers[fieldData$observers == "allison_mac connell"] = "allison_macconnell"
 fieldData$observers[fieldData$observers == "mary jo_barkaszi"] = "maryjo_barkaszi"
@@ -349,18 +359,24 @@ fieldData$observers[fieldData$observers == "na_na"] = NA
 #fieldData$crew[fieldData$crew == "erik_haney"] = "eric_haney" # probably???????????????????????
 # --------------------------- # 
 
+
 # --------------------------- # 
 # platform
+# --------------------------- # 
 fieldData$platform = tolower(fieldData$platform)
 # --------------------------- # 
 
+
 # --------------------------- # 
 # count
+# --------------------------- # 
 names(fieldData)[names(fieldData) == "number_individuals"] = "count"
 # --------------------------- # 
 
+
 # --------------------------- # 
 # remove unneccessary and/or unused fields
+# --------------------------- # 
 names(fieldData)[names(fieldData) == "Data-sheet ID"] = "DataSheet_ID"
 names(fieldData)[names(fieldData) == "Start Transect"] = "Stransect"
 names(fieldData)[names(fieldData) == "End Transect"] = "Etransect"
@@ -371,13 +387,25 @@ fieldData = fieldData %>% select(-Observers, -missing_sp, -F26, -obs_time_rd,
                                  -DataSheet_ID, -Stransect, -Etransect,
                                  -obs_first_name, -obs_last_name)
 # --------------------------- # 
+
+
+# --------------------------- # 
 # split data before fixing transects
+# --------------------------- # 
+fieldData = fieldData %>% rename(original_species_tx = species, distance_to_animal = distance) %>% 
+  select(-year,-month,-day,-satellite_GPS_time) %>%
+  mutate(travel_direction = replace(travel_direction, travel_direction=="n/a", NA), 
+         travel_direction = toupper(travel_direction))
+
 boatObs = fieldData[fieldData$platform=="voyager",] %>% arrange(ID, obs_dt)
 planeObs = fieldData[fieldData$platform=="vplane",] %>% arrange(ID, obs_dt)
 #rm(fieldData)
+# --------------------------- # 
+
 
 # --------------------------- # 
 # fix transects where NA
+# --------------------------- # 
 #boatObs$source_transect_id[boatObs$type == "BEGCNT"]
 #boatObs$source_transect_id[boatObs$type == "ENDCNT"]
 
@@ -409,17 +437,40 @@ boatObs$source_transect_id[boatObs$ID %in% c(2670,2681)] = 53
 #                                                            old[boatObs$source_transect_id != old], sep = "")
 
 # possibly???????
-boatObs$offline[boatObs$ID %in% c(2791:2805,2656,2657,2648,2877:2893,3049.5,3032:3039,2677:2680,2664:2669,
-                                  2188:2253)] = 1
+#boatObs$offline[boatObs$ID %in% c(2791:2805,2656,2657,2648,2877:2893,3049.5,3032:3039,2677:2680,2664:2669,2188:2253)] = 2
+# it seems that offline points dont have GPS points assosiated with them
+# --------------------------- # 
+
+
+# --------------------------- #
+# mark chumming as offline
+# --------------------------- # 
+boatObs$comments = tolower(boatObs$comments)
+ind = grep("chum", boatObs$comments)
+boatObs$chum = 0
+boatObs$chum[ind] = 1
+ind = c(2680,2669,2656,2641,2576,2579,2588,2634,2552,2554,2556,2558, 2136,2562.5,2571)
+boatObs$chum[boatObs$ID %in% ind] = 1
+boatObs$comments[boatObs$ID %in% ind] = paste(boatObs$comments[boatObs$ID %in% ind], "; chum", sep="")
+
+# fill in inbetween BEG and END
+ind = filter(boatObs, type == "BEGCNT")
+ind$segment = seq.int(nrow(ind))
+boatObs = left_join(boatObs, select(ind, segment, ID), by="ID") %>% as.data.frame %>% 
+  mutate(segment = na.locf(segment)) %>% group_by(segment) %>% 
+  mutate(chum = ifelse(chum[1] == 1, 1, 0)) %>% as.data.frame
+# --------------------------- # 
+
 
 # --------------------------- #
 ## GPS
+# --------------------------- # 
 names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/@lat"] = "lat"
 names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/@lon"] = "long"
-names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/time"] = "track_dt"
+names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/time"] = "time"
 GPSdata$platform = tolower(GPSdata$platform)
 
-df <- data.frame(date = GPSdata$GPS_time_rd, #satellite_GPS_time,
+df <- data.frame(date = GPSdata$GPS_time_rd, 
                  hr = as.numeric(format(GPSdata$GPS_time_rd, format = "%H")),
                  min = as.numeric(format(GPSdata$GPS_time_rd, format = "%M")),
                  sec = as.numeric(format(GPSdata$GPS_time_rd, format = "%S")))
@@ -427,9 +478,19 @@ GPSdata$obs_dt = ISOdatetime(GPSdata$year_, GPSdata$month_, GPSdata$day, df$hr, 
 rm(df)
 
 # take lat and lon from GPS
-GPSdata2 = GPSdata %>% filter(platform=="voyager") %>% select(lat,long,obs_dt) 
-test = inner_join(boatObs,GPSdata2,by="obs_dt")
+GPSdata2 = GPSdata %>% filter(platform=="voyager") %>% select(lat,long,track_dt,obs_dt) 
+test.b = left_join(boatObs,GPSdata2,by="obs_dt")
 #test = right_join(GPSdata2,boatObs,by="obs_dt")
 
 GPSdata2 = GPSdata %>% filter(platform=="vplane") %>% select(lat,long,obs_dt) 
-test = inner_join(planeObs,GPSdata2,by="obs_dt")
+test.p = left_join(planeObs,GPSdata2,by="obs_dt")
+# --------------------------- # 
+
+
+# --------------------------- # 
+# Camera data
+# --------------------------- # 
+# add lat/lon
+test = CameraData %>% rename(Time = Timestamp) %>%
+  inner_join(., select(GPSdata,-Altitude,-ID), by = c("Date","Time"))
+# --------------------------- # 
