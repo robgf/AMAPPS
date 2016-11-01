@@ -56,15 +56,17 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
         - checkConditionChange.R 
         - combineObsTrack.R -> combines the observation and track files. If you see an error message such as **"Missing track file and manual seconds fix required"**, then this needs to be fixed before moving on. If a track is not available for an observer, for example the pilot track is available for that date but not the second observer's track, then the pilot's track will be used here.     
               - combineByName.R -> combines dataframes by name  
+        - commonErrors.R -> fix basic errors 
         - conditionCodeErrorChecks.R 
-        - getDatabase.R 
+        - createBandBehavior.R -> create band and behavior columns 
         - getObsFiles.R -> reads in the crew#_mmddyyy_birds.txt or .asc files and turns them into the "obs" and "Obs.Crew#" tables
         - getTrackFiles.R -> reads in the track files
+        - fixMixed.R -> break mixed code row into multiple rows for each code  
+        - fixSeconds.R -> fixes seconds errors in observation files
         - GPSFix.R -> fix GPS errors  
         - obsFilesErrorChecks.R -> checks basic errors  
         - runArcGISpy.R -> runs the python script that generates ArcGIS shapefiles  
-        - SECFix.R -> fixes seconds errors
-        - sourceDir.R 
+        
     - ObsFilesFix\_yearlabel.R This script is unique to each input year/season file and fixes errors in the observation files:  
            a) Flags offine/useless information  
            b) Fixes incorrect type codings  
