@@ -1,7 +1,7 @@
 # AMAPPS
 
 [id]: http://www.nefsc.noaa.gov/psb/AMAPPS/  
-This repository contains the scripts to QA/QC the USFWS Atlantic Marine Assessment Program for Protected Species ([AMAPPS][id]) aerial data and prepare it for import into the USFWS AMAPPS access database and the USFWS maintained Northwest Atlantic Seabird Catalog (NWASC). 
+This repository contains the scripts to QA/QC the USFWS Atlantic Marine Assessment Program for Protected Species ([AMAPPS][id]) aerial data and prepare it for import into the USFWS AMAPPS SQL Server database and the USFWS maintained Northwest Atlantic Seabird Catalog (NWASC). 
 
 Read Me for AMAPPS data management
 ========================================================
@@ -45,24 +45,25 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
 - This section describes how to QA/QC the data using R, ArcMap, and Python within ArcMap. You will run "part1", check the shapefiles in ArcMap, save those files, then run "part2" of the scripts. 
 
 **Scripts needed:**  
-- run_processSurveyData_part1.R This will load packages and functions, this is the file you should alter. You will at least have to change the yearLabel, but might also need to change the pathways. The "py.exe" will be dependent on your ArcGIS version (e.g. 10.3) and you might also have installer issues (64 bit vs. 32 bit) -- to test this you can go into the python window in ArcGIS and type *import sys* -> hit enter -> then type *print(sys.version)*. You might also need to check your Rstudio version (Tools-Options). Issues like this might also occur with the 'RODBC' package, odbcDriverConnect function. 
-    - processSurveyData_part1.R. This function is used by run_processSurveyData_part1.R, you should generally not have to change this. This will clean the data and generate temporary shapefiles.
+- processSurveyData_part1.R -> This will load packages and functions. You should alter the beginning of this file for surveyFolder and yearLabel. This will clean the data and generate temporary shapefiles.  
+              *WARNGING*: The "py.exe" will be dependent on your ArcGIS version (e.g. 10.3) and you might also have installer issues (64 bit vs. 32 bit) -- to test this you can go into the python window in ArcGIS and type *import sys* -> hit enter -> then type *print(sys.version)*. You might also need to check your Rstudio version (Tools-Options). Issues like this might also occur with the 'RODBC' package, odbcDriverConnect function.  
+    *Within this script*:   
     - RProfile.R loads neccessary librarys and runs the following functions: 
-        - addBegEnd\_GISeditObsTrack.R (this is for after the GIS edits, if points were deleted and new BEG/END counts need to be added)
-        - addBegEnd\_Obs.R (this adds BEG/END counts if needed)
-        - addCoch.R (Adds a condition change (COCH) row when one was not reported with condition value "0" and count "0")
-        - checkBEGCNTandENDCNTnumbers.R (Reports transects with errors in BEGCNT and ENDCNT rows)
+        - addBegEnd\_GISeditObsTrack.R -> this is for after the GIS edits, if points were deleted and new BEG/END counts need to be added
+        - addBegEnd\_Obs.R -> this adds BEG/END counts if needed
+        - addCoch.R -> Adds a condition change (COCH) row when one was not reported with condition value "0" and count "0"
+        - checkBEGCNTandENDCNTnumbers.R -> Reports transects with errors in BEGCNT and ENDCNT rows
         - checkConditionChange.R 
-        - combineByName.R 
-        - combineObsTrack.R (combines the observation and track files. When running *combineObsTrack.R*, if you see **"Error in BEG/END"** then there is an error in how the begin count and end count rows line up, this needs to be fixed, do not continue.)
+        - combineObsTrack.R -> combines the observation and track files. If you see an error message such as **"Missing track file and manual seconds fix required"**, then this needs to be fixed before moving on. If a track is not available for an observer, for example the pilot track is available for that date but not the second observer's track, then the pilot's track will be used here.     
+              - combineByName.R -> combines dataframes by name  
         - conditionCodeErrorChecks.R 
         - getDatabase.R 
-        - getObsFiles.R (reads in the crew#_mmddyyy_birds.txt or .asc files and turns them into the "obs" and "Obs.Crew#" tables)
-        - getTrackFiles.R (reads in the track files)
-        - GPSFix.R 
-        - obsFilesErrorChecks.R 
-        - runArcGISpy.R 
-        - SECFix.R 
+        - getObsFiles.R -> reads in the crew#_mmddyyy_birds.txt or .asc files and turns them into the "obs" and "Obs.Crew#" tables
+        - getTrackFiles.R -> reads in the track files
+        - GPSFix.R -> fix GPS errors  
+        - obsFilesErrorChecks.R -> checks basic errors  
+        - runArcGISpy.R -> runs the python script that generates ArcGIS shapefiles  
+        - SECFix.R -> fixes seconds errors
         - sourceDir.R 
     - ObsFilesFix\_yearlabel.R This script is unique to each input year/season file and fixes errors in the observation files:  
            a) Flags offine/useless information  
@@ -84,7 +85,7 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
 **Files Needed:**  
 - AMAPPS observation files (downloaded from SharePoint)
 - AMAPPS transect files (downloaded from SharePoint)
-- NWASC_codes.xlsx (list of all of the species codes used, path defined as dbpath in the process scripts)
+- NWASC_temp database lu_species table (list of all of the species codes used, path defined as dbpath in the process scripts)
 - ObsFilesFix\_yearlabel.R   
         - Creating yearlab\_ObsFilesFix.R: You will add to this script as you run through the error checks and find new errors. The *AMAPPS\_yearlab\_AOUErrors.xlsx* and *AMAPPS\_yearlab\_ObsFileErrors.xlsx* generated in the *DataProcessing -> Surveys -> AMAPPS -> AMAPPS\_yearlab* folder will help inform you of which errors to fix in the yearlab\_ObsFilesFix.R script. These are often typos. You may need to listen to the corresponding WAV file (on the SharePoint site) to find out what the observer was trying to enter. Common errors should be included in the yearlab\_ObsFilesFix.R script prior if you need to look them up for reference (e\.g\. changing TOWER to code TOWR).  Also if there are corrections in the pilot/observer notes these corrections should be included in the yearlab\_ObsFilesFix.R script.  
 - GISeditObsTrack_template (ArcGIS ArcMap Document)  
@@ -150,13 +151,13 @@ c) Part2
 - Crew Summary
 
 
-4) Entering the data in the Access "Atlantic_Coast_Surveys" database 
+4) Entering the data in AMAPPS SQL Server database (formerly the Access "Atlantic_Coast_Surveys" database)  
 --------------------------------------------------------
 **Process:**  
-- The "Atlantic_Coast_Surveys" database houses all of the AMAPPS data but excludes nonbirds (except for boats). Nonbird and offline data are saved seperately or in the Misc_observations table of the "Atlantic_Coast_Surveys" database. The database includes tables for  "Crew_Information", "Observations", "Survey_Information", "Tracks", and "Transect_Information". 
+- The AMAPPS database houses all of the AMAPPS data but excludes nonbirds (except for boats). Nonbird and offline data are saved seperately or in the Misc_observations table of the database. The database includes tables for  "Crew_Information", "Observations", "Survey_Information", "Tracks", and "Transect_Information". 
 
 **Scripts needed:**  
--- Add2Database2.R (formats the data to go into each table and adds the data to the access "Atlantic_Coast_Surveys" database)     
+-- formerly Add2Database2.R (formats the data to go into each table and adds the data to the access "Atlantic_Coast_Surveys" database), a new script is being written to enter the data into SQL Server     
 
 
 5) Reformating and entering the data in the NWASC Database 
@@ -164,10 +165,6 @@ c) Part2
 **Process:**  
 - All offline, bird, and nonbird data are entered into the NWASC.   
 - Segmentation of the data for NOAA happens once the data is in the NWASC on all of the NWASC data at the same time (not by dataset).
-
-**Scripts needed:**  
-- R script
-- SQL script
 
 **If you are also managing the NWASC, see NWASC folder to continue**
 
