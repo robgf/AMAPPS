@@ -46,7 +46,7 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
 
 **Scripts needed:**  
 - processSurveyData_part1.R -> This will load packages and functions. You should alter the beginning of this file for surveyFolder and yearLabel. This will clean the data and generate temporary shapefiles.  
-              *WARNGING*: The "py.exe" will be dependent on your ArcGIS version (e.g. 10.3) and you might also have installer issues (64 bit vs. 32 bit) -- to test this you can go into the python window in ArcGIS and type *import sys* -> hit enter -> then type *print(sys.version)*. You might also need to check your Rstudio version (Tools-Options). Issues like this might also occur with the 'RODBC' package, odbcDriverConnect function.  
+              *WARNING*: The "py.exe" will be dependent on your ArcGIS version (e.g. 10.3) and you might also have installer issues (64 bit vs. 32 bit) -- to test this you can go into the python window in ArcGIS and type *import sys* -> hit enter -> then type *print(sys.version)*. You might also need to check your Rstudio version (Tools-Options). Issues like this might also occur with the 'RODBC' package, odbcDriverConnect function.  
     *Within this script*:   
     - RProfile.R loads neccessary librarys and runs the following functions: 
         - addBegEnd\_GISeditObsTrack.R -> this is for after the GIS edits, if points were deleted and new BEG/END counts need to be added
