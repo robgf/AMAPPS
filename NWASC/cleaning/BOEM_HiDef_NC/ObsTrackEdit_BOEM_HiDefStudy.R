@@ -1,4 +1,4 @@
-# ------------------------------------------------------------------------- #
+# -------------------------------- #
 # Date Created: 7-2015
 # Author: Kaycee Coleman
 #
@@ -9,15 +9,22 @@
 # the pilot and observer raw track files and creates a header row, compares 
 # the track files to the observation files, and outputs the edited track 
 # files containing only the survey segments.
-#
-# ------------------------------------------------------------------------- #
+# -------------------------------- #
 
-require(dplyr) # 
+
+# -------------------------------- #
+# LOAD PACKAGES
+# -------------------------------- #
 require(RODBC) # odbcConnect
-library(lubridate) #fix timestamps
+require(lubridate) #fix timestamps
+require(zoo) #na.locf
+require(dplyr) # 
+# -------------------------------- #
 
-# ------------------------------------------------------------------------- #
-# DEFINE SURVEY, CHANGE THIS!!!
+
+# -------------------------------- #
+# DEFINE SURVEY
+# -------------------------------- #
 surveyFolder = "BOEM_HiDef_NC"
 yearLabel = "BOEM_HiDefStudy"
 
@@ -35,57 +42,72 @@ sourceDir(file.path("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working
 
 # SET PATH TO R FILE THAT FIXES DATA ERRORS
 errfix.file <- file.path(dir.out, paste(yearLabel, "_ObsFilesFix.R", sep = ""))
-# ------------------------------------------------------------------------- #
+# -------------------------------- #
 
-# ------------------------------------------------------------------------- #
+
+# -------------------------------- #
 # STEP 1: Load data
-# ------------------------------------------------------------------------- #
-database = odbcConnectAccess2007(file.path(dir.in, "N_Carolina_data_2011_3 platforms_for DBigger.accdb")) 
-spptbl = sqlFetch(database, "All_taxa_tbl", stringsAsFactors = FALSE)
-fieldData = sqlFetch(database, "field_data_tbl")
+# -------------------------------- #
+db = odbcConnectAccess2007(file.path(dir.in, "N_Carolina_data_2011_3 platforms_for DBigger.accdb")) 
+spptbl = sqlFetch(db, "All_taxa_tbl", stringsAsFactors = FALSE)
+fieldData = sqlFetch(db, "field_data_tbl")
 fieldData = fieldData[order(fieldData$ID),]
-enviroData = sqlFetch(database, "environ_data_tbl", stringsAsFactors = FALSE)
-GPSdata = sqlFetch(database, "GPS_tbl")
-
-## Ignore Camera data for now as it is priority 3 and might require additional formating
-# CameraGPSdata = sqlFetch(database, "Camera GPS data")
-# CameraData = sqlFetch(database, "Camera target data")
+enviroData = sqlFetch(db, "environ_data_tbl", stringsAsFactors = FALSE)
+GPSdata = sqlFetch(db, "GPS_tbl")
+CameraGPSdata = sqlFetch(db, "Camera GPS data")
+CameraData = sqlFetch(db, "Camera target data")
 
 # list of codes used by BOEM
-Species_Information = sqlQuery(database, 
+Species_Information = sqlQuery(db, 
   paste("SELECT All_taxa_tbl.species_code, All_taxa_tbl.common_name, All_taxa_tbl.species, bird_list_AOU_NAm_tbl.*
          FROM bird_list_AOU_NAm_tbl 
          RIGHT JOIN All_taxa_tbl 
          ON bird_list_AOU_NAm_tbl.common_name = All_taxa_tbl.common_name;"))
 
-starts = rbind(sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
+starts = rbind(sqlQuery(db, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
                                         FROM field_data_tbl 
                                         WHERE (((field_data_tbl.comments) Like '%start%'));")),
-               sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
+               sqlQuery(db, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
                                         FROM field_data_tbl 
                                         WHERE (((field_data_tbl.comments) Like '%began%'));")),
-               sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
+               sqlQuery(db, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
                                         FROM field_data_tbl 
-                                        WHERE (((field_data_tbl.comments) Like '%begin%'));")))
-# exclude ID 2662 this section might be cut...
+                                        WHERE (((field_data_tbl.comments) Like '%begin%'));")),
+               sqlQuery(db, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
+                                        FROM field_data_tbl 
+                                        WHERE (((field_data_tbl.comments) Like '%resume%'));")))
+              # sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
+              #                          FROM field_data_tbl 
+               #                         WHERE (((field_data_tbl.comments) Like '%wheels up%'));")))
 
-ends = rbind(sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
+ends = rbind(sqlQuery(db, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
                                       FROM field_data_tbl 
                                       WHERE (((field_data_tbl.comments) Like '%end%'));")), 
-             sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
+             sqlQuery(db, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
                                       FROM field_data_tbl 
                                       WHERE (((field_data_tbl.comments) Like '%stop%'));")))
-transit = rbind(sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
+            # sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
+            #                          FROM field_data_tbl 
+            #                          WHERE (((field_data_tbl.comments) Like '%wheels down%'));")))
+transit = rbind(sqlQuery(db, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
                                         FROM field_data_tbl 
                                         WHERE (((field_data_tbl.comments) Like '%transit%'));")),
-                sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
+                sqlQuery(db, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
                                         FROM field_data_tbl 
                                         WHERE (((field_data_tbl.comments) Like '%off effort%'));")))
-transect = rbind(sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
+transect = rbind(sqlQuery(db, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
                                       FROM field_data_tbl 
                                       WHERE (((field_data_tbl.comments) Like '%transect%'));")))
 # close database
 odbcCloseAll()
+# -------------------------------- #
+
+
+# -------------------------------- #
+# STEP 2: QA/QC
+# -------------------------------- #
+# exclude ID 2662 this section might be cut...
+# starts = starts[ends$ID != 2662,]
 
 # exclude ID 1889 
 ends = ends[ends$ID != 1889,]
@@ -101,42 +123,23 @@ fieldData$offline = ""
 fieldData$offline[fieldData$ID %in% transit$ID] = 1
 fieldData$offline[fieldData$ID %in% transect$ID] = 0
 rm(transect,transit)
-# ------------------------------------------------------------------------- #
 
-# ------------------------------------------------------------------------- #
-# STEP 2: QA/QC
-# ------------------------------------------------------------------------- #
 if (!file.exists(errfix.file)) {
   warning("Error fix R file is missing and will not be sourced.")
 } else source(errfix.file, local = TRUE)
-
-tmp = !spplist %in% name$spp_cd
-cat("Found", sum(tmp), "out of",  length(spplist), "entries with non-matching AOU code(s).\n\n")
-# spplist[!spplist %in% name$spp_cd]
 # --------------------------- # 
 
-# ------------------------------------------------------------------------- #
+
+# -------------------------------- #
 # STEP 3: RESTRUCTURE DATA
-# ------------------------------------------------------------------------- #
+# -------------------------------- #
+
+
+  
 
                
 
   
-
-
-####################### FIX THIS #######################################
-  # fill in spots were transect number is missing using event number, but if all NA's can't fix now
-  a = which(fieldData$event_number == 1)
-  old = fieldData$"Transect ID"
-  for (b in 2:length(a)) {
-    c = a[b-1]:(a[b]-1)
-    fieldData$"Transect ID"[c] = median(fieldData$"Transect ID"[c], na.rm = TRUE)
-    if (length(which(old[c] != fieldData$"Transect ID"[c])) != 0) {
-      d = which(old[c] != fieldData$"Transect ID"[c])
-      fieldData$dataChange[c[d]] = paste(fieldData$dataChange[c[d]], "; TRANSECT ID changed from ", old[c[d]], sep = "")
-    }
-  }
-  fieldData$"Transect ID" = as.character(fieldData$"Transect ID")
 
 
 
@@ -211,7 +214,11 @@ obstrack$ID <- as.numeric(row.names(obstrack))
 
 
 #new = sqlQuery(database, paste("SELECT field_data_tbl.*, All_taxa_tbl.species_code, bird_list_AOU_NAm_tbl.scientific_name
-#FROM (field_data_tbl INNER JOIN All_taxa_tbl ON field_data_tbl.species = All_taxa_tbl.common_name) INNER JOIN bird_list_AOU_NAm_tbl ON field_data_tbl.species = bird_list_AOU_NAm_tbl.common_name;"))
+#               FROM (field_data_tbl 
+#               INNER JOIN All_taxa_tbl 
+#               ON field_data_tbl.species = All_taxa_tbl.common_name) 
+#               INNER JOIN bird_list_AOU_NAm_tbl 
+#               ON field_data_tbl.species = bird_list_AOU_NAm_tbl.common_name;"))
 
 
 
@@ -286,6 +293,21 @@ Observations$platform_tx = platform
 #metadata_tx = NULL
 #source_dataset_id = "BOEMHighDef_NC2011Boat"
 # ------------------------------------------------------------------------- #
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# observation
 
 
 
