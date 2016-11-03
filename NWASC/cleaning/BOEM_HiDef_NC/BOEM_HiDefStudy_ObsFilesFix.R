@@ -142,6 +142,105 @@ spplist = ifelse(spplist == "LoJa", "LTJA", spplist)
 spplist = ifelse(spplist == "SoPo", "SPSK", spplist)
 spplist = ifelse(spplist == "WiSt", "WISP", spplist)
 spplist = ifelse(spplist == "DoCo", "DCCO", spplist)
+
+
+## Camera 
+# rename 
+names(CameraData)[names(CameraData)=="Transect ID"] <- "source_transect_id"
+names(CameraData)[names(CameraData)=="Animal ID"] <- "type"
+
+CameraData$animal_age_tx = ""
+ind = grep("juv", CameraData$type)
+CameraData$animal_age_tx[ind] = "Juvenile"
+CameraData$comments = ""
+ind = grep("poss", CameraData$type)
+CameraData$comments[ind] = paste(CameraData$comments[ind], "possible identification", sep="")
+
+CameraData$original_species_tx = CameraData$type
+CameraData$count = 1
+
+## Camera species         
+CameraData$type = tolower(CameraData$type)
+#CameraData$type[CameraData$type == "large and sterna terns and herring gulls"]
+CameraData$type[CameraData$type == "arctic tern"] = "ARTE"                              
+#CameraData$type[CameraData$type == "b(poss)"]                                  
+CameraData$type[CameraData$type == "bridled tern (poss)"] = "BRTE"            
+CameraData$type[CameraData$type %in% c("caspain ten","caspian tern","poss caspian tern")] = "CATE"                            
+CameraData$type[CameraData$type %in% c("cattle egret","cattle egret  (poss)","cattle egret (poss)",
+                                       "poss cattle egret")] = "CAEG"                      
+CameraData$type[CameraData$type %in% c("poss common tern","common tern")] = "COTE"                             
+#CameraData$type[CameraData$type =="dark-colored"]                             
+#CameraData$type[CameraData$type =="dark dot"]                                
+#CameraData$type[CameraData$type %in% c("dolphin","poss dolphin","dolphin?")]                                  
+#CameraData$type[CameraData$type =="dolphin/mola mola"] #mahi mahi or mola mola/ocean sunfish                       
+CameraData$type[CameraData$type %in% c("egret","poss egret")] = "UNEG"                                   
+CameraData$type[CameraData$type %in% c("fish?","poss fish")] = "FISH"                                   
+CameraData$type[CameraData$type =="great black-backed gull"] = "GBBG"                  
+CameraData$type[CameraData$type %in% c("great egret", "poss great egret")] = "GREG"                            
+CameraData$type[CameraData$type %in% c("gull","gull (poss)","gull sp","gulls","poss gull")] = "UNGU"                                    
+CameraData$type[CameraData$type %in% c("hammerhead","hammerhead?")] = "HASH"                              
+CameraData$type[CameraData$type %in% c("poss hawksbill","hawksbill")] = "HATU"                              
+CameraData$type[CameraData$type %in% c("heron","poss heron")] = "UNHE"                                    
+CameraData$type[CameraData$type %in% c("herring gull","herring gull poss","juv herring gull","juv herring guul",
+                                       "poss herring gull")] = "HERG"                          
+CameraData$type[CameraData$type %in% c("large tern","large tern (poss)")] = "UNLT"                      
+CameraData$type[CameraData$type %in% c(" laughing gull","laughing gull","laughing gull ","laughing gull (poss)",
+                                       "laughing gulls","lauging gull","poss laughing gull")] = "LAGU"                             
+CameraData$type[CameraData$type =="leatherback"] = "LETU"                           
+CameraData$type[CameraData$type =="lesser black-backed gull"] = "LBBG"                 
+CameraData$type[CameraData$type %in% c("loggerhead","loggerhead (poss)","turtle poss loggerhead",
+                                       "poss loggerhead")] = "LOTU"                        
+CameraData$type[CameraData$type =="magnificent frigatebird"] = "MAFR"                
+CameraData$type[CameraData$type =="mahimahi"] = "MAMA"                                 
+CameraData$type[CameraData$type =="mola mola"] = "MOLA"                                
+CameraData$type[CameraData$type %in% c("northern gannet?","poss northern gannet")] = "NOGA"                        
+CameraData$type[CameraData$type %in% c("osprey","poss osprey")] = "OSPR"                                   
+CameraData$type[CameraData$type %in% c("oyster catcher","oystercatcher")] = "AMOY"                            
+CameraData$type[CameraData$type %in% c("brown pelican","brown pelican (poss)","pelican-brown","pelican - brown",
+                                       "poss brown pelican","juv brown pelican","poss pelican-brown")] = "BRPE"                         
+CameraData$type[CameraData$type %in% c("poss. bird", "poss bird")] = "UNBI"                              
+CameraData$type[CameraData$type =="poss black scoter"] = "BLSC"                      
+CameraData$type[CameraData$type =="poss bt grackle"] = "BTGR"                          
+CameraData$type[CameraData$type =="poss cormorant"] = "UNCO"                      
+CameraData$type[CameraData$type =="poss duck"] = "UNDU"  
+CameraData$type[CameraData$type =="poss gb heron"] = "GBHE"                           
+#CameraData$type[CameraData$type =="poss green"]                              
+CameraData$type[CameraData$type %in% c("poss green turtle","green turtle")] = "GRTU"                        
+CameraData$type[CameraData$type %in% c("poss kemp's ridley","poss kemps","kemps")] = "KRST"                               
+CameraData$type[CameraData$type =="poss pelican"] = "PELI"                            
+CameraData$type[CameraData$type =="poss petrel"] = "UNPE"                            
+CameraData$type[CameraData$type =="poss red-winged blackbird"] = "RWBL"                       
+CameraData$type[CameraData$type =="poss shearwater"] = "UNSH"                       
+CameraData$type[CameraData$type =="poss shorebird sanderling"] = "SAND"               
+CameraData$type[CameraData$type %in% c("poss shorebird","poss small shorebird", "poss small shorebirds",
+                                       "mixed shorebird flock")] = "SHOR"                   
+CameraData$type[CameraData$type =="poss spotted dolphin"] = "SPDO"                     
+CameraData$type[CameraData$type =="possible kestrel"] = "AMKE"                        
+CameraData$type[CameraData$type =="ray"] = "UNRA"                                     
+#CameraData$type[CameraData$type =="red throated diver"]                       
+CameraData$type[CameraData$type %in% c("royal tern","royal tern ","royal tern (poss)","royal terns","tern - royal",
+                                       "poss royal tern")] = "ROYT"                              
+CameraData$type[CameraData$type %in% c("sandwich tern", "sandwich tern poss")] = "SATE"
+CameraData$type[CameraData$type %in% c("scoter","poss scoter")] = "UNSC"                                 
+CameraData$type[CameraData$type %in% c("sea turtle","poss sea turtle","turtle","poss turtle")] = "TURT"                               
+CameraData$type[CameraData$type %in% c("shark","shark?","poss shark")] = "SHAR"                                   
+CameraData$type[CameraData$type %in% c("small tern","small tern (poss)","poss small tern")] = "UNST"                       
+CameraData$type[CameraData$type %in% c("sooty tern","sooty tern (poss)","poss sooty tern")] = "SOTE"                       
+CameraData$type[CameraData$type %in% c("sterna sp","sterna tern","sterna tern (poss)","tern sterna",
+                                       "tern sterna poss","poss sterna tern","tern","tern (poss)",
+                                       "terns","poss tern")] = "UNTE"                       
+CameraData$type[CameraData$type %in% c("storm-petrel?","storm petrel")] = "UNSP"                           
+CameraData$type[CameraData$type %in% c("tricolored heron","poss tricolor heron")] = "TRHE"                         
+CameraData$type[CameraData$type %in% c("unknown","unknown ","debris or pelican sitting down?")] = "UNKN"                                
+CameraData$type[CameraData$type =="whale?"] = "UNWH"                                  
+CameraData$type[CameraData$type =="white ibis"] = "WHIB"                              
+#CameraData$type[CameraData$type %in% c("white tip?","whitetip","whitetip?")]  
+
+
+# remove duplicates
+ind = grep(")", CameraData$Animal)
+duplicates = CameraData[ind,]
+#CameraData = CameraData[!ind,]
 # --------------------------- # 
 
 
@@ -441,6 +540,19 @@ boatObs$source_transect_id[boatObs$ID %in% c(2670,2681)] = 53
 # it seems that offline points dont have GPS points assosiated with them
 # --------------------------- # 
 
+# --------------------------- #
+# fix plane errors
+# --------------------------- #
+planeObs$type[planeObs$ID %in% c(756, 773, 1914, 1962,728, 1805, 1820, 1831)] = "ENDCNT"
+planeObs$type[planeObs$ID %in% c(1788, 1803, 1813)] = "COMMENT"
+planeObs$type[planeObs$ID == 733] = "ROYT"
+
+planeObs$offline[planeObs$ID %in% c(1820, 1256, 1831, 1914)] = 0 
+
+planeObs$source_transect_id[planeObs$ID == 2782] = 42
+planeObs$source_transect_id[planeObs$ID == 2786] = 43
+planeObs$source_transect_id[planeObs$ID == 2811] = 46
+# --------------------------- # 
 
 # --------------------------- #
 # mark chumming as offline
@@ -459,6 +571,23 @@ ind$segment = seq.int(nrow(ind))
 boatObs = left_join(boatObs, select(ind, segment, ID), by="ID") %>% as.data.frame %>% 
   mutate(segment = na.locf(segment)) %>% group_by(segment) %>% 
   mutate(chum = ifelse(chum[1] == 1, 1, 0)) %>% as.data.frame
+
+# mark when aerial obs happened after chumming
+planeObs$comments = tolower(planeObs$comments)
+ind = grep("chum", planeObs$comments)
+planeObs$chum = 0
+planeObs$chum[ind] = 1
+
+ind = c(1255, 2773:2776, 2083, 2084)
+planeObs$chum[planeObs$ID %in% ind] = 1
+planeObs$comments[planeObs$ID %in% ind] = paste(planeObs$comments[planeObs$ID %in% ind], "; chum", sep="")
+
+# mark chumming as offline
+planeObs$offline[planeObs$chum == 1] = 1
+
+test = left_join(planeObs, select(boatObs, chum, obs_dt), by="obs_dt") %>% as.data.frame 
+  
+
 # --------------------------- # 
 
 
@@ -478,11 +607,11 @@ GPSdata$obs_dt = ISOdatetime(GPSdata$year_, GPSdata$month_, GPSdata$day, df$hr, 
 rm(df)
 
 # take lat and lon from GPS
-GPSdata2 = GPSdata %>% filter(platform=="voyager") %>% select(lat,long,track_dt,obs_dt) 
+GPSdata2 = GPSdata %>% filter(platform=="voyager") %>% select(lat, long, time, obs_dt) 
 test.b = left_join(boatObs,GPSdata2,by="obs_dt")
 #test = right_join(GPSdata2,boatObs,by="obs_dt")
 
-GPSdata2 = GPSdata %>% filter(platform=="vplane") %>% select(lat,long,obs_dt) 
+GPSdata2 = GPSdata %>% filter(platform=="vplane") %>% select(lat, long, time, obs_dt) 
 test.p = left_join(planeObs,GPSdata2,by="obs_dt")
 # --------------------------- # 
 
