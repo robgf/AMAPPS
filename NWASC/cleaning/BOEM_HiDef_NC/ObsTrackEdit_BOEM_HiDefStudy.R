@@ -76,9 +76,6 @@ starts = rbind(sqlQuery(db, paste("SELECT field_data_tbl.comments, field_data_tb
                sqlQuery(db, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
                                         FROM field_data_tbl 
                                         WHERE (((field_data_tbl.comments) Like '%resume%'));")))
-              # sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
-              #                          FROM field_data_tbl 
-               #                         WHERE (((field_data_tbl.comments) Like '%wheels up%'));")))
 
 ends = rbind(sqlQuery(db, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
                                       FROM field_data_tbl 
@@ -86,9 +83,7 @@ ends = rbind(sqlQuery(db, paste("SELECT field_data_tbl.comments, field_data_tbl.
              sqlQuery(db, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
                                       FROM field_data_tbl 
                                       WHERE (((field_data_tbl.comments) Like '%stop%'));")))
-            # sqlQuery(database, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
-            #                          FROM field_data_tbl 
-            #                          WHERE (((field_data_tbl.comments) Like '%wheels down%'));")))
+
 transit = rbind(sqlQuery(db, paste("SELECT field_data_tbl.comments, field_data_tbl.ID 
                                         FROM field_data_tbl 
                                         WHERE (((field_data_tbl.comments) Like '%transit%'));")),
@@ -131,183 +126,28 @@ if (!file.exists(errfix.file)) {
 
 
 # -------------------------------- #
-# STEP 3: RESTRUCTURE DATA
+# STEP 3: EXPORT DATA
 # -------------------------------- #
 
-
-  
-
-               
-
-  
-
-
-
-# ---------------------------------------------------------------------------- #
-# STEP 3b: CHECK OBSERVATION FILES FOR ERRORS, DOCUMENT IN .CSV FILE
-# ---------------------------------------------------------------------------- #
-obs <- errorCheckObsFiles(obs, dir.out, error.flag = TRUE)
-
-# STOP IF ERRORS STILL EXIST IN OBSERVATION FILES
-if (obs[["errorStatus"]] == 1) {
-  stop("Errors still exist in observation files. These must be fixed before continuing.")
-} else obs <- obs[["data"]]
-
-# SUMMARIZE CERTAIN DATA COLUMNS
-tmp <- !is.na(obs$count) & obs$offline == 0 & 
-  !(obs$type %in% c("BEGSEG", "ENDSEG", "BEGCNT", "ENDCNT", "COCH"))
-if (!is.null(obs$band)) {
-  out.obssum <- summary(obs[tmp, c("lat", "long", "sec", "GPSerror", "count", "band")])
-} else {
-  out.obssum <- summary(obs[tmp, c("lat", "long", "sec", "GPSerror", "count")])
-}
-# ---------------------------------------------------------------------------- #
-
-
-# ---------------------------------------------------------------------------- #
-# STEP 3c: RE-ORGANIZE OBSERVATION AND TRACK DATA INTO SEPARATE LISTS CONTAINING 
-#         UNIQUE DATA FRAMES - ONE DATA FRAME FOR EACH COMBINATION OF OBSERVER 
-#         AND DAY
-# ---------------------------------------------------------------------------- #
-# RE-ORGANIZE OBSERVATION DATA
-obs$key <- paste(obs$crew, obs$seat, obs$year, obs$month, obs$day, sep = "_")
-obs <- split(obs, list(obs$key))
-
-# RE-ORGANIZE TRACK DATA
-track$key <- paste(track$crew, track$seat, track$year, track$month, track$day, sep = "_")
-track <- split(track, list(track$key))
-# ---------------------------------------------------------------------------- #
-
-
-# ---------------------------------------------------------------------------- #
-# STEP 3d: FIX MISSING SECONDS VALUES IN OBSERVATION FILES
-# ---------------------------------------------------------------------------- #
-obs <- lapply(setNames(names(obs), names(obs)), function(x) fixSeconds(obs[[x]], track[[x]]))
-# ---------------------------------------------------------------------------- #
-
-
-# ---------------------------------------------------------------------------- #
-# STEP 3e: ADD BEG/END POINTS WHERE NEEDED IN OBSERVATION FILES
-# ---------------------------------------------------------------------------- #
-obs <- suppressMessages(lapply(obs, addBegEnd_obs))
-# ---------------------------------------------------------------------------- #
-
-
-# ---------------------------------------------------------------------------- #
-# STEP 3f: COMBINE OBSERVATION FILES & TRACK FILES, OUTPUT EDITED
-#         TRACK FILES CONTAINING ONLY SURVEY SEGMENTS (WITH OBSERVATIONS)
-# ---------------------------------------------------------------------------- #
-obstrack <- lapply(setNames(names(obs), names(obs)), function(x) {
-  alt <- names(track)[sapply(strsplit(names(track), "_"), function(y) all(y[-2] == strsplit(x, "_")[[1]][-2]))]
-  combineObsTrack(obs[[x]], track[[x]], track[[alt[alt != x][1]]])
-})
-obstrack <- do.call(rbind.data.frame, obstrack)
-obstrack <- obstrack[order(obstrack$crew, obstrack$seat, obstrack$year, obstrack$month, 
-                           obstrack$day, obstrack$sec, obstrack$index), ]
-row.names(obstrack) <- NULL
-obstrack$ID <- as.numeric(row.names(obstrack))
-# ---------------------------------------------------------------------------- #
-
-###################################################################################
-
-
-
-
-#new = sqlQuery(database, paste("SELECT field_data_tbl.*, All_taxa_tbl.species_code, bird_list_AOU_NAm_tbl.scientific_name
-#               FROM (field_data_tbl 
-#               INNER JOIN All_taxa_tbl 
-#               ON field_data_tbl.species = All_taxa_tbl.common_name) 
-#               INNER JOIN bird_list_AOU_NAm_tbl 
-#               ON field_data_tbl.species = bird_list_AOU_NAm_tbl.common_name;"))
-
-
-
-# ------------------------------------------------------------------------- #
-# STEP 3: FIX OBSERVATION FILE ERRORS
-# look at yearlab_AOUErrors.xlsx and yearlab_ObsFileErrors.xlsx for help
-# ------------------------------------------------------------------------- #
-
-# ------------------------------------------------------------------------- #
-# seperate boat (Voyager) from plane (Vplane)
-boat = 
-plane = 
-
-
-if(platform == "Vplane") {
-  
-} else if (platform == "Voyager") {
-  
-} else
-
-
-  
-  
-  
-  
-  
-  
-  # ------------------------------------------------------------------------- #
-Observations = data.frame(matrix(ncol = 54))
-colnames(Observations) = c("observation_id", "transect_id", "dataset_id", "local_obs_id", "local_transect_id",
-                          "source_obs_id", "source_transect_id", "source_dataset_id", "obs_dt", "obs_start_tm", 
-                          "observers_tx", "original_species_tx", "spp_cd", "obs_count_intrans_nd", "obs_count_general_nb", 
-                          "animal_age_tx", "plumage_tx", "behavior_tx", "travel_direction_tx", "flight_height_tx",
-                          "distance_to_animal_tx", "angle_from_observer_nb", "visibility_tx", "weather_tx", "seastate_beaufort_nb",
-                          "wind_speed_tx", "wind_dir_tx", "seasurface_tempc_nb", "comments_tx", "animal_sex_tx",
-                          "obs_end_tm", "cloud_cover_tx", "association_tx", "who_created_tx", "who_created",
-                          "date_created", "boem_lease_block_id", "whole_transect", "temp_lat", "temp_lon", 
-                          "date_imported", "who_imported", "salinity_ppt_nb", "admin_notes", "platform_tx",
-                          "station_tx", "survey_type", "heading_tx", "wave_height_tx", "obs_position",
-                          "glare_tx", "whitecaps_tx", "visit","time_from_midnight")
-
-Transect = data.frame(matrix(ncol = 21))
-colnames(Transect) = c("transect_id", "dataset_id", "source_transect_id", "source_dataset_id", "start_dt",
-                       "start_tm", "end_dt", "end_tm", "transect_time_min_nb", "transect_distance_nb", 
-                       "traversal_speed_nb", "transect_width_nb", "observers_tx", "visability_tx", "weather_tx", 
-                       "seastate_beaufort_nb", "windspeed_tx", "wind_dir_tx", "seasurface_tempc_nb", "comments_tx",
-                       "track_gs")
-
-odbcCloseAll()
-# ------------------------------------------------------------------------- #
-
-Observations$platform_tx = platform
-
-# information for production_dataset table
-# can be found in "FWS IAA Phase II list revised 07.01.2015" spreadsheet (most recent on google drive)
-
 ## ariel (Vplane)
-#dataset_id = 144
-#survey_type_cd = "a"
-#survey_method_cd = NULL
-#dataset_type_cd = NULL
-#original_dataset_id = NULL
-#metadata_tx = NULL
-#source_dataset_id = "BOEMHighDef_NC2011Aerial"
+planeObs$dataset_id = 144
+planeObs$source_dataset_id = "BOEMHighDef_NC2011Aerial"
 
 ## boat (voyager)
-#dataset_id = 143
-#survey_type_cd = "b"
-#survey_method_cd = NULL
-#dataset_type_cd = NULL
-#original_dataset_id = NULL
-#metadata_tx = NULL
-#source_dataset_id = "BOEMHighDef_NC2011Boat"
+boatObs$dataset_id = 143
+boatObs$source_dataset_id = "BOEMHighDef_NC2011Boat"
+
+# camera
+cameraObs$dataset_id = 169
+cameraObs$source_dataset_id = "BOEMHighDef_NC2011Camera"
+
+# workspace and cvs
+save.image(paste(dir.out,"BOEMHiDef_NC2011.Rdata",sep="/"))
+write.csv(planeObs, file=paste(dir.out,"BOEMHiDef_NC2011_aerial.csv",sep="/"), row.names = FALSE)
+write.csv(boatObs, file=paste(dir.out,"BOEMHiDef_NC2011_boat.csv",sep="/"), row.names = FALSE)
+write.csv(cameraObs, file=paste(dir.out,"BOEMHiDef_NC2011_camera.csv",sep="/"), row.names = FALSE)
 # ------------------------------------------------------------------------- #
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-# observation
 
 
 
