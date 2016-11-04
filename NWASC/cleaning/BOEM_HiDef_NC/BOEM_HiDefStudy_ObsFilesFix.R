@@ -161,20 +161,16 @@ CameraData$count = 1
 
 ## Camera species         
 CameraData$type = tolower(CameraData$type)
-#CameraData$type[CameraData$type == "large and sterna terns and herring gulls"]
+CameraData$type[CameraData$type == "large and sterna terns and herring gulls"] = "GUTE" #unid small gull or tern
 CameraData$type[CameraData$type == "arctic tern"] = "ARTE"                              
-#CameraData$type[CameraData$type == "b(poss)"]                                  
 CameraData$type[CameraData$type == "bridled tern (poss)"] = "BRTE"            
 CameraData$type[CameraData$type %in% c("caspain ten","caspian tern","poss caspian tern")] = "CATE"                            
 CameraData$type[CameraData$type %in% c("cattle egret","cattle egret  (poss)","cattle egret (poss)",
                                        "poss cattle egret")] = "CAEG"                      
 CameraData$type[CameraData$type %in% c("poss common tern","common tern")] = "COTE"                             
-#CameraData$type[CameraData$type =="dark-colored"]                             
-#CameraData$type[CameraData$type =="dark dot"]                                
-#CameraData$type[CameraData$type %in% c("dolphin","poss dolphin","dolphin?")]                                  
-#CameraData$type[CameraData$type =="dolphin/mola mola"] #mahi mahi or mola mola/ocean sunfish                       
+CameraData$type[CameraData$type %in% c("dolphin","poss dolphin","dolphin?")] = "UNDO"                                  
 CameraData$type[CameraData$type %in% c("egret","poss egret")] = "UNEG"                                   
-CameraData$type[CameraData$type %in% c("fish?","poss fish")] = "FISH"                                   
+CameraData$type[CameraData$type %in% c("fish?","poss fish","dolphin/mola mola")] = "FISH"                                   
 CameraData$type[CameraData$type =="great black-backed gull"] = "GBBG"                  
 CameraData$type[CameraData$type %in% c("great egret", "poss great egret")] = "GREG"                            
 CameraData$type[CameraData$type %in% c("gull","gull (poss)","gull sp","gulls","poss gull")] = "UNGU"                                    
@@ -198,14 +194,13 @@ CameraData$type[CameraData$type %in% c("osprey","poss osprey")] = "OSPR"
 CameraData$type[CameraData$type %in% c("oyster catcher","oystercatcher")] = "AMOY"                            
 CameraData$type[CameraData$type %in% c("brown pelican","brown pelican (poss)","pelican-brown","pelican - brown",
                                        "poss brown pelican","juv brown pelican","poss pelican-brown")] = "BRPE"                         
-CameraData$type[CameraData$type %in% c("poss. bird", "poss bird")] = "UNBI"                              
+CameraData$type[CameraData$type %in% c("poss. bird", "poss bird","dark-colored","b(poss)")] = "UNBI"                              
 CameraData$type[CameraData$type =="poss black scoter"] = "BLSC"                      
 CameraData$type[CameraData$type =="poss bt grackle"] = "BTGR"                          
 CameraData$type[CameraData$type =="poss cormorant"] = "UNCO"                      
 CameraData$type[CameraData$type =="poss duck"] = "UNDU"  
 CameraData$type[CameraData$type =="poss gb heron"] = "GBHE"                           
-#CameraData$type[CameraData$type =="poss green"]                              
-CameraData$type[CameraData$type %in% c("poss green turtle","green turtle")] = "GRTU"                        
+CameraData$type[CameraData$type %in% c("poss green turtle","green turtle","poss green")] = "GRTU"                        
 CameraData$type[CameraData$type %in% c("poss kemp's ridley","poss kemps","kemps")] = "KRST"                               
 CameraData$type[CameraData$type =="poss pelican"] = "PELI"                            
 CameraData$type[CameraData$type =="poss petrel"] = "UNPE"                            
@@ -217,7 +212,7 @@ CameraData$type[CameraData$type %in% c("poss shorebird","poss small shorebird", 
 CameraData$type[CameraData$type =="poss spotted dolphin"] = "SPDO"                     
 CameraData$type[CameraData$type =="possible kestrel"] = "AMKE"                        
 CameraData$type[CameraData$type =="ray"] = "UNRA"                                     
-#CameraData$type[CameraData$type =="red throated diver"]                       
+CameraData$type[CameraData$type =="red throated diver"] = "RTLO"                       
 CameraData$type[CameraData$type %in% c("royal tern","royal tern ","royal tern (poss)","royal terns","tern - royal",
                                        "poss royal tern")] = "ROYT"                              
 CameraData$type[CameraData$type %in% c("sandwich tern", "sandwich tern poss")] = "SATE"
@@ -231,16 +226,21 @@ CameraData$type[CameraData$type %in% c("sterna sp","sterna tern","sterna tern (p
                                        "terns","poss tern")] = "UNTE"                       
 CameraData$type[CameraData$type %in% c("storm-petrel?","storm petrel")] = "UNSP"                           
 CameraData$type[CameraData$type %in% c("tricolored heron","poss tricolor heron")] = "TRHE"                         
-CameraData$type[CameraData$type %in% c("unknown","unknown ","debris or pelican sitting down?")] = "UNKN"                                
+CameraData$type[CameraData$type %in% c("unknown","unknown ","debris or pelican sitting down?","dark dot")] = "UNKN"                                
 CameraData$type[CameraData$type =="whale?"] = "UNWH"                                  
 CameraData$type[CameraData$type =="white ibis"] = "WHIB"                              
-#CameraData$type[CameraData$type %in% c("white tip?","whitetip","whitetip?")]  
+CameraData$type[CameraData$type %in% c("white tip?","whitetip","whitetip?")] = "OWTS"  
 
+# add generics based of "Animal" column
+CameraData$type[CameraData$ID == 293] = "TURT" 
+CameraData$type[CameraData$ID == 1808] = "SHAR" 
+CameraData$type[CameraData$ID == 1991] = "UNRA" 
+CameraData$type[CameraData$ID == 3076] = "UNBI" 
 
 # remove duplicates
-ind = grep(")", CameraData$Animal)
+ind = c(grep(")", CameraData$Animal),grep("-", CameraData$Animal))
 duplicates = CameraData[ind,]
-#CameraData = CameraData[!ind,]
+CameraData = CameraData[-ind,]
 # --------------------------- # 
 
 
@@ -619,7 +619,15 @@ test.p = left_join(planeObs,GPSdata2,by="obs_dt")
 # --------------------------- # 
 # Camera data
 # --------------------------- # 
+# time errors
+CameraData$Time[CameraData$ID == 212] = "20:56:08:286.546" #20:56::08:286.546
+CameraData$Time[CameraData$ID == 680] = "20:39:03:857.750" #20:39:3:857.750 ????????????????
+
 # add lat/lon
-test = CameraData %>% rename(Time = Timestamp) %>%
-  inner_join(., select(GPSdata,-Altitude,-ID), by = c("Date","Time"))
+CameraGPSdata =  mutate(CameraGPSdata, date_time = paste(Date, substr(Time, 1, 8), sep = " "))
+CameraGPSdata = CameraGPSdata[duplicated(CameraGPSdata$date_time)==FALSE,]
+
+test = CameraData %>% rename(Time = Timestamp) %>% mutate(date_time = paste(Date, substr(Time, 1, 8), sep = " ")) %>%
+  left_join(., select(CameraGPSdata,-Altitude,-ID, -Time, -Date), by = "date_time")
+
 # --------------------------- # 
