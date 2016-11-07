@@ -156,7 +156,7 @@ CameraData$comments = ""
 ind = grep("poss", CameraData$type)
 CameraData$comments[ind] = paste(CameraData$comments[ind], "possible identification", sep="")
 
-CameraData$original_species_tx = CameraData$type
+CameraData$original_species_tx = paste(CameraData$type, CameraData$Animal, sep = "; ")
 CameraData$count = 1
 
 ## Camera species         
@@ -620,14 +620,25 @@ test.p = left_join(planeObs,GPSdata2,by="obs_dt")
 # Camera data
 # --------------------------- # 
 # time errors
-CameraData$Time[CameraData$ID == 212] = "20:56:08:286.546" #20:56::08:286.546
-CameraData$Time[CameraData$ID == 680] = "20:39:03:857.750" #20:39:3:857.750 ????????????????
+CameraData$Timestamp = as.character(CameraData$Timestamp)
+CameraData$Timestamp[CameraData$ID == 3356] = "13:59:47:508.226" #13:5:47:508.226
+CameraData$Timestamp[CameraData$ID == 3620] = "14:16:03:651.146" #14:16::03:651.146
+CameraData$Timestamp[CameraData$ID == 3621] = "14:16:03:651.146" #14:16::03:651.146
+CameraData$Timestamp[CameraData$ID == 3022] = "13:37:50:516.867" #13:37:50:516.867 error in date time, odd, trying to recopy the time in hopes to not fix it later
 
-# add lat/lon
 CameraGPSdata =  mutate(CameraGPSdata, date_time = paste(Date, substr(Time, 1, 8), sep = " "))
 CameraGPSdata = CameraGPSdata[duplicated(CameraGPSdata$date_time)==FALSE,]
+CameraData = CameraData %>% dplyr::rename(Time = Timestamp)  %>% 
+  mutate(date_time = paste(Date, substr(Time, 1, 8), sep = " ")) 
 
-test = CameraData %>% rename(Time = Timestamp) %>% mutate(date_time = paste(Date, substr(Time, 1, 8), sep = " ")) %>%
-  left_join(., select(CameraGPSdata,-Altitude,-ID, -Time, -Date), by = "date_time")
+#CameraData$Timestamp[CameraData$ID == 680] #NA unknown
+#CameraData$Timestamp[CameraData$ID == 212] #NA unknown
+#CameraData$Timestamp[CameraData$ID == 1873] #NA unknown
+#CameraData$Timestamp[CameraData$ID == 2004]  #NA unknown
+  
+# add lat/lon
+test = left_join(CameraData, select(CameraGPSdata,-Altitude,-ID, -Time, -Date), by = "date_time")
+
+# if location is still NA, find closest observation (within a few seconds)
 
 # --------------------------- # 
