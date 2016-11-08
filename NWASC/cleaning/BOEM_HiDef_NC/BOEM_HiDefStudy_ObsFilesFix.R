@@ -606,6 +606,17 @@ df <- data.frame(date = GPSdata$GPS_time_rd,
 GPSdata$obs_dt = ISOdatetime(GPSdata$year_, GPSdata$month_, GPSdata$day, df$hr, df$min, df$sec) #Y m d H M S
 rm(df)
 
+# creat function to find closets timestamp
+require(data.table) 
+closest.time.point = function(time, reference.time) { 
+  # where time is a scalar and reference.time is a vector
+  # less than 5 min, and still transect start and stop locations are missing in GPSdata
+  x = ifelse(any(abs(difftime(time, reference.time, units="secs"))<=120),
+             which.min(abs(difftime(time, reference.time))),
+             NA)
+  return(x)
+}
+
 # take lat and lon from GPS
 GPSdata2 = GPSdata %>% filter(platform=="voyager") %>% select(lat, long, time, obs_dt) 
 test.b = left_join(boatObs,GPSdata2,by="obs_dt")
@@ -637,8 +648,122 @@ CameraData = CameraData %>% dplyr::rename(Time = Timestamp)  %>%
 #CameraData$Timestamp[CameraData$ID == 2004]  #NA unknown
   
 # add lat/lon
-test = left_join(CameraData, select(CameraGPSdata,-Altitude,-ID, -Time, -Date), by = "date_time")
+CameraGPSdata = CameraGPSdata %>% mutate(date_time = as.POSIXct(date_time,format="%Y-%m-%d %H:%M:%S"))
+#test = left_join(CameraData, select(CameraGPSdata,-Altitude,-ID, -Time, -Date), by = "date_time")
 
 # if location is still NA, find closest observation (within a few seconds)
+CameraData  = CameraData %>% 
+  mutate(date_time = as.POSIXct(date_time,format="%Y-%m-%d %H:%M:%S")) %>% rowwise %>% 
+  mutate(ind = closest.time.point(date_time, CameraGPSdata$date_time)) %>% as.data.frame %>%
+  mutate(lat = CameraGPSdata$Latitude[ind], 
+         lon = CameraGPSdata$Longitude[ind]) %>% select(-ind)
+
+# --------------------------- # 
+
+
+# --------------------------- # 
+# Camera transect from report
+CameraTransect = as.data.frame(matrix(ncol=12, nrow=110, data = NA))
+names(CameraTransect) = c("date", "segment_type", "start_tm", "end_tm", "location", "altitude_m", "resolution_cm", 
+                          "swath_width_m", "polarizer", "gyrostabilizer", "camera_angle_d", "camera")
+CameraTransect$date = c(rep("2011-05-11", 12),rep("2011-05-12", 9),rep("2011-05-13", 10),rep("2011-05-14", 6),
+                        rep("2011-05-15", 11), rep("2011-05-16",11), rep("2011-05-17",9),rep("2011-05-18", 27),
+                        rep("2011-05-19",9),rep("2011-05-20",6))
+CameraTransect$camera_angle_d = c(rep(0, 3), rep(15, 15), rep(44, 3), rep(15, 13),
+                                  rep(44, 25), NA, NA, rep(15, 21), rep(44, 28))
+CameraTransect$camera = c(rep("area-scan",104),rep("line-scan",6))
+CameraTransect$gyrostabilizer = c(rep("no", 59), NA, NA, rep("yes", 49))
+CameraTransect$polarizer = c(rep("yes", 7),rep("no", 5), rep("yes", 6),
+                             rep("no", 36), rep("yes", 5), NA, NA, rep("no", 49))
+CameraTransect$location = c("docks","coast","offshore","docks","offshore","chum boat","offshore","coast",
+                            "docks", rep("coast",3),"ocean and docks","coast","docks","offshore","chum boat",
+                            "offshore", "docks","coast", rep("docks",2), rep("coast",2), "docks", "chum boat",
+                            rep("coast",4),"docks","docks and ocean", "coast", "chum boat", "ocean", rep("chum boat",2),
+                            "bird island", "docks", "ocean", "coast", "docks", rep("bird island", 2), "docks",
+                            "offshore","chum boat",rep("bird island",3), "docks","coast","docks","bird island",
+                            "docks","offshore","chum boat", "barge","bird island", "docks","water tower",
+                            "bird island","docks","coast","docks", "water tower",  rep("bird island", 5), 
+                            rep("docks", 2), rep("water tower", 3), rep("lighthouse", 2),
+                            rep("bird island", 2), "offshore","chum boat", rep("bird island", 3), rep("docks", 3),
+                            rep("water tower", 3), "circle", rep("bird island", 2), "light house", "circle", 
+                            rep("bird island",2), "docks", rep("bird island", 3), "offshore", "chum boat", 
+                            rep("docks", 2), "bird island", "ocean", "offshore", "chum boat")
+CameraTransect$start_tm = c("10:00","10:13","11:00","13:00","13:05","13:53","14:07","15:00",
+                            "15:02","15:00","16:07","17:29","09:30","09:40","12:40","12:54","13:20",
+                            "13:30","15:10","15:21","16:51","09:17","09:25","10:45","10:50","14:59",
+                            "15:25","16:08","16:17","16:23","16:48","08:49","09:10","10:25","11:45","12:13","13:00",
+                            "09:15","09:30","09:45","09:50","11:06","11:10","12:28","12:45","12:50","13:20","14:00",
+                            "09:20","09:55","10:00","10:13","11:13","11:25","12:26","12:45","13:14","14:00","14:15",
+                            "12:51","12:59","13:40","14:00","14:05","15:04","15:10","15:15","15:23",
+                            "09:00","09:15","09:30","09:50","10:00","10:12","10:17","10:20","10:25","10:30","12:00",
+                            "12:20","12:39","13:08","15:30","15:50","16:00",rep("16:15",3),rep("16:40",3),"18:45",
+                            "19:00","19:15","19:30",
+                            "07:15","07:30","07:45","09:00","09:30","09:45","10:00","11:30","12:15",
+                            "09:39","10:00","10:20","10:30","12:25","13:09")
+CameraTransect$end_tm = c("10:13","11:00","11:45","13:05","13:52","14:07","14:30","15:00",
+                          "15:02","16:30","17:29","17:39",
+                          "09:40","11:46","12:50","13:20","13:30","14:00","15:20","16:51","16:55",
+                          "09:25","10:45","10:50","11:33","15:25","16:08","16:17","16:23","16:45","17:00",
+                          "09:10","10:25","10:36","12:13","13:00","13:15",
+                          "09:30","09:45","09:50","11:06","11:10","11:29","12:45","12:50","13:16","13:55","14:32",
+                          "09:55","10:00","10:13","11:13","11:25","11:34","12:45","13:14","13:54","14:15","14:40",
+                          "12:59","13:07","14:00","14:05","15:04","15:10","15:15","15:23","15:30",
+                          "09:15","09:30","09:50","10:00","10:12","10:15","10:17","10:20","10:25","10:30",
+                          "12:20","12:38","13:08","13:22","15:50","16:00",rep("16:15",4),rep("16:40",3),"18:45",
+                          "19:00","19:15","19:30",
+                          "07:15","07:30","07:45","09:00","09:30","09:45","10:00","12:14","13:01",
+                          "09:39","10:00","10:20","10:30","13:09","13:41")
+CameraTransect$altitude_m = c(rep(600,3),rep(450,9), rep(1000,3), "1200-1600 (clouds)",rep(600,2), rep(425,3), 
+                              rep(1000,2),"450-600 (clouds)", 1000, rep(1200,2), 1000, 600, rep(1200,2), rep(1000,3), 
+                              rep("300-450",2), 600, 332, rep(433,3), 400, 433, rep(731,3), rep(433,2), 733, 900, 
+                              rep(733,2), rep(900,2), rep(733,5), NA, NA, rep(600,6), 1000, 600, 1000, rep(1200,2), 
+                              rep(1000,2), 1200, rep(600,2), rep(1000,5), 433, 719, rep(863,2), 719, rep(433,2), 
+                              719, 863, 719, 863, rep(719,3), 863, 719, rep(863,2), 719, 433, rep(863, 2), rep(433,6))
+CameraTransect$segment_type = c("reference object flyover", "transect", "short transect","reference object flyover",
+                                "transect","target flyover","transect", rep("reference object flyover",3),
+                                "transect", rep("reference object flyover",2),"transect","reference object flyover",
+                                "transect","target flyover","transect","reference object flyover","transect",
+                                rep("reference object flyover",2),rep("transect",2),"reference object flyover",
+                                "target flyover",rep("transect",4),rep("reference object flyover",2), "transect",
+                                "target flyover","reference object flyover",rep("target flyover",3),
+                                rep("reference object flyover",2), "transect","reference object flyover",
+                                rep("target flyover",2), "reference object flyover",'transect',
+                                "target flyover","reference object flyover",rep("target flyover",2),
+                                "reference object flyover","transect","reference object flyover",
+                                "target flyover","reference object flyover","transect",rep("target flyover",3),
+                                "reference object flyover",rep("target flyover",2),"reference object flyover",
+                                "transect","reference object flyover",rep("target flyover",6),
+                                rep("reference object flyover",2), rep("target flyover",6),"bird island3_1000m_15Tilt",
+                                "transect",rep("target flyover",4),rep("reference object flyover",3),
+                                rep("target flyover",3),"reference object flyover",rep("target flyover",3),
+                                "reference object flyover",rep("target flyover",2),"reference object flyover",
+                                rep("target flyover",3),"transect","target flyover",rep("reference object flyover",2),
+                                "target flyover","reference object flyover","transect","target flyover")
+CameraTransect$resolution_cm = c(rep(2,3),rep(1,9),rep(2.5,3),"3-1.5",rep(1.5,5),rep(2.5,2),"1-1.5",2.5,
+                                 rep(3,2),2.5,1.5,rep(3,2),rep(2.5,3),1,1.5,2.1,1,rep(1.5,3),1.4,1.5,rep(2.5,3),
+                                 rep(1.5,2),2.5,3,rep(2.5,2),rep(3,2),rep(2.5,5),NA,NA,rep(1.5,6),2.5,1.5,
+                                 2.5,rep(3,2),rep(2.5,2),3,rep(1.5,2),rep(2.5,5),1.5,2.5,rep(3,2),2.5,rep(1.5,2),
+                                 2.5,3,2.5,3,rep(2.5,3),3,2.5,2,3,2.5,1.5,rep(3,2),rep(1.5,6))       
+CameraTransect$swath_width_m = c(rep(98,3),rep(49,4),rep(50,5),rep(121,3),"146-73",rep(73,5),rep(121,2),
+                                 "73-50",121,rep(146,2),121,73, rep(146,2),rep(121,3),49,73,102,49,
+                                 rep(73,3),69,73,rep(121,3),rep(73,2),121,146,rep(121,2),rep(146,2),rep(121,5),
+                                 NA,NA, rep(73,6),121,73,121,rep(146,2),rep(121,2),146,rep(73,2),rep(121,5),
+                                 73,121,rep(146,2),121,rep(73,2),121,146,121,146,rep(121,3),146,121,97,146,121,73,
+                                 rep(146,2),rep(61,6))
+
+## Get GPS points
+CameraTransect  = CameraTransect %>% 
+  mutate(start_date_tm = paste(CameraTransect$date, CameraTransect$start_tm, sep=" ")) %>%
+  mutate(start_date_tm = as.POSIXct(start_date_tm,format="%Y-%m-%d %H:%M")) %>%
+  mutate(end_date_tm = paste(CameraTransect$date, CameraTransect$end_tm, sep=" ")) %>%
+  mutate(end_date_tm = as.POSIXct(end_date_tm,format="%Y-%m-%d %H:%M")) %>% rowwise %>%
+  mutate(start_ind = closest.time.point(start_date_tm, CameraGPSdata$date_time),
+         end_ind = closest.time.point(end_date_tm, CameraGPSdata$date_time)) %>% as.data.frame %>%
+  mutate(start_lat = CameraGPSdata$Latitude[start_ind], 
+         start_lon = CameraGPSdata$Longitude[start_ind],
+         end_lat = CameraGPSdata$Latitude[end_ind],
+         end_lon = CameraGPSdata$Longitude[end_ind]) %>% select(-start_ind, -end_ind, -end_date_tm, -start_date_tm)
+  
+## transect == online, no chumming. Also else should be excluded. 
 
 # --------------------------- # 
