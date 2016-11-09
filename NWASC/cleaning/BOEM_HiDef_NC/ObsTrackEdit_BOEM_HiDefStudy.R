@@ -131,23 +131,41 @@ if (!file.exists(errfix.file)) {
 
 ## ariel (Vplane)
 planeObs$dataset_id = 144
+planeGPS$dataset_id = 144
 planeObs$source_dataset_id = "BOEMHighDef_NC2011Aerial"
+planeGPS$source_dataset_id = "BOEMHighDef_NC2011Boat"
 
 ## boat (voyager)
 boatObs$dataset_id = 143
+boatGPS$dataset_id = 143
 boatObs$source_dataset_id = "BOEMHighDef_NC2011Boat"
+boatGPS$source_dataset_id = "BOEMHighDef_NC2011Boat"
 
 # camera
 cameraObs$dataset_id = 169
+cameraTransect$dataset_id = 169
+CameraGPSdata$dataset_id = 169
 cameraObs$source_dataset_id = "BOEMHighDef_NC2011Camera"
+cameraTransect$source_dataset_id = "BOEMHighDef_NC2011Camera"
+CameraGPSdata$source_dataset_id = "BOEMHighDef_NC2011Camera"
 
 # workspace and cvs
 save.image(paste(dir.out,"BOEMHiDef_NC2011.Rdata",sep="/"))
-write.csv(planeObs, file=paste(dir.out,"BOEMHiDef_NC2011_aerial.csv",sep="/"), row.names = FALSE)
-write.csv(boatObs, file=paste(dir.out,"BOEMHiDef_NC2011_boat.csv",sep="/"), row.names = FALSE)
-write.csv(cameraObs, file=paste(dir.out,"BOEMHiDef_NC2011_camera.csv",sep="/"), row.names = FALSE)
-# ------------------------------------------------------------------------- #
 
+write.csv(planeObs, file=paste(dir.out,"BOEMHiDef_NC2011_aerial.csv",sep="/"), row.names = FALSE)
+write.csv(planeGPS, file=paste(dir.out,"BOEMHiDef_NC2011_aerial_track.csv",sep="/"), row.names = FALSE)
+write.csv(planeTransects, file=paste(dir.out,"BOEMHiDef_NC2011_aerial_transects.csv",sep="/"), row.names = FALSE)
+
+write.csv(boatObs, file=paste(dir.out,"BOEMHiDef_NC2011_boat.csv",sep="/"), row.names = FALSE)
+write.csv(boatGPS, file=paste(dir.out,"BOEMHiDef_NC2011_boat_track.csv",sep="/"), row.names = FALSE)
+write.csv(boatTransects, file=paste(dir.out,"BOEMHiDef_NC2011_boat_transects.csv",sep="/"), row.names = FALSE)
+
+write.csv(CameraData, file=paste(dir.out,"BOEMHiDef_NC2011_camera_obs.csv",sep="/"), row.names = FALSE)
+write.csv(CameraTransect, file=paste(dir.out,"BOEMHiDef_NC2011_camera_transect.csv",sep="/"), row.names = FALSE)
+write.csv(CameraGPSdata, file=paste(dir.out,"BOEMHiDef_NC2011_camera_track.csv",sep="/"), row.names = FALSE)
+write.csv(duplicates, file=paste(dir.out,"BOEMHiDef_NC2011_camera_obs_deleted_duplicates.csv",sep="/"), row.names = FALSE)
+
+# ------------------------------------------------------------------------- #
 
 
 
