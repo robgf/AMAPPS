@@ -24,9 +24,9 @@ common_name = tolower(Species_Information$common_name)
 spplist = as.character(Species_Information$species_code)
 
 # list of codes we are using
-codes = odbcConnectExcel2007(file.path(dbpath, "NWASC_codes.xlsx"), readOnly = TRUE) 
-name <- sqlFetch(codes,"codes")
-odbcCloseAll()
+#db <- odbcConnectAccess2007("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
+#name = sqlFetch(db, "lu_species")
+#odbcCloseAll()
 
 #species_code
 spplist = ifelse(common_name == "humpback whale", "HUWH", spplist)
@@ -272,12 +272,13 @@ CameraData = CameraData[-ind,]
 spplist = toupper(spplist) # change correct code to uppercase
 fieldData$species = tolower(fieldData$species)
 
-fieldData = data.frame(cbind(species = common_name, spp_type = spplist), stringsAsFactors = FALSE) %>% distinct %>%
-  left_join(fieldData, ., by = "species") %>% rowwise %>% mutate(type = replace(type, is.na(type), spp_type)) %>%
+fieldData = data.frame(cbind(species = common_name, spp_type = spplist), stringsAsFactors = FALSE) %>% 
+  distinct %>% left_join(fieldData, ., by = "species") %>% rowwise %>% 
+  mutate(type = replace(type, is.na(type), spp_type)) %>%
   as.data.frame
 # fix 'type' where wrongfully coded as BEG/END count due to key words in comments
 fieldData$type[which(fieldData$type != fieldData$spp_type)] = fieldData$spp_type[which(fieldData$type != fieldData$spp_type)]
-rm(common_name,spplist, Species_Information, name)
+rm(common_name,spplist, Species_Information)
 fieldData = fieldData %>% select(-spp_type)
 
 # from comments 
@@ -443,8 +444,16 @@ df <- data.frame(date = fieldData$obs_time_rd,
                  min = as.numeric(format(fieldData$obs_time_rd, format = "%M")),
                  sec = as.numeric(format(fieldData$obs_time_rd, format = "%S"))) #satellite_GPS_time,
 fieldData = rename(fieldData, year = year_, month = month_)
-fieldData$obs_dt = ISOdatetime(fieldData$year, fieldData$month, fieldData$day, df$hr, df$min, df$sec) #Y m d H M S
+fieldData$date_time = ISOdatetime(fieldData$year, fieldData$month, fieldData$day, df$hr, df$min, df$sec) #Y m d H M S
 rm(df)
+
+names(fieldData)[names(fieldData) == "Start Transect"] = "Stransect"
+names(fieldData)[names(fieldData) == "End Transect"] = "Etransect"
+names(fieldData)[names(fieldData) == "Transect ID"] = "source_transect_id"
+names(fieldData)[names(fieldData) == "Data-sheet ID"] = "DatasheetID"
+names(fieldData)[names(fieldData) == "number_individuals"] = "count"
+
+fieldData$platform = tolower(fieldData$platform)
 # --------------------------- # 
 
 
@@ -455,50 +464,43 @@ fieldData$observers = sub("^\\s+", "", tolower(paste(fieldData$obs_first_name, f
 fieldData$observers[fieldData$observers == "allison_mac connell"] = "allison_macconnell"
 fieldData$observers[fieldData$observers == "mary jo_barkaszi"] = "maryjo_barkaszi"
 fieldData$observers[fieldData$observers == "na_na"] = NA
-#fieldData$crew[fieldData$crew == "erik_haney"] = "eric_haney" # probably???????????????????????
-# --------------------------- # 
+fieldData$observers[fieldData$observers == "erik_haney"] = "eric_haney" 
 
+## change to initials to protect PII
+fieldData$observers[fieldData$observers == "allison_macconnell"] = "AM"    
+fieldData$observers[fieldData$observers == "caleb_gordon"] = "CG"          
+fieldData$observers[fieldData$observers == "christy_harrington"]= "CH"    
+fieldData$observers[fieldData$observers == "david_hartgrove"] = "DH"       
+fieldData$observers[fieldData$observers == "eric_haney"] = "EH"           
+fieldData$observers[fieldData$observers == "julia_willmott"] = "JW"        
+fieldData$observers[fieldData$observers == "maryjo_barkaszi"] = "MB"       
+fieldData$observers[fieldData$observers == "mitchell_harris"]= "MH"      
+fieldData$observers[fieldData$observers == "rachel_hardee"] = "RaH"         
+fieldData$observers[fieldData$observers == "richard_holt"] = "RiH"          
+fieldData$observers[fieldData$observers == "wes_biggs"] = "WB"
 
-# --------------------------- # 
-# platform
-# --------------------------- # 
-fieldData$platform = tolower(fieldData$platform)
-# --------------------------- # 
+# mixed obs
+fieldData$observers[fieldData$observers == "haney_biggs"] = "EH/WB" 
+fieldData$observers[fieldData$observers == "willmott_biggs/gordon"] = "JW/WB/CG"
+fieldData$observers[fieldData$observers %in% c("julia_gordon","willmott_gordon")] = "JW/CG"
 
-
-# --------------------------- # 
-# count
-# --------------------------- # 
-names(fieldData)[names(fieldData) == "number_individuals"] = "count"
-# --------------------------- # 
-
-
-# --------------------------- # 
-# remove unneccessary and/or unused fields
-# --------------------------- # 
-names(fieldData)[names(fieldData) == "Data-sheet ID"] = "DataSheet_ID"
-names(fieldData)[names(fieldData) == "Start Transect"] = "Stransect"
-names(fieldData)[names(fieldData) == "End Transect"] = "Etransect"
-names(fieldData)[names(fieldData) == "Transect ID"] = "source_transect_id"
-fieldData = fieldData %>% select(-Observers, -missing_sp, -F26, -obs_time_rd,
-                                 -cue_type_start_stop, -start_time_sheet,
-                                 -end_time_sheet, -page_number, -page_total,
-                                 -DataSheet_ID, -Stransect, -Etransect,
-                                 -obs_first_name, -obs_last_name)
+fieldData = select(fieldData, -obs_first_name, -obs_last_name, -Observers)
 # --------------------------- # 
 
 
 # --------------------------- # 
 # split data before fixing transects
 # --------------------------- # 
-fieldData = fieldData %>% rename(original_species_tx = species, distance_to_animal = distance) %>% 
-  select(-year,-month,-day,-satellite_GPS_time) %>%
+fieldData = fieldData %>% mutate(original_species_tx = paste(species, DatasheetID, sep = "; ")) %>%
+  rename(distance_to_animal = distance) %>% 
+  select(-year,-month,-day,-satellite_GPS_time, -obs_time_rd, -species, -DatasheetID, -F26) %>%
   mutate(travel_direction = replace(travel_direction, travel_direction=="n/a", NA), 
          travel_direction = toupper(travel_direction))
+fieldData$original_species_tx[fieldData$original_species_tx %in% c("NA; NA","NA; 0")] = NA
 
-boatObs = fieldData[fieldData$platform=="voyager",] %>% arrange(ID, obs_dt)
-planeObs = fieldData[fieldData$platform=="vplane",] %>% arrange(ID, obs_dt)
-#rm(fieldData)
+boatObs = fieldData[fieldData$platform=="voyager",] %>% arrange(ID, date_time)
+planeObs = fieldData[fieldData$platform=="vplane",] %>% arrange(ID, date_time)
+rm(fieldData)
 # --------------------------- # 
 
 
@@ -515,9 +517,8 @@ planeObs = fieldData[fieldData$platform=="vplane",] %>% arrange(ID, obs_dt)
 
 boatObs = boatObs[-(which(boatObs$ID %in% c(2114,2528))),] # remove duplicate
 
-
 # Cant use fill since most of the BEGCNTs are NA
-old = boatObs$source_transect_id
+#old = boatObs$source_transect_id
 boatObs$source_transect_id[boatObs$ID %in% c(2118:2121,2124,2522:2524,2516:2518)] = 9
 boatObs$source_transect_id[boatObs$ID %in% c(2132:2136,2519:2520,2525,2526:2527,2521)] = 10
 boatObs$source_transect_id[boatObs$ID %in% c(2160:2178,2534,2535,2536,2529,2530)] = 20
@@ -531,17 +532,16 @@ boatObs$source_transect_id[boatObs$ID %in% c(2894)] = 49
 boatObs$source_transect_id[boatObs$ID %in% c(2659,2663,2672,2676)] = 52
 boatObs$source_transect_id[boatObs$ID %in% c(2670,2681)] = 53
 
-#boatObs$comments[boatObs$source_transect_id != old] = paste(boatObs$comments[boatObs$source_transect_id != old],
+#boatObs$comments[!boatObs$source_transect_id %in% old] = paste(boatObs$comments[boatObs$source_transect_id != old],
 #                                                            "; changed TRANSECT from ",
 #                                                            old[boatObs$source_transect_id != old], sep = "")
-
 # possibly???????
 #boatObs$offline[boatObs$ID %in% c(2791:2805,2656,2657,2648,2877:2893,3049.5,3032:3039,2677:2680,2664:2669,2188:2253)] = 2
 # it seems that offline points dont have GPS points assosiated with them
 # --------------------------- # 
 
 # --------------------------- #
-# fix plane errors
+# fix plane type and transect errors
 # --------------------------- #
 planeObs$type[planeObs$ID %in% c(756, 773, 1914, 1962,728, 1805, 1820, 1831)] = "ENDCNT"
 planeObs$type[planeObs$ID %in% c(1788, 1803, 1813)] = "COMMENT"
@@ -571,6 +571,9 @@ ind$segment = seq.int(nrow(ind))
 boatObs = left_join(boatObs, select(ind, segment, ID), by="ID") %>% as.data.frame %>% 
   mutate(segment = na.locf(segment)) %>% group_by(segment) %>% 
   mutate(chum = ifelse(chum[1] == 1, 1, 0)) %>% as.data.frame
+boatObs$offline[boatObs$chum == 1] = 1
+boatObs$offline[boatObs$offline != 1 & boatObs$chum == 0] = 0
+boatObs = select(boatObs, -chum)
 
 # mark when aerial obs happened after chumming
 planeObs$comments = tolower(planeObs$comments)
@@ -584,10 +587,8 @@ planeObs$comments[planeObs$ID %in% ind] = paste(planeObs$comments[planeObs$ID %i
 
 # mark chumming as offline
 planeObs$offline[planeObs$chum == 1] = 1
-
-test = left_join(planeObs, select(boatObs, chum, obs_dt), by="obs_dt") %>% as.data.frame 
-  
-
+planeObs$offline[planeObs$ID == 1805] = 0 # endcount to go offline
+planeObs$offline[planeObs$offline != 1 & planeObs$chum == 0] = 0
 # --------------------------- # 
 
 
@@ -599,31 +600,62 @@ names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/@lon"] = "long"
 names(GPSdata)[names(GPSdata) == "/trk/trkseg/trkpt/time"] = "time"
 GPSdata$platform = tolower(GPSdata$platform)
 
-df <- data.frame(date = GPSdata$GPS_time_rd, 
-                 hr = as.numeric(format(GPSdata$GPS_time_rd, format = "%H")),
-                 min = as.numeric(format(GPSdata$GPS_time_rd, format = "%M")),
-                 sec = as.numeric(format(GPSdata$GPS_time_rd, format = "%S")))
-GPSdata$obs_dt = ISOdatetime(GPSdata$year_, GPSdata$month_, GPSdata$day, df$hr, df$min, df$sec) #Y m d H M S
+df <- data.frame(date = GPSdata$time, 
+                 hr = as.numeric(format(GPSdata$time, format = "%H")),
+                 min = as.numeric(format(GPSdata$time, format = "%M")),
+                 sec = as.numeric(format(GPSdata$time, format = "%S")))
+GPSdata$date_time = ISOdatetime(GPSdata$year_, GPSdata$month_, GPSdata$day, df$hr, df$min, df$sec) #Y m d H M S
 rm(df)
+GPSdata = select(GPSdata, -time, -GPS_time_rd)
 
 # creat function to find closets timestamp
 require(data.table) 
-closest.time.point = function(time, reference.time) { 
+closest.time.point = function(time, reference.time, n) { 
   # where time is a scalar and reference.time is a vector
+  # n is the amount of seconds you want to be closest to (ex. 120 for two min, <5, etc.)
   # less than 5 min, and still transect start and stop locations are missing in GPSdata
-  x = ifelse(any(abs(difftime(time, reference.time, units="secs"))<=120),
+  x = ifelse(any(abs(difftime(time, reference.time, units="secs"))<=n),
              which.min(abs(difftime(time, reference.time))),
              NA)
   return(x)
 }
 
-# take lat and lon from GPS
-GPSdata2 = GPSdata %>% filter(platform=="voyager") %>% select(lat, long, time, obs_dt) 
-test.b = left_join(boatObs,GPSdata2,by="obs_dt")
-#test = right_join(GPSdata2,boatObs,by="obs_dt")
+# find closest lat and lon from GPS
+boatGPS = GPSdata[GPSdata$platform=="voyager",]
+planeGPS = GPSdata[GPSdata$platform=="vplane",]
 
-GPSdata2 = GPSdata %>% filter(platform=="vplane") %>% select(lat, long, time, obs_dt) 
-test.p = left_join(planeObs,GPSdata2,by="obs_dt")
+planeObs  = planeObs %>% 
+  mutate(date_time = as.POSIXct(date_time,format="%Y-%m-%d %H:%M:%S")) %>% rowwise %>% 
+  mutate(ind = closest.time.point(date_time, GPSdata$date_time, 5)) %>% as.data.frame %>%
+  mutate(lat = GPSdata$lat[ind], 
+         lon = GPSdata$long[ind]) %>% select(-ind)
+
+boatObs  = boatObs %>% 
+  mutate(date_time = as.POSIXct(date_time,format="%Y-%m-%d %H:%M:%S")) %>% rowwise %>% 
+  mutate(ind = closest.time.point(date_time, GPSdata$date_time, 180)) %>% as.data.frame %>%
+  mutate(lat = GPSdata$lat[ind], 
+         lon = GPSdata$long[ind]) %>% select(-ind)
+# --------------------------- # 
+
+
+# --------------------------- # 
+# make boat and plane transect tables
+# --------------------------- # 
+boatTransects = boatObs %>% mutate(source_transect_id = paste(source_transect_id, observers, sep="_")) %>%
+  group_by(source_transect_id) %>% filter(row_number()==1 | row_number()==n()) %>% as.data.frame %>%
+  select(date_time, type, source_transect_id, lat, lon) %>% 
+  filter(type %in% c("BEGCNT","ENDCNT")) %>% group_by(source_transect_id) %>%
+  summarize(start_dt = first(date_time), end_dt = last(date_time),
+            start_lat = first(lat), end_lat = last(lat),
+            start_lon = first(lon), end_lon = last(lon)) %>% as.data.frame %>% arrange(start_dt)
+
+planeTransects = planeObs %>% mutate(source_transect_id = paste(source_transect_id, observers, sep="_")) %>%
+  group_by(source_transect_id) %>% filter(row_number()==1 | row_number()==n()) %>% as.data.frame %>%
+  select(date_time, type, source_transect_id, lat, lon) %>% 
+  filter(type %in% c("BEGCNT","ENDCNT")) %>% group_by(source_transect_id) %>%
+  summarize(start_dt = first(date_time), end_dt = last(date_time),
+            start_lat = first(lat), end_lat = last(lat),
+            start_lon = first(lon), end_lon = last(lon)) %>% as.data.frame %>% arrange(start_dt)
 # --------------------------- # 
 
 
@@ -654,7 +686,7 @@ CameraGPSdata = CameraGPSdata %>% mutate(date_time = as.POSIXct(date_time,format
 # if location is still NA, find closest observation (within a few seconds)
 CameraData  = CameraData %>% 
   mutate(date_time = as.POSIXct(date_time,format="%Y-%m-%d %H:%M:%S")) %>% rowwise %>% 
-  mutate(ind = closest.time.point(date_time, CameraGPSdata$date_time)) %>% as.data.frame %>%
+  mutate(ind = closest.time.point(date_time, CameraGPSdata$date_time, 120)) %>% as.data.frame %>%
   mutate(lat = CameraGPSdata$Latitude[ind], 
          lon = CameraGPSdata$Longitude[ind]) %>% select(-ind)
 
@@ -757,13 +789,15 @@ CameraTransect  = CameraTransect %>%
   mutate(start_date_tm = as.POSIXct(start_date_tm,format="%Y-%m-%d %H:%M")) %>%
   mutate(end_date_tm = paste(CameraTransect$date, CameraTransect$end_tm, sep=" ")) %>%
   mutate(end_date_tm = as.POSIXct(end_date_tm,format="%Y-%m-%d %H:%M")) %>% rowwise %>%
-  mutate(start_ind = closest.time.point(start_date_tm, CameraGPSdata$date_time),
-         end_ind = closest.time.point(end_date_tm, CameraGPSdata$date_time)) %>% as.data.frame %>%
+  mutate(start_ind = closest.time.point(start_date_tm, CameraGPSdata$date_time, 120),
+         end_ind = closest.time.point(end_date_tm, CameraGPSdata$date_time, 120)) %>% as.data.frame %>%
   mutate(start_lat = CameraGPSdata$Latitude[start_ind], 
          start_lon = CameraGPSdata$Longitude[start_ind],
          end_lat = CameraGPSdata$Latitude[end_ind],
          end_lon = CameraGPSdata$Longitude[end_ind]) %>% select(-start_ind, -end_ind, -end_date_tm, -start_date_tm)
   
 ## transect == online, no chumming. Also else should be excluded. 
-
 # --------------------------- # 
+
+
+# --------------------------- #
