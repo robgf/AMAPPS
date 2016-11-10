@@ -18,7 +18,8 @@
 require(RODBC) # odbcConnect
 require(lubridate) #fix timestamps
 require(zoo) #na.locf
-require(dplyr) # 
+require(dplyr) # %>% 
+library(dtplyr) #data.table
 # -------------------------------- #
 
 
@@ -142,11 +143,11 @@ boatObs$source_dataset_id = "BOEMHighDef_NC2011Boat"
 boatGPS$source_dataset_id = "BOEMHighDef_NC2011Boat"
 
 # camera
-cameraObs$dataset_id = 169
-cameraTransect$dataset_id = 169
+CameraData$dataset_id = 169
+CameraTransect$dataset_id = 169
 CameraGPSdata$dataset_id = 169
-cameraObs$source_dataset_id = "BOEMHighDef_NC2011Camera"
-cameraTransect$source_dataset_id = "BOEMHighDef_NC2011Camera"
+CameraData$source_dataset_id = "BOEMHighDef_NC2011Camera"
+CameraTransect$source_dataset_id = "BOEMHighDef_NC2011Camera"
 CameraGPSdata$source_dataset_id = "BOEMHighDef_NC2011Camera"
 
 # workspace and cvs
