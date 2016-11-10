@@ -548,10 +548,25 @@ planeObs$type[planeObs$ID %in% c(1788, 1803, 1813)] = "COMMENT"
 planeObs$type[planeObs$ID == 733] = "ROYT"
 
 planeObs$offline[planeObs$ID %in% c(1820, 1256, 1831, 1914)] = 0 
+planeObs$offline[planeObs$ID %in% c(2023,2025,2026)]=1
 
+planeObs$source_transect_id[planeObs$ID %in% c(1840,1793,558)] = 1
+planeObs$source_transect_id[planeObs$ID == 559] = 2
+planeObs$source_transect_id[planeObs$ID %in% c(1851,1801,469,468,467,568)] = 4
+planeObs$source_transect_id[planeObs$ID %in% c(1864,1833,1888,543)] = 8
+planeObs$source_transect_id[planeObs$ID %in% c(1912,1914,573)]=11
+planeObs$source_transect_id[planeObs$ID %in% c(1969,1941,818,973,974)] = 22
+planeObs$source_transect_id[planeObs$ID %in% c(1051,1955,1962,1980,1987,889,909)] = 25
+planeObs$source_transect_id[planeObs$ID %in% c(1028,1029,1979)] = 24
+planeObs$source_transect_id[planeObs$ID %in% c(1237:1249,1290:1297,2033,2051)] = 28
+planeObs$source_transect_id[planeObs$ID == 2052] = 29
+planeObs$source_transect_id[planeObs$ID == 2073] = 34
+planeObs$source_transect_id[planeObs$ID %in% c(2724,2733)] = 40
+planeObs$source_transect_id[planeObs$ID %in% c(2726,2734)] = 41
 planeObs$source_transect_id[planeObs$ID == 2782] = 42
 planeObs$source_transect_id[planeObs$ID == 2786] = 43
-planeObs$source_transect_id[planeObs$ID == 2811] = 46
+planeObs$source_transect_id[planeObs$ID %in% c(2838,2854,2811)] = 46
+planeObs$source_transect_id[planeObs$ID == 2977] = 50
 # --------------------------- # 
 
 # --------------------------- #
@@ -609,7 +624,7 @@ rm(df)
 GPSdata = select(GPSdata, -time, -GPS_time_rd)
 
 # creat function to find closets timestamp
-require(data.table) 
+#require(data.table) 
 closest.time.point = function(time, reference.time, n) { 
   # where time is a scalar and reference.time is a vector
   # n is the amount of seconds you want to be closest to (ex. 120 for two min, <5, etc.)
@@ -796,8 +811,33 @@ CameraTransect  = CameraTransect %>%
          end_lat = CameraGPSdata$Latitude[end_ind],
          end_lon = CameraGPSdata$Longitude[end_ind]) %>% select(-start_ind, -end_ind, -end_date_tm, -start_date_tm)
   
-## transect == online, no chumming. Also else should be excluded. 
+## transect == online, no chumming. All else should be excluded. 
+# relate Camera Data to Camera Transect to mark offline data
+CameraTransect = CameraTransect %>% 
+  mutate(start_date_time = as.POSIXct(paste(date, start_tm, sep=" "),format="%Y-%m-%d %H:%M"), 
+         end_date_time = as.POSIXct(paste(date, end_tm, sep=" "),format="%Y-%m-%d %H:%M")) 
+#CameraTransect$transect_ID = row_number
+
+CameraData = CameraData %>% rowwise %>% 
+  mutate(start_ind = closest.time.point(date_time, CameraTransect$start_date_time, 90)) %>% 
+  as.data.frame %>% mutate(segment_type = paste(CameraTransect$segment_type[start_ind],
+                                                CameraTransect$location[start_ind], sep="; ")) %>%
+  select(-start_ind) 
+CameraData$segment_type[CameraData$segment_type=="NA; NA"] = NA
+
 # --------------------------- # 
 
 
 # --------------------------- #
+# remove unnecessary columns
+# --------------------------- #
+boatObs = select(boatObs, -page_number,-page_total,-platform,-start_time_sheet,-end_time_sheet,-cue_type_start_stop,
+                 -Stransect,-Etransect,-missing_sp) 
+planeObs = select(planeObs, -page_number,-page_total,-platform,-start_time_sheet,-end_time_sheet,-cue_type_start_stop,
+                 -Stransect,-Etransect,-missing_sp,-chum)
+CameraData = select(CameraData, -Date, -Time)
+
+
+boatObs = boatObs %>% arrange(segment, date_time)
+# --------------------------- #
+
