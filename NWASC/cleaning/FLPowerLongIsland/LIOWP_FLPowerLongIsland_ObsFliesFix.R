@@ -263,30 +263,17 @@ for (a in 1:length(changes)) {
 }
 rm(changes, a)
 
-boat.transect$TRANSECT[which(boat.transect$TRANSECT == "2N,2S" | boat.transect$TRANSECT == "t2n" | boat.transect$TRANSECT == "t2s" |
-                        boat.transect$TRANSECT == "2n" | boat.transect$TRANSECT == "2s")] = "2"
-boat.transect$TRANSECT[which(boat.transect$TRANSECT == "3N,3S" | boat.transect$TRANSECT == "t3n" | boat.transect$TRANSECT == "t3s" |
-                          boat.transect$TRANSECT == "3n" | boat.transect$TRANSECT == "3s")] = "3"
-boat.transect$TRANSECT[which(boat.transect$TRANSECT == "4N,4S" | boat.transect$TRANSECT == "t4n" | boat.transect$TRANSECT == "t4s" |
-                          boat.transect$TRANSECT == "4n" | boat.transect$TRANSECT == "4s")] = "4"
-boat.transect$TRANSECT[which(boat.transect$TRANSECT == "5N,5S" | boat.transect$TRANSECT == "t5n" | boat.transect$TRANSECT == "t5s" |
-                          boat.transect$TRANSECT == "5n" | boat.transect$TRANSECT == "5s")] = "5"
-boat.transect$TRANSECT[which(boat.transect$TRANSECT == "6N,6S" | boat.transect$TRANSECT == "t6n" | boat.transect$TRANSECT == "t6s" |
-                          boat.transect$TRANSECT == "6n" | boat.transect$TRANSECT == "6s")] = "6"
-boat.transect$TRANSECT[which(boat.transect$TRANSECT == "7N,7S" | boat.transect$TRANSECT == "t7n" | boat.transect$TRANSECT == "t7s" |
-                          boat.transect$TRANSECT == "7n" | boat.transect$TRANSECT == "7s")] = "7"
-boat.transect$TRANSECT[which(boat.transect$TRANSECT == "8N,8S" | boat.transect$TRANSECT == "t8n" | boat.transect$TRANSECT == "t8s" |
-                          boat.transect$TRANSECT == "8n" | boat.transect$TRANSECT == "8s")] = "8"
-boat.transect$TRANSECT[which(boat.transect$TRANSECT == "9N,9S" | boat.transect$TRANSECT == "t9n" | boat.transect$TRANSECT == "t9s" |
-                          boat.transect$TRANSECT == "9n" | boat.transect$TRANSECT == "9s")] = "9"
-boat.transect$TRANSECT[which(boat.transect$TRANSECT == "10N,10S" | boat.transect$TRANSECT == "t10n" | boat.transect$TRANSECT == "t10s" |
-                          boat.transect$TRANSECT == "10n" | boat.transect$TRANSECT == "10s" | boat.transect$TRANSECT == "t10")] = "10"
-boat.transect$TRANSECT[which(boat.transect$TRANSECT == "11N,11S" | boat.transect$TRANSECT == "t11n" | boat.transect$TRANSECT == "t11s" |
-                          boat.transect$TRANSECT == "11n" | boat.transect$TRANSECT == "11s")] = "11"
-boat.transect$TRANSECT[which(boat.transect$TRANSECT == "12N,12S" | boat.transect$TRANSECT == "t12n" | boat.transect$TRANSECT == "t12s" |
-                          boat.transect$TRANSECT == "12n" | boat.transect$TRANSECT == "12s")] = "12"
-
-
+boat.transect$TRANSECT[boat.transect$TRANSECT %in% c("2N,2S","t2n","t2s","2n","2s")] = "2"
+boat.transect$TRANSECT[boat.transect$TRANSECT %in% c("3N,3S","t3n","t3s","3n","3s")] = "3"
+boat.transect$TRANSECT[boat.transect$TRANSECT %in% c("4N,4S","t4n","t4s","4n","4s")] = "4"
+boat.transect$TRANSECT[boat.transect$TRANSECT %in% c("5N,5S","t5n","t5s","5n","5s")] = "5"
+boat.transect$TRANSECT[boat.transect$TRANSECT %in% c("6N,6S","t6n","t6s","6n","6s")] = "6"
+boat.transect$TRANSECT[boat.transect$TRANSECT %in% c("7N,7S","t7n","t7s","7n","7s")] = "7"
+boat.transect$TRANSECT[boat.transect$TRANSECT %in% c("8N,8S","t8n","t8s","8n","8s")] = "8"
+boat.transect$TRANSECT[boat.transect$TRANSECT %in% c("9N,9S","t9n","t9s","9n","9s")] = "9"
+boat.transect$TRANSECT[boat.transect$TRANSECT %in% c("10N,10S","t10n","t10s","10n","10s","t10")] = "10"
+boat.transect$TRANSECT[boat.transect$TRANSECT %in% c("11N,11S","t11n","t11s","11n","11s")] = "11"
+boat.transect$TRANSECT[boat.transect$TRANSECT %in% c("12N,12S","t12n","t12s","12n","12s")] = "12"
 
 
 ##### NEXT STEPS. CHANGE THE NA's TO TRANSECT NUMBERS BASED ON LOCATION (INTERP EXISTING POINTS TO GET A LINE) AND TIME
