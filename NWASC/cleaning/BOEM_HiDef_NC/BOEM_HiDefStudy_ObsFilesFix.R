@@ -227,7 +227,7 @@ CameraData$type[CameraData$type %in% c("sterna sp","sterna tern","sterna tern (p
 CameraData$type[CameraData$type %in% c("storm-petrel?","storm petrel")] = "UNSP"                           
 CameraData$type[CameraData$type %in% c("tricolored heron","poss tricolor heron")] = "TRHE"                         
 CameraData$type[CameraData$type %in% c("unknown","unknown ","debris or pelican sitting down?","dark dot")] = "UNKN"                                
-CameraData$type[CameraData$type =="whale?"] = "UNWH"                                  
+CameraData$type[CameraData$type =="whale?"] = "UNDO"  # they were dolphins most likely, not whales                                
 CameraData$type[CameraData$type =="white ibis"] = "WHIB"                              
 CameraData$type[CameraData$type %in% c("white tip?","whitetip","whitetip?")] = "OWTS"  
 
@@ -238,9 +238,15 @@ CameraData$type[CameraData$ID == 1991] = "UNRA"
 CameraData$type[CameraData$ID == 3076] = "UNBI" 
 
 # remove duplicates
-ind = c(grep(")", CameraData$Animal),grep("-", CameraData$Animal))
+ind = c(grep(")", CameraData$Animal))
 duplicates = CameraData[ind,]
 CameraData = CameraData[-ind,]
+
+# fix count
+ind = c(grep("-", CameraData$Animal))
+new.counts = sapply(strsplit(as.character(CameraData$Animal[ind]),"-"),tail,1)
+new.counts = gsub("[^0-9]", "", new.counts)
+CameraData$count[ind] = new.counts
 # --------------------------- # 
 
 
