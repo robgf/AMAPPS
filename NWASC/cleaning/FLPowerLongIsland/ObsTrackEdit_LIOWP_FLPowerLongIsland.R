@@ -20,6 +20,7 @@ require(lubridate) #fix timestamps
 require(zoo) #na.locf
 require(dplyr) # %>% 
 library(dtplyr) #data.table
+library(stringr) #extract parts of a string
 # -------------------------------- #
 
 
@@ -41,16 +42,12 @@ speciesPath <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Fold
 # SOURCE R FUNCTIONS
 source(file.path("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/_Rfunctions/sourceDir.R"))
 sourceDir(file.path("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/_Rfunctions"))
-
-# SET PATH TO R FILE THAT FIXES DATA ERRORS
-errfix.file <- file.path(dir.out, paste(surveyFolder, "_ObsFilesFix.R", sep = ""))
 # -------------------------------- #
 
 
 # ------------------------------------------------------------------------- #
 # BOAT
 # ------------------------------------------------------------------------- #
-
 # get a list of the data available
 boat.data.list = list.files(boatpath)
 
@@ -148,20 +145,62 @@ for (i in seq(along = boat.raw.list)) {
     if (exists("transect")) {boat.transect = rbind.all.columns(boat.transect, transect); rm(transect)}
     if (exists("ptge")) {boat.point.ge = rbind.all.columns(boat.point.ge, ptge); rm(ptge)}
 }
-
+# ------------------------------------------------------------------------- #
 
 
 # ------------------------------------------------------------------------- #
 # Plane
 # ------------------------------------------------------------------------- #
 plane.list = list.files(planepath)
-plane.gps = sapply(strsplit((plane.list[grep("GPS",plane.list)]),"[.]"),head,1)
-plane.list = sapply(strsplit(plane.list[grep("Final",plane.list)],"[.]"),head,1)
+plane.list = plane.list[!plane.list %in% c("Final_raw_data_072005.xls","Aerial_Transect_Excel_Files_06-08-06.zip")]
 
+for (i in seq(along = plane.list)) {
+  database = odbcConnectExcel2007(file.path(planepath, plane.list[i])) 
+  
+  if("SPECIES$" %in% sqlTables(database)$TABLE_NAME) {spp = sqlFetch(database, "SPECIES")}
+  if("COUNT_EVENTS_FINAL$" %in% sqlTables(database)$TABLE_NAME) {spp = sqlFetch(database, "COUNT_EVENTS_FINAL")}
+  spp$filename = strsplit(plane.list[i],"[.]")[[1]][1]
+  if("SPECIES" %in% colnames(spp)) {spp = rename(spp, SPECIES1=SPECIES)}
+  if("CODE" %in% colnames(spp)) {spp = rename(spp, SPECIES1=CODE)}
+  if("GPSTIME" %in% colnames(spp)) {spp = rename(spp, GPS_Time=GPSTIME)}
+  if("TRANSECTID" %in% colnames(spp)) {spp = rename(spp, TRANSECT=TRANSECTID)}
+  if("DATE_" %in% colnames(spp)) {spp = rename(spp, GPS_Date=DATE_)}
+  if("LAT" %in% colnames(spp)) {spp = rename(spp, Latitude=LAT)}
+  if("LON" %in% colnames(spp)) {spp = rename(spp, Longitude=LON)}
+  
+  if("TRANSECT$" %in% sqlTables(database)$TABLE_NAME) {
+    transect = sqlFetch(database, "TRANSECT")
+    transect$filename = strsplit(plane.list[i],"[.]")[[1]][1]
+  }
+  
+  if("Point_ge$" %in% sqlTables(database)$TABLE_NAME) {
+    ptge = sqlFetch(database, "Point_ge")
+    ptge$filename = strsplit(plane.list[i],"[.]")[[1]][1]
+  }
+  
+  odbcCloseAll()
+  
+  if(i == 1) {
+    plane.transect = transect
+    plane.obs = spp
+    plane.point.ge = ptge
+    rm(spp, transect, ptge)
+  } else {
+    plane.obs = rbind.all.columns(plane.obs, spp)
+    rm(spp)
+    if(exists("transect")) {
+      plane.transect = rbind.all.columns(plane.transect, transect)
+      rm(transect)
+    }
+    if(exists("ptge")) {
+      plane.point.ge = rbind.all.columns(plane.point.ge, ptge)
+      rm(ptge)
+      }
+    }
+}
 
 # ------------------------------------------------------------------------- #
-# STEP 3: FIX OBSERVATION FILE BEGSEG/ENDSEG ERRORS
-# look at yearlab_AOUErrors.xlsx and yearlab_ObsFileErrors.xlsx for help
+# FIX OBSERVATION FILE BEGSEG/ENDSEG ERRORS
 # ------------------------------------------------------------------------- #
-source(file.path(path, paste("ObsFilesFix_", yearlab, ".R", sep = "")))
+source(file.path(dir.out, paste(surveyFolder, "_ObsFilesFix.R", sep = "")))
 # ------------------------------------------------------------------------- #
