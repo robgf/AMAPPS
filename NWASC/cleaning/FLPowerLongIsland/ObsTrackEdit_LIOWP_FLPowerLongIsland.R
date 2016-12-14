@@ -104,10 +104,12 @@ for (i in seq(along = boat.raw.list)) {
       spp = sqlFetch(database, "SPECIES$")} else {spp = sqlFetch(database, "Sheet1$")}
     if (exists("spp") == TRUE && dim(spp)[1] >1) {
       spp$filename = strsplit(boat.raw.list[i],"[.]")[[1]][1]
-      if ("GPS_Date" %in% colnames(spp) && nchar(spp$GPS_Date[1]) == 5) {spp$GPS_Date = as.Date(spp$GPS_Date, origin = "1899-12-30")} # excel date
+      if ("GPS_Date" %in% colnames(spp) && nchar(spp$GPS_Date[4]) == 5) {
+        spp$GPS_Date = as.Date(spp$GPS_Date, origin = "1899-12-30")} # excel date
       if ("DATE" %in% colnames(spp) && nchar(spp$DATE[1]) == 5) {
-        spp$GPS_Date = as.Date(spp$DATE, origin = "1899-12-30")
+        spp$DATE = as.Date(spp$DATE, origin = "1899-12-30")
         spp = select(spp, -DATE)} # excel date
+      if ("CODE" %in% colnames(spp)) {spp = rename(spp, SPECIES1 = CODE)}
     } 
 
     if ("TRANSECT$" %in% sqlTables(database)$TABLE_NAME) {
@@ -132,7 +134,7 @@ for (i in seq(along = boat.raw.list)) {
     # fix names
     if("LAT" %in% colnames(spp)) {spp = rename(spp, Latitude = LAT, Longitude = LONG, GroupSZ = GROUP_SIZE, 
                                                SPECIES1 = SPECIES, BEHAVIOR = BEHAV, DIRECTION = DIR)}
-    if("GROUPSZ" %in% colnames(spp)) {spp = rename(spp, GroupSZ = GROUPSZ)}
+    if("GroupSZ" %in% colnames(spp)) {spp = rename(spp, GROUPSZ = GroupSZ)}
     if("FLDIR" %in% colnames(spp)) {spp = rename(spp, DIRECTION = FLDIR)}
     if("Date" %in% colnames(spp)) {spp = rename(spp, GPS_Date = Date)}
     if("Lat" %in% colnames(spp)) {spp = rename(spp, Latitude = Lat, Longitude = Long,
@@ -147,49 +149,19 @@ for (i in seq(along = boat.raw.list)) {
     if (exists("ptge")) {boat.point.ge = rbind.all.columns(boat.point.ge, ptge); rm(ptge)}
 }
 
-# remove NAs
-boat.transect = boat.transect[!is.na(boat.transect$Latitude),]
-boat.obs = boat.obs[!is.na(boat.obs$Latitude),]
-boat.point.ge = boat.point.ge[!is.na(boat.point.ge$Latitude),]
-boat.point.ge = boat.point.ge[boat.point.ge$Comment != "Comment",] 
-
-# pull transect info out
-boat.obs$index = seq.int(nrow(boat.obs))
-tmp = boat.obs[boat.obs$SPECIES1 %in% c("10n","10s","11n","11s","12n","12s","2n","2ss",
-                                        "3n","3s","4s","5s","6n","6s","7n","7s","8n",
-                                        "8s","9n","9s","t4","2s","4n","5n","5S","6N",
-                                        "12","10 n"),]
-ind = which(tmp$SPECIES1 == "t4")  
-tmp$SPECIES1[ind] = NA 
-tmp$TRANSECT = as.numeric(strsplit(as.character(tmp$SPECIES1), "[^0-9]+"))
-tmp$TRANSECT[ind] = 4
-
-for(a in 1:(nrow(tmp)-1)) {
-  if(tmp$TRANSECT[a] == tmp$TRANSECT[a+1]) {
-    if(tmp$index[a+1]-tmp$index[a]-1 >= 1) {
-      boat.obs$TRANSECT[(tmp$index[a]+1):(tmp$index[a+1]-1)] = replicate(tmp$index[a+1]-tmp$index[a]-1, tmp$TRANSECT[a])
-    }
-  }
-}
 
 
-# fix transects that dont have start and stops
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_071105" & boat.obs$GPS_Time == "03:40:03pm"]:
-  boat.obs$index[boat.obs$filename == "Final_raw_data_071105" & boat.obs$GPS_Time == "03:59:47pm"]] = 10 
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "02:29:59pm"]:
-                    boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "03:33:19pm"]] = 6
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "03:40:55pm"]:
-                    boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "04:10:39pm"]] = 4
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "04:53:11pm"]:
-                    boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "05:16:23pm"]] = 2
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "05:24:23pm"]:
-                    boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "05:44:59pm"]] = 8 
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "06:04:55pm"]:
-                    boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "06:25:55pm"]] = 9 
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "06:31:11pm"]:
-                    boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "06:57:27pm"]] = 10 
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "07:05:27pm"]:
-                    boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "07:31:43pm"]] = 11 
+# ------------------------------------------------------------------------- #
+# Plane
+# ------------------------------------------------------------------------- #
+plane.list = list.files(planepath)
+plane.gps = sapply(strsplit((plane.list[grep("GPS",plane.list)]),"[.]"),head,1)
+plane.list = sapply(strsplit(plane.list[grep("Final",plane.list)],"[.]"),head,1)
 
-# remove transect info from obs
-boat.obs[tmp$index,] = NULL
+
+# ------------------------------------------------------------------------- #
+# STEP 3: FIX OBSERVATION FILE BEGSEG/ENDSEG ERRORS
+# look at yearlab_AOUErrors.xlsx and yearlab_ObsFileErrors.xlsx for help
+# ------------------------------------------------------------------------- #
+source(file.path(path, paste("ObsFilesFix_", yearlab, ".R", sep = "")))
+# ------------------------------------------------------------------------- #
