@@ -6,7 +6,7 @@
 # Fix initial transect and general data errors
 #-----------------#
 # remove NAs
-boat.obs = select(boat.obs, -F1,-F2,-F3,-F4,-F5,-F6,-F7)
+#boat.obs = select(boat.obs,-F2,-F3,-F4,-F5,-F6,-F7)
 boat.transect = boat.transect[!is.na(boat.transect$Latitude),]
 boat.obs = boat.obs[!is.na(boat.obs$Latitude),]
 boat.point.ge = boat.point.ge[!is.na(boat.point.ge$Latitude),]
@@ -76,7 +76,6 @@ boat.obs$dataChange[!is.na(boat.obs$SPECIES1) & !is.na(boat.obs$SPECIES2)] =
   paste(boat.obs$dataChange[!is.na(boat.obs$SPECIES1) & !is.na(boat.obs$SPECIES2)],
         "ADDED new row for SPECIES2", sep = "; ")
 
-library(stringr)
 new = boat.obs[!is.na(boat.obs$SPECIES1) & !is.na(boat.obs$SPECIES2),] # only when there is more than one species
 boat.obs$SPECIES2[!is.na(boat.obs$SPECIES1) & !is.na(boat.obs$SPECIES2)] = NA
 new$SPECIES1 = new$SPECIES2
@@ -256,43 +255,47 @@ boat.obs$dataChange[which(boat.obs$NOTES == "pomarine jaeger")] =
         "Changed SPECIES1 from NA ", sep ="; ") 
 
 # CHANGE SPECIES1
+boat.obs$SPECIES1 = as.character(boat.obs$SPECIES1)
 boat.obs$SPECIES1[grep(" vessel ", boat.obs$SPECIES1)] = "BOCF"
 boat.obs$SPECIES1[grep("seal ",boat.obs$SPECIES1)] = "UNSE"
 boat.obs$SPECIES1[grep("ray ",boat.obs$SPECIES1)] = "UNRA"
 
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "American Woodcock"] = "AMWO"                    
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Black Duck"] = "ABDU"                                          
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Tern sp."] = "UNTE"                                                   
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Gull sp."] = "UNGU"                                                  
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Loon sp."] = "UNLO"                                               
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Scoter sp."] = "UNSC"                                             
-boat.obs$SPECIES1[boat.obs$SPECIES1 %in% c("Sandpiper sp.","sandpiper 2","Sandpiper","unid sandpip")] = "USAN"                                                 
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Duck sp."] = "UNDU"                                               
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Petrel sp."] = "UNPE"                                                   
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Corm sp."] = "UNCO" #Cormorant?                                                
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "BASW"] = "BARS"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "BLBR"] = "BRAN"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "RWSW"] = "ROSW"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "American Woodcock"] = "AMWO"                    
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Black Duck"] = "ABDU"                                          
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Tern sp."] = "UNTE"                                                   
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Gull sp."] = "UNGU"                                                  
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Loon sp."] = "UNLO"                                               
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% c("SCSP","Scoter sp.")] = "UNSC"                                             
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% c("Sandpiper sp.","sandpiper 2","Sandpiper","unid sandpip", "UNSA")] = "USAN"                                                 
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Duck sp."] = "UNDU"                                               
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Petrel sp."] = "UNPE"                                                   
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Corm sp."] = "UNCO" #Cormorant?                                                
 boat.obs$SPECIES1[boat.obs$SPECIES1 %in% c("sanderlings","Sanderling")] = "SAND"                                               
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Plover sp."] = "UNPL"                                           
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Yellowlegs sp."] = "UNYE"
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Leatherback turtle"] = "LETU"
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Albacore tuna school"] = "ALTU"
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Ruddy Turnstone"] = "RUTU"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Plover sp."] = "UNPL"                                           
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Yellowlegs sp."] = "UNYE"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Leatherback turtle"] = "LETU"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Albacore tuna school"] = "ALTU"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Ruddy Turnstone"] = "RUTU"
 boat.obs$SPECIES1[boat.obs$SPECIES1 %in% c("Harbor Porpoise","har por 1000  w","harbor porpoise")] = "HAPO"
 boat.obs$SPECIES1[boat.obs$SPECIES1 %in% c("porpoise","porpoise 1, 800 feet west","porp","PORP","porp 2")] = "UNPO"
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Unidentified Scoter"] = "UNSC"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Unidentified Scoter"] = "UNSC"
 boat.obs$SPECIES1[boat.obs$SPECIES1 %in% c("Jaeger spp.","jaeger sp")] = "UNJA"
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Scaup spp."] = "SCAU"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Scaup spp."] = "SCAU"
 boat.obs$SPECIES1[boat.obs$SPECIES1 %in% c("co murrs","co murre","cco murre","co murre","co  murre")] = "COMU"
 boat.obs$SPECIES1[boat.obs$SPECIES1 %in% c("alcid sp.","alcid")] = "UNAL"
 boat.obs$SPECIES1[boat.obs$SPECIES1 %in% c("sparrow sp","unidentified sparrow")] = "SPAR"
 boat.obs$SPECIES1[boat.obs$SPECIES1 %in% c("passarine sp","unknown pass","Passerine species")] = "UNPA" # passerine?
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "willet"] = "WILL"
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "horned grebe"] = "HOGR"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "willet"] = "WILL"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "horned grebe"] = "HOGR"
 boat.obs$SPECIES1[boat.obs$SPECIES1 %in% c("RED-","Red-breasted Merganser")] = "RBME"
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Bonaparte's Gull"] = "BOGU"
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "murre sp."] = "UNMU"
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "shearwater sp"] = "UNSH"
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Cliff Swallow"] = "CLSW"
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "loggerhead turtle"] = "LOTU"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Bonaparte's Gull"] = "BOGU"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "murre sp."] = "UNMU"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "shearwater sp"] = "UNSH"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Cliff Swallow"] = "CLSW"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "loggerhead turtle"] = "LOTU"
 boat.obs$SPECIES1[boat.obs$SPECIES1 %in% c("party boat 1 mi se","party boat 500 ft  nw",
                                            "party boats 4 1/2 mile se")] = "BOFI"
 boat.obs$SPECIES1[boat.obs$SPECIES1 %in% c("2 comm fiishing vessels  3mi w",
@@ -302,9 +305,9 @@ boat.obs$SPECIES1[boat.obs$SPECIES1 %in% c("2 comm fiishing vessels  3mi w",
                                            "com. fishing vessel/approx .5 mi from survey vessel",
                                            "comm. squid vessel/1,000 ft nw","comm. vessel/2 mi. sw of boat",
                                            "commercial fishing vessel","Commercial fishing vessel")] = "BOCF"
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "mixed flock"] = "UNBI"
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "basw  1"] = "BASW"
-boat.obs$SPECIES1[boat.obs$SPECIES1 == "Scoter spp."] = "UNSC"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "mixed flock"] = "UNBI"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "basw  1"] = "BASW"
+boat.obs$SPECIES1[boat.obs$SPECIES1 %in% "Scoter spp."] = "UNSC"
 
 # Check NOTES for SPECIES and NO errors and mixed flocks
 #notes = cbind(boat.obs$SPECIES1[!is.na(boat.obs$NOTES)], 
@@ -465,3 +468,199 @@ boat.transect$TRANSECT = as.numeric(str_extract(boat.transect$TRANSECT, "[0-9]+"
 # format to have start time, end time etc... 
 
 ##### NEXT STEPS. CHANGE THE NA's TO TRANSECT NUMBERS BASED ON LOCATION (INTERP EXISTING POINTS TO GET A LINE) AND TIME
+
+
+#--------------------------------------------------------------------------- #
+# Plane
+#----------------------------------------------------------------------------#
+
+# remove NAs
+plane.obs = select(plane.obs, -F17,-F18,-F19,-F20,-F21)
+plane.point.ge = select(plane.point.ge, -F1,-F2,-F3,-F4,-F5,-F6,-F7)
+plane.obs = plane.obs[!is.na(plane.obs$Latitude),]
+plane.point.ge = plane.point.ge[!is.na(plane.point.ge$Latitude),]
+
+# combine point.ge and obs
+plane.point.ge = rename(plane.point.ge, NOTES = Comment)
+plane.point.ge$NOTES = as.character(plane.point.ge$NOTES)
+plane.point.ge$SPECIES1 = plane.point.ge$NOTES
+plane.point.ge$NO = 1
+plane.point.ge$NO[plane.point.ge$SPECIES1 %in% "2 porp"] = 2
+plane.point.ge$SPECIES1[plane.point.ge$SPECIES1 %in% c("2 porp","1 porp","porp")] = "UNPO"
+plane.obs = bind_rows(plane.obs, plane.point.ge)
+rm(plane.point.ge)
+
+# fix species
+plane.obs$SPECIES1 = as.character(plane.obs$SPECIES1)
+plane.obs$SPECIES2 = as.character(plane.obs$SPECIES2)
+plane.obs$SPECIES1[plane.obs$SPECIES1 %in% "SCSP"] = "UNSC"
+plane.obs$SPECIES1[plane.obs$SPECIES1 %in% "SPSP"] = "WISP"
+plane.obs$SPECIES1[plane.obs$SPECIES1 %in% "UNSA"] = "USAN"
+plane.obs$SPECIES1[plane.obs$SPECIES1 %in% "BLBR"] = "BRAN"
+plane.obs$SPECIES1[plane.obs$SPECIES1 %in% "seal"] = "UNSE"             
+plane.obs$SPECIES1[plane.obs$SPECIES1 %in% "mola"] = "MOLA"            
+plane.obs$SPECIES1[plane.obs$SPECIES1 %in% "turtle"] ="TURT"            
+plane.obs$SPECIES1[plane.obs$SPECIES1 %in% "Loggerhead turtle"] = "LOTU"
+plane.obs$SPECIES1[plane.obs$SPECIES1 %in% "Passerine species"] = "UNPA"
+plane.obs$SPECIES1[plane.obs$SPECIES1 %in% "leatherback turtle"] = "LETU"
+plane.obs$SPECIES1[plane.obs$SPECIES1 %in% "Swallow sp."] = "SWAL"
+plane.obs$SPECIES1[plane.obs$SPECIES1 %in% "Tern sp."] = "UNTE"
+plane.obs$SPECIES1[plane.obs$SPECIES1 %in% "Gull sp."] = "UNGU"
+plane.obs$SPECIES1[plane.obs$SPECIES1 %in% "Unidentified shorebird"] = "SHOR"
+plane.obs$SPECIES2[plane.obs$SPECIES2 %in% c("a;lcid","alcid","allcid")] = "UNAL"
+plane.obs$SPECIES1[!is.na(plane.obs$SPECIES2)] = plane.obs$SPECIES2[!is.na(plane.obs$SPECIES2)] 
+plane.obs = select(plane.obs, -SPECIES2)
+
+#transect
+plane.obs$TRANSECT = as.numeric(str_extract(plane.obs$TRANSECT, "[0-9]+"))
+
+# pull transect info out
+plane.obs$index = seq.int(nrow(plane.obs))
+tmp = plane.obs[plane.obs$SPECIES1 %in% c("10n","10s","11n","11s","12n","12s","13n",
+                                          "13s","14n","14s","15n","15s","16n","16s",
+                                          "17n","17s","18n","18s","19n","19s","1n",
+                                          "1s","2n","2s","3n","3s","4n","4s","5n",
+                                          "5s","6n","6s","7n","7s","8n","8s","9n","9s"),]
+tmp$TRANSECT = as.numeric(strsplit(as.character(tmp$SPECIES1), "[^0-9]+"))
+plane.obs$SPECIES1 = as.character(plane.obs$SPECIES1)
+
+for(a in 1:(nrow(tmp)-1)) {
+  if(tmp$TRANSECT[a] == tmp$TRANSECT[a+1] & tmp$filename[a] == tmp$filename[a+1]) {
+    if(tmp$index[a+1]-tmp$index[a]-1 >= 1) {
+      plane.obs$TRANSECT[(tmp$index[a]+1):(tmp$index[a+1]-1)] = replicate(tmp$index[a+1]-tmp$index[a]-1, tmp$TRANSECT[a])
+      plane.obs$SPECIES1[tmp$index[a]] = "BEGCNT"
+      plane.obs$SPECIES1[tmp$index[a+1]] = "ENDCNT"
+    }
+  }
+}
+
+# remove incorrect information
+plane.obs$NO[tmp$index] = NA
+plane.obs$AGE[tmp$index] = NA
+plane.obs$SEX[tmp$index] = NA
+plane.obs = plane.obs[!plane.obs$index %in% tmp$index,]
+plane.obs$index = seq.int(nrow(plane.obs))
+rm(tmp)
+
+# fix transects that didnt have a BEG and END
+plane.obs$filename = as.character(plane.obs$filename)
+plane.obs$GPS_Time = as.character(plane.obs$GPS_Time)
+plane.obs$TRANSECT[plane.obs$index[plane.obs$filename == "Final_raw_data_101304" & plane.obs$GPS_Time == "12:44:25pm"]:
+                     plane.obs$index[plane.obs$filename == "Final_raw_data_101304" & plane.obs$GPS_Time == "12:45:24pm"]] = 16
+plane.obs$TRANSECT[plane.obs$index[plane.obs$filename == "Final_raw_data_101304" & plane.obs$GPS_Time == "12:25:43pm"]:
+                     plane.obs$index[plane.obs$filename == "Final_raw_data_101304" & plane.obs$GPS_Time == "12:28:40pm"]] = 12
+plane.obs$TRANSECT[plane.obs$index[plane.obs$filename == "Final_raw_data_101304" & plane.obs$GPS_Time == "12:16:19pm"]:
+                     plane.obs$index[plane.obs$filename == "Final_raw_data_101304" & plane.obs$GPS_Time == "12:19:40pm"]] = 10
+plane.obs$TRANSECT[plane.obs$index[plane.obs$filename == "Final_raw_data_101304" & plane.obs$GPS_Time == "12:02:42pm"]:
+                     plane.obs$index[plane.obs$filename == "Final_raw_data_101304" & plane.obs$GPS_Time == "12:05:42pm"]] = 7
+plane.obs$TRANSECT[plane.obs$index[plane.obs$filename == "Final_raw_data_101304" & plane.obs$GPS_Time == "11:49:25am"]:
+                     plane.obs$index[plane.obs$filename == "Final_raw_data_101304" & plane.obs$GPS_Time == "11:52:31am"]] = 4
+plane.obs$TRANSECT[plane.obs$index[plane.obs$filename == "Final_aerial_data_103105" & plane.obs$GPS_Time == "11:27:55pm"]:
+                     plane.obs$index[plane.obs$filename == "Final_aerial_data_103105" & plane.obs$GPS_Time == "11:30:48pm"]] = 19
+plane.obs$TRANSECT[plane.obs$index[plane.obs$filename == "Final_aerial_data_103105" & plane.obs$GPS_Time == "10:59:04am"]:
+                     plane.obs$index[plane.obs$filename == "Final_aerial_data_103105" & plane.obs$GPS_Time == "11:00:03pm"]] = 13
+
+# Pull species from NOTES when SPECIES 1 == NA
+plane.obs$SPECIES1[plane.obs$NOTES %in% "swallow"] = "SWAL"
+plane.obs$SPECIES1[grep("3 UNTE/5 UNGU",plane.obs$NOTES)] = "UNTE"
+plane.obs$SPECIES1[grep("3 UNTE/5 UNGU",plane.obs$NOTES)] = "UNGU"
+plane.obs$NO[grep("3 UNTE/5 UNGU",plane.obs$NOTES)] = 3
+plane.obs$NO[grep("3 UNTE/5 UNGU",plane.obs$NOTES)] = 5
+
+# Pull from NOTES to fix miscodings
+new = plane.obs[plane.obs$NOTES %in% "9 GBBG/2 UNGU following fishing boat",]                                                                                                                              
+new$index = new$index + 0.001
+new$NO = 9
+new$SPECIES1 = "GBBG"
+plane.obs = rbind(plane.obs, new)
+rm(new)
+#
+new = plane.obs[plane.obs$NOTES %in% "Flock of 12 (10 NOGA, 2 UNGU)",]                                                                                                                              
+new$index = new$index + 0.001
+new$NO = 2
+new$SPECIES1 = "UNGU"
+plane.obs$NO[plane.obs$NOTES %in% "Flock of 12 (10 NOGA, 2 UNGU)"] = 10
+plane.obs = rbind(plane.obs, new)
+rm(new)
+#
+new = plane.obs[plane.obs$NOTES %in% "Flock of 2 (1 NOGA/1 HEGU)",] 
+new$index = new$index + 0.001
+new$NO = 1
+new$SPECIES1 = "HEGU"
+plane.obs$NO[plane.obs$NOTES %in% "Flock of 2 (1 NOGA/1 HEGU)"] = 1
+plane.obs = rbind(plane.obs, new)
+rm(new)
+#
+new = plane.obs[plane.obs$NOTES %in% "Flock of 20 (13 NOGA/7 UNGU) in zones 1 and 2",] 
+new$index = new$index + 0.001
+new$NO = 7
+new$SPECIES1 = "UNGU"
+plane.obs$NO[plane.obs$NOTES %in% "Flock of 20 (13 NOGA/7 UNGU) in zones 1 and 2"] = 13
+plane.obs = rbind(plane.obs, new)
+rm(new)
+#
+new = plane.obs[plane.obs$NOTES %in% "Flock of 20 (5 NOGA/15 UNGU) In all zones",] 
+new$index = new$index + 0.001
+new$NO = 5
+new$SPECIES1 = "NOGA"
+plane.obs$NO[plane.obs$NOTES %in% "Flock of 20 (5 NOGA/15 UNGU) In all zones"] = 15
+plane.obs = rbind(plane.obs, new)
+rm(new)
+#
+new = plane.obs[plane.obs$NOTES %in% "Flock of 40 (25 NOGA/15 UNGU). In all zones",] 
+new$index = new$index + 0.001
+new$NO = 15
+new$SPECIES1 = "UNGU"
+plane.obs$NO[plane.obs$NOTES %in% "Flock of 40 (25 NOGA/15 UNGU). In all zones"] = 25
+plane.obs = rbind(plane.obs, new)
+rm(new)
+#
+new = plane.obs[plane.obs$NOTES %in% "Flock of 8 (7 UNGU/1 NOGA)",] 
+new$index = new$index + 0.001
+new$NO = 1
+new$SPECIES1 = "NOGA"
+plane.obs$NO[plane.obs$NOTES %in% "Flock of 8 (7 UNGU/1 NOGA)"] = 7
+plane.obs = rbind(plane.obs, new)
+rm(new)
+#
+new = plane.obs[plane.obs$NOTES %in% "Large flock of 100 (80 UNGU/20 NOGA). Zones 2,3. 4:1 water to flight.",] 
+new$index = new$index + 0.001
+new$NO = 80
+new$SPECIES1 = "UNGU"
+plane.obs$NO[plane.obs$NOTES %in% "Large flock of 100 (80 UNGU/20 NOGA). Zones 2,3. 4:1 water to flight."] = 20
+plane.obs = rbind(plane.obs, new)
+rm(new)
+#
+new = plane.obs[plane.obs$NOTES %in% "Large flock of UNGU/NOGA. 3:1 ration NOGA to UNGU. IN all zones",] 
+new$index = new$index + 0.001
+new$NO = 30
+new$SPECIES1 = "UNGU"
+plane.obs$NO[plane.obs$NOTES %in% "Large flock of UNGU/NOGA. 3:1 ration NOGA to UNGU. IN all zones"] = 10
+plane.obs = rbind(plane.obs, new)
+rm(new)
+#
+new = plane.obs[plane.obs$NOTES %in% "Large flock of UNGU/NOGA. 75 NOGA/8 UNGU in all zones. Approximately 10 NOGA in flight",] 
+new$index = new$index + 0.001
+new$NO = 8
+new$SPECIES1 = "UNGU"
+plane.obs$NO[plane.obs$NOTES %in% "Large flock of UNGU/NOGA. 75 NOGA/8 UNGU in all zones. Approximately 10 NOGA in flight"] = 75
+plane.obs = rbind(plane.obs, new)
+rm(new)
+#
+new = plane.obs[plane.obs$NOTES %in% "Large flock of UNGU/NOGA. Approximately 3:1 NOGA to UNGU. Approximately 3:1 birds on water to birds in flight. In all zones",] 
+new$index = new$index + 0.001
+new$NO = 49
+new$SPECIES1 = "NOGA"
+plane.obs$NO[plane.obs$NOTES %in% "Large flock of UNGU/NOGA. Approximately 3:1 NOGA to UNGU. Approximately 3:1 birds on water to birds in flight. In all zones"] = 16
+plane.obs = rbind(plane.obs, new)
+rm(new)
+#
+new = plane.obs[plane.obs$NOTES %in% "Unidentified Tern species",] 
+new$index = new$index + 0.001
+new$NO = 8
+new$SPECIES1 = "UNGU"
+plane.obs$NO[plane.obs$NOTES %in% "Large flock of UNGU/NOGA. 75 NOGA/8 UNGU in all zones. Approximately 10 NOGA in flight"] = 75
+plane.obs = rbind(plane.obs, new)
+rm(new)
+#
+plane.obs = arrange(plane.obs, index)
