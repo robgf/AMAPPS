@@ -24,7 +24,7 @@
    
 5) Ideally the observation data would be in an easily accessible format that can be read into R (e.g., .txt, .csv, MS Excel, MS Access database, ArcGIS shapefile or geodatabase). Track (effort) files will be stored in a geographic information system part of the database; therefor if  possible ArcGIS shapefiles would be appreciated.  
 *    a. Descriptions of variables that are included in the observation table of the [database](http://www.nodc.noaa.gov/archive/arc0070/0115356/1.1/data/0-data/seabird_data_structure_NODC_30Dec2013.csv)  
-*    b. If the data are in multiple files, please make sure formating between files is the same (e.g. tables and columns have the same names) so that they can easily be combined      
+*    b. If the data are in multiple files, please make sure formatting between files is the same (e.g. tables and columns have the same names) so that they can easily be combined      
 
 6) The data should be free of basic errors (e.g., typos, date errors, mislabeled transects)  
 
