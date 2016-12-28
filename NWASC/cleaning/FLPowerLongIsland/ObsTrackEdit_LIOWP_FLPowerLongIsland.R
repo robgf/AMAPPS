@@ -91,6 +91,9 @@ for (i in seq(along = boat.gps.list)) {
   rm(spp, transect, ptge)
 }
 
+#fix names
+boat.obs = rename(boat.obs, DIRECTION = FLDIR, DIS_OB_1ST = FIRSTOB, DIS_OB_CL = CLOSEST)
+
 # load the other messier data
 boat.raw.list = boat.data.list[grep("Final",boat.data.list)]
 
@@ -104,7 +107,7 @@ for (i in seq(along = boat.raw.list)) {
       if ("GPS_Date" %in% colnames(spp) && nchar(spp$GPS_Date[4]) == 5) {
         spp$GPS_Date = as.Date(spp$GPS_Date, origin = "1899-12-30")} # excel date
       if ("DATE" %in% colnames(spp) && nchar(spp$DATE[1]) == 5) {
-        spp$DATE = as.Date(spp$DATE, origin = "1899-12-30")
+        spp$GPS_Date = as.Date(spp$DATE, origin = "1899-12-30")
         spp = select(spp, -DATE)} # excel date
       if ("CODE" %in% colnames(spp)) {spp = rename(spp, SPECIES1 = CODE)}
     } 
@@ -129,17 +132,26 @@ for (i in seq(along = boat.raw.list)) {
     odbcCloseAll()
 
     # fix names
-    if("LAT" %in% colnames(spp)) {spp = rename(spp, Latitude = LAT, Longitude = LONG, GroupSZ = GROUP_SIZE, 
-                                               SPECIES1 = SPECIES, BEHAVIOR = BEHAV, DIRECTION = DIR)}
+    if("LAT" %in% colnames(spp)) {spp = rename(spp, Latitude = LAT, Longitude = LONG, GROUPSZ = GROUP_SIZE, SPECIES1 = SPECIES, BEHAVIOR = BEHAV, DIRECTION = DIR)}
     if("GroupSZ" %in% colnames(spp)) {spp = rename(spp, GROUPSZ = GroupSZ)}
     if("FLDIR" %in% colnames(spp)) {spp = rename(spp, DIRECTION = FLDIR)}
     if("Date" %in% colnames(spp)) {spp = rename(spp, GPS_Date = Date)}
-    if("Lat" %in% colnames(spp)) {spp = rename(spp, Latitude = Lat, Longitude = Long,
-                                               SPECIES1 = Species, BEHAVIOR = Behavior)}
+    if("Lat" %in% colnames(spp)) {spp = rename(spp, Latitude = Lat, Longitude = Long,SPECIES1 = Species, BEHAVIOR = Behavior)}
     if("FIRSTOB" %in% colnames(spp)) {spp = rename(spp, DIS_OB_1ST = FIRSTOB)}
     if("CLOSEST" %in% colnames(spp)) {spp = rename(spp, DIS_OB_CL = CLOSEST)}
     if("Transect" %in% colnames(spp)) {spp = rename(spp, TRANSECT = Transect)}
-    
+    if("STATION_ID" %in% colnames(spp)) {spp = rename(spp, TRANSECT = STATION_ID)}
+    if("SPECIES2" %in% colnames(spp)) {spp$SPECIES2 = as.factor(spp$SPECIES2)}
+    if("BEHAVIOR" %in% colnames(spp)) {spp$BEHAVIOR = as.factor(spp$BEHAVIOR)}
+    if("TRANSECT" %in% colnames(spp)) {spp$TRANSECT = as.character(spp$TRANSECT)}
+    if("FL_C_1ST" %in% colnames(spp)) {
+      spp$FL_C_1ST = as.numeric(spp$FL_C_1ST)
+      spp$FL_C_LOW = as.numeric(spp$FL_C_1ST)
+      spp$FL_C_HIGH = as.numeric(spp$FL_C_1ST)}
+    if(spp$filename[1] == "Final_raw_summer04") {
+      spp$GPS_Time = as.character(spp$GPS_Time)
+      spp$GPS_Time = as.factor(sapply(str_split(spp$GPS_Time," "),tail,1))}
+   
     # aggregate data
     boat.obs = rbind.all.columns(boat.obs, spp); rm(spp)
     if (exists("transect")) {boat.transect = rbind.all.columns(boat.transect, transect); rm(transect)}
