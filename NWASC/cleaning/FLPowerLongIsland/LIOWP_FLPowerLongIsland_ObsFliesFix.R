@@ -6,7 +6,6 @@
 # Fix initial transect and general data errors
 #-----------------#
 # remove NAs
-#boat.obs = select(boat.obs,-F2,-F3,-F4,-F5,-F6,-F7)
 boat.transect = boat.transect[!is.na(boat.transect$Latitude),]
 boat.obs = boat.obs[!is.na(boat.obs$Latitude),]
 boat.point.ge = boat.point.ge[!is.na(boat.point.ge$Latitude),]
@@ -14,16 +13,15 @@ boat.point.ge = boat.point.ge[boat.point.ge$Comment != "Comment",]
 
 # pull transect info out
 boat.obs$index = seq.int(nrow(boat.obs))
+boat.obs$SPECIES1 = as.character(boat.obs$SPECIES1)
 tmp = boat.obs[boat.obs$SPECIES1 %in% c("10n","10s","11n","11s","12n","12s","2n","2ss",
                                         "3n","3s","4s","5s","6n","6s","7n","7s","8n",
                                         "8s","9n","9s","t4","2s","4n","5n","5S","6N",
-                                        "12","10 n"),]
-ind = which(tmp$SPECIES1 == "t4")  
-tmp$SPECIES1[ind] = NA 
+                                        "12","10 n", "T11N"),]
+tmp$SPECIES1[tmp$SPECIES1 == "t4"] = 4 
+tmp$SPECIES1[tmp$SPECIES1 == "T11N"] = 11 
 tmp$TRANSECT = as.numeric(strsplit(as.character(tmp$SPECIES1), "[^0-9]+"))
-tmp$TRANSECT[ind] = 4
-
-boat.obs$SPECIES1 = as.character(boat.obs$SPECIES1)
+boat.obs$TRANSECT[tmp$index] = tmp$TRANSECT
 
 for(a in 1:(nrow(tmp)-1)) {
   if(tmp$TRANSECT[a] == tmp$TRANSECT[a+1] & tmp$filename[a] == tmp$filename[a+1]) {
@@ -43,22 +41,22 @@ boat.obs$DIRECTION[tmp$index] = NA
 boat.obs$SPECIES2[tmp$index] = NA
 
 # fix transects that dont have start and stops
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_071105" & boat.obs$GPS_Time == "03:40:03pm"]:
-                    boat.obs$index[boat.obs$filename == "Final_raw_data_071105" & boat.obs$GPS_Time == "03:59:47pm"]] = 10 
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "02:29:59pm"]:
-                    boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "03:33:19pm"]] = 6
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "03:40:55pm"]:
-                    boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "04:10:39pm"]] = 4
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "04:53:11pm"]:
-                    boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "05:16:23pm"]] = 2
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "05:24:23pm"]:
-                    boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "05:44:59pm"]] = 8 
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "06:04:55pm"]:
-                    boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "06:25:55pm"]] = 9 
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "06:31:11pm"]:
-                    boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "06:57:27pm"]] = 10 
-boat.obs$TRANSECT[boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "07:05:27pm"]:
-                    boat.obs$index[boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "07:31:43pm"]] = 11 
+boat.obs$TRANSECT[which(boat.obs$filename == "Final_raw_data_071105" & boat.obs$GPS_Time == "03:40:03pm"):
+                    which(boat.obs$filename == "Final_raw_data_071105" & boat.obs$GPS_Time == "03:59:47pm")] = 10 
+boat.obs$TRANSECT[which(boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "02:29:59pm"):
+                    which(boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "03:33:19pm")] = 6
+boat.obs$TRANSECT[which(boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "03:40:55pm"):
+                    which(boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "04:10:39pm")] = 4
+boat.obs$TRANSECT[which(boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "04:53:11pm"):
+                    which(boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "05:16:23pm")] = 2
+boat.obs$TRANSECT[which(boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "05:24:23pm"):
+                    which(boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "05:44:59pm")] = 8 
+boat.obs$TRANSECT[which(boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "06:04:55pm"):
+                    which(boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "06:25:55pm")] = 9 
+boat.obs$TRANSECT[which(boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "06:31:11pm"):
+                    which(boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "06:57:27pm")] = 10 
+boat.obs$TRANSECT[which(boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "07:05:27pm"):
+                    which(boat.obs$filename == "Final_raw_data_081105" & boat.obs$GPS_Time == "07:31:43pm")] = 11 
 #-----------------#
 
 
@@ -208,6 +206,7 @@ boat.point.ge$Latitude = as.numeric(boat.point.ge$Latitude)
 boat.point.ge$Longitude = as.numeric(boat.point.ge$Longitude)
 boat.point.ge$TRANSECT = as.character(boat.point.ge$TRANSECT)
 boat.point.ge$NO = as.character(boat.point.ge$NO)
+boat.point.ge = select(boat.point.ge,-F1,-F2,-F3,-F4,-F5,-F6,-F7)
 boat.obs = bind_rows(boat.obs, boat.point.ge)
 rm(boat.point.ge)
 
@@ -456,18 +455,213 @@ boat.obs = rbind(boat.obs, new); rm(new)
 #-----------------#
 # IN SPECIES1, need to be changed to BEG or END counts
 #-----------------#
-#"10n"    "10s"    "11s"    "12n"    "2s"     "3s"     "4s"     "6n"     "6s"     "7n"     "7s"     "8n"     "8s"     "9s"  "T11N"
+x = boat.obs$filename[boat.obs$SPECIES1 %in% c("10n","10s","11s","12n","2s","3s","4s","6n","6s","7n","7s","8n","8s","9s","T11N")]
+x = boat.obs[boat.obs$filename %in% x,]
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "10s" & boat.obs$Datafile == "R071107B.cor"]= "ENDCNT"
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "7s" & boat.obs$Datafile == "R041611A.cor"]= "ENDCNT"
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "6s" & boat.obs$Datafile == "R041611A.cor"]= "BEGCNT"                 
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "4s" & boat.obs$Datafile == "R041611A.cor"]= "BEGCNT"     
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "2s" & boat.obs$Datafile == "R041611A.cor"]= "BEGCNT"     
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "8n" & boat.obs$Datafile == "R041611A.cor"]= "BEGCNT"     
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "9s" & boat.obs$Datafile == "R041611A.cor"]= "BEGCNT"     
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "10n" & boat.obs$Datafile == "R041611A.cor"]= "BEGCNT"     
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "11s" & boat.obs$Datafile == "R041611A.cor"]= "BEGCNT"  
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "12n" & boat.obs$Datafile == "R041611A.cor"]= "BEGCNT"
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "8s" & boat.obs$Datafile == "R092110A.cor"]= "BEGCNT" 
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "8n" & boat.obs$Datafile == "R092110A.cor"]= "ENDCNT"
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "7s" & boat.obs$Datafile == "R092712A.cor"]= "BEGCNT" 
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "7n" & boat.obs$Datafile == "R092712A.cor"]= "ENDCNT"
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "6n" & boat.obs$Datafile == "R092712A.cor"]= "BEGCNT" 
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "12n" & boat.obs$Datafile == "R101910A.cor"]= "ENDCNT"
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "6n" & boat.obs$Datafile == "R101910A.cor"]= "BEGCNT" 
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "3s" & boat.obs$Datafile == "R102908A.COR"]= "ENDCNT"
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "4s" & boat.obs$filename == "Final_raw_data_101804"]= "BEGCNT"
+boat.obs$TRANSECT[which(boat.obs$SPECIES1 == "11s" & boat.obs$filename == "Final_raw_data_102805"):
+                    which(boat.obs$SPECIES1 == "T11N" & boat.obs$filename == "Final_raw_data_102805")] = 11
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "T11N" & boat.obs$filename == "Final_raw_data_102805"] = "ENDCNT"
+boat.obs$SPECIES1[boat.obs$SPECIES1 == "11s" & boat.obs$filename == "Final_raw_data_102805"] = "BEGCNT"
+boat.obs$TRANSECT[which(boat.obs$filename == "Final_raw_data_092705" & boat.obs$GPS_Time == "05:46:14pm"):
+                    which(boat.obs$filename == "Final_raw_data_092705" & boat.obs$GPS_Time == "06:01:58pm")] = 6
+boat.obs$TRANSECT[which(boat.obs$filename == "Final_raw_data_101905" & boat.obs$GPS_Time == "10:44:58am"):
+                    which(boat.obs$filename == "Final_raw_data_101905" & boat.obs$GPS_Time == "11:07:31am")] = 12
+boat.obs$TRANSECT[which(boat.obs$filename == "Final_raw_data_101905" & boat.obs$GPS_Time == "03:50:33pm")] = 6
+boat.obs$TRANSECT[which(boat.obs$filename == "Final_raw_data_102904" & boat.obs$GPS_Time == "10:51:34am"):
+                    which(boat.obs$filename == "Final_raw_data_102904" & boat.obs$GPS_Time == "11:17:38am")] = 3
+boat.obs$TRANSECT[which(boat.obs$filename == "Final_raw_data_101804" & boat.obs$GPS_Time == "10:26:39am"):
+                    which(boat.obs$filename == "Final_raw_data_101804" & boat.obs$GPS_Time == "10:50:25am")] = 4
+
+boat.obs$TRANSECT = as.character(boat.obs$TRANSECT)
+
+# fix mislabeled transects (must run in order!!)
+boat.obs$dataChange = as.character(boat.obs$dataChange)
+
+boat.obs$dataChange[boat.obs$TRANSECT %in% "1" & boat.obs$filename %in% "Final_raw_summer04"] = "Changed TRANSECT from 1; Changed filename to _v2 since there were two transect 2's"
+boat.obs$filename[boat.obs$TRANSECT %in% "1" & boat.obs$filename %in% "Final_raw_summer04"] = "Final_raw_summer04_v2"
+boat.obs$TRANSECT[boat.obs$TRANSECT %in% "1" & boat.obs$filename %in% "Final_raw_summer04_v2"] = "2"
+#
+boat.obs$dataChange[boat.obs$TRANSECT %in% "1" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = "Changed TRANSECT from 1; Changed filename to _v2 since there were 3 transect 2's"
+boat.obs$filename[boat.obs$TRANSECT %in% "1" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = "Final_raw_Spring_data_04b_v2"
+boat.obs$TRANSECT[boat.obs$TRANSECT %in% "1" & boat.obs$filename %in% "Final_raw_Spring_data_04b_v2"] = "2"
+#
+boat.obs$dataChange[boat.obs$TRANSECT %in% "1A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = paste(boat.obs$dataChange[boat.obs$TRANSECT %in% "1A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"],
+                                                                                                              " Changed TRANSECT from 1; Changed filename to _v3 since there were 3 transect 2's", sep = ";")
+boat.obs$filename[boat.obs$TRANSECT %in% "1A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = "Final_raw_Spring_data_04b_v3"
+boat.obs$TRANSECT[boat.obs$TRANSECT %in% "1A" & boat.obs$filename %in% "Final_raw_Spring_data_04b_v3"] = "2"
+#
+boat.obs$dataChange[boat.obs$TRANSECT %in% "4" & boat.obs$filename %in% "Final_raw_Spring_data_04b" & boat.obs$Latitude < 40.56] = "Changed TRANSECT from 4; Changed filename to _v2 since there were multiple transect 4's"
+boat.obs$filename[boat.obs$TRANSECT %in% "4" & boat.obs$filename %in% "Final_raw_Spring_data_04b" & boat.obs$Latitude < 40.56] = "Final_raw_Spring_data_04b_v2"
+boat.obs$TRANSECT[boat.obs$TRANSECT %in% "4" & boat.obs$filename %in% "Final_raw_Spring_data_04b_v2"] = "3"
+# 
+boat.obs$dataChange[boat.obs$TRANSECT %in% "4" & boat.obs$filename %in% "Final_raw_summer04" & 
+                      boat.obs$Longitude <(-73.36) & boat.obs$Latitude <40.56] = "Changed TRANSECT from 4; Changed filename to _v2 since there were two transect 4's"
+boat.obs$filename[boat.obs$TRANSECT %in% "4" & boat.obs$filename %in% "Final_raw_summer04" & 
+                    boat.obs$Longitude <(-73.36) & boat.obs$Latitude <40.56] = "Final_raw_summer04_v2"
+boat.obs$TRANSECT[boat.obs$TRANSECT %in% "4" & boat.obs$filename %in% "Final_raw_summer04_v2" & 
+                    boat.obs$Longitude <(-73.36) & boat.obs$Latitude <40.56] = "3"
+#
+boat.obs$dataChange[boat.obs$TRANSECT %in% "5" & boat.obs$filename %in% "Final_raw_summer04" & 
+                      boat.obs$Longitude <(-73.34) & boat.obs$Latitude <40.54] = paste(boat.obs$dataChange[boat.obs$TRANSECT %in% "5" & boat.obs$filename %in% "Final_raw_summer04" & 
+                                                                                                             boat.obs$Longitude <(-73.34) & boat.obs$Latitude <40.54], 
+                                                                                       "; Changed TRANSECT from 5; Changed filename to _v2 since there were two transect 5's", sep = " ")
+boat.obs$filename[boat.obs$TRANSECT %in% "5" & boat.obs$filename %in% "Final_raw_summer04" & 
+                    boat.obs$Longitude <(-73.34) & boat.obs$Latitude <40.54] = "Final_raw_summer04_v2"
+boat.obs$TRANSECT[boat.obs$TRANSECT %in% "5" & boat.obs$filename %in% "Final_raw_summer04_v2" & 
+                    boat.obs$Longitude <(-73.34) & boat.obs$Latitude <40.54] = "4"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "5" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = paste(boat.obs$dataChange[boat.obs$TRANSECT == "5" & boat.obs$filename %in% "Final_raw_Spring_data_04b"],
+                                                                                                           "; Changed TRANSECT from 5 and filename to _v2 since there were multiple transect 5's", sep = " ")
+boat.obs$filename[boat.obs$TRANSECT %in% "5" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = "Final_raw_Spring_data_04b_v2"
+boat.obs$TRANSECT[boat.obs$TRANSECT %in% "5" & boat.obs$filename %in% "Final_raw_Spring_data_04b_v2"] = "4"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "6" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = paste(boat.obs$dataChange[boat.obs$TRANSECT == "6" & boat.obs$filename %in% "Final_raw_Spring_data_04b"], 
+                                                                                                           "; Changed TRANSECT from 6 and filename to _v3 since there were multiple transect 4's", sep = " ")
+boat.obs$filename[boat.obs$TRANSECT %in% "6" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = "Final_raw_Spring_data_04b_v3"
+boat.obs$TRANSECT[boat.obs$TRANSECT %in% "6" & boat.obs$filename %in% "Final_raw_Spring_data_04b_v3"] = "4"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "6" & boat.obs$filename %in% "Final_raw_summer04" & boat.obs$Longitude <(-73.35)] = paste(boat.obs$dataChange[boat.obs$TRANSECT == "6" & boat.obs$filename %in% "Final_raw_summer04" & boat.obs$Longitude <(-73.35)],
+                                                                                                                                   "; Changed TRANSECT from 6, Changed filename to _v3", sep = " ")
+boat.obs$filename[boat.obs$TRANSECT == "6" & boat.obs$filename %in% "Final_raw_summer04" & boat.obs$Longitude <(-73.35)] = "Final_raw_summer04_v3"
+boat.obs$TRANSECT[boat.obs$TRANSECT == "6" & boat.obs$filename %in% "Final_raw_summer04_v3" & boat.obs$Longitude <(-73.35)] = "4"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "6" & boat.obs$filename %in% "Final_raw_data_081105" & 
+  !boat.obs$GPS_Time %in% c("02:23:11pm","02:29:59pm","02:31:15pm","02:37:27pm","02:42:23pm",
+                  "02:46:39pm","02:49:59pm","02:53:07pm","02:54:15pm","02:56:11pm","02:56:55pm")] = "Changed TRANSECT from 6"
+boat.obs$TRANSECT[boat.obs$TRANSECT == "6" & boat.obs$filename %in% "Final_raw_data_081105" & 
+           !boat.obs$GPS_Time %in% c("02:23:11pm","02:29:59pm","02:31:15pm","02:37:27pm","02:42:23pm",
+                                     "02:46:39pm","02:49:59pm","02:53:07pm","02:54:15pm","02:56:11pm","02:56:55pm")] = "5"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "7" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = paste(boat.obs$dataChange[boat.obs$TRANSECT == "7" & boat.obs$filename %in% "Final_raw_Spring_data_04b"], 
+                                                                                                           "; Changed TRANSECT from 7", sep = " ")
+boat.obs$TRANSECT[boat.obs$TRANSECT == "7" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = "5"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "7" & boat.obs$filename %in% "Final_raw_summer04" & boat.obs$Longitude<(-73.33)] = paste(boat.obs$dataChange[boat.obs$TRANSECT == "7" & boat.obs$filename %in% "Final_raw_summer04" & boat.obs$Longitude<(-73.33)],
+                                                                                                    "Changed TRANSECT from 7; Changed filename to _v2", sep = " ")
+boat.obs$filename[boat.obs$TRANSECT == "7" & boat.obs$filename %in% "Final_raw_summer04" & boat.obs$Longitude<(-73.33)] = "Final_raw_summer04_v2"
+boat.obs$TRANSECT[boat.obs$TRANSECT == "7" & boat.obs$filename %in% "Final_raw_summer04_v2" & boat.obs$Longitude<(-73.33)] = "5"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "2A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = paste(boat.obs$dataChange[boat.obs$TRANSECT == "2A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"],
+                                                                                                            "; Changed TRANSECT from 2A", sep = " ")
+boat.obs$TRANSECT[boat.obs$TRANSECT == "2A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = "3"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "3A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = paste(boat.obs$dataChange[boat.obs$TRANSECT == "3A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"],
+                                                                                                            "; Changed TRANSECT from 3A", sep = " ")
+boat.obs$TRANSECT[boat.obs$TRANSECT == "3A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = "4"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "4A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = paste(boat.obs$dataChange[boat.obs$TRANSECT == "4A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"],
+                                                                                                            "; Changed TRANSECT from 4A", sep = " ")
+boat.obs$TRANSECT[boat.obs$TRANSECT == "4A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = "5"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "5A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = paste(boat.obs$dataChange[boat.obs$TRANSECT == "5A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"],
+                                                                                                            "; Changed TRANSECT from 5A", sep = " ")
+boat.obs$TRANSECT[boat.obs$TRANSECT == "5A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = "6"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "6A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = paste(boat.obs$dataChange[boat.obs$TRANSECT == "6A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"],
+                                                                                                            "; Changed TRANSECT from 6A", sep = " ")
+boat.obs$TRANSECT[boat.obs$TRANSECT == "6A" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = "7"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "8" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = paste(boat.obs$dataChange[boat.obs$TRANSECT == "8" & boat.obs$filename %in% "Final_raw_Spring_data_04b"], 
+                                                                                                           "; Changed TRANSECT from 8", sep = " ")
+boat.obs$TRANSECT[boat.obs$TRANSECT == "8" & boat.obs$filename %in% "Final_raw_Spring_data_04b"] = "5"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "8" & boat.obs$filename=="Final_raw_summer04" & boat.obs$Longitude>(-73.35)] = "Changed TRANSECT from 8"
+boat.obs$TRANSECT[boat.obs$TRANSECT == "8" & boat.obs$filename=="Final_raw_summer04" & boat.obs$Longitude>(-73.35)] = "5"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "9"& boat.obs$filename=="Final_raw_summer04" & boat.obs$Longitude>(-73.35)] = paste(boat.obs$dataChange[boat.obs$TRANSECT == "9"& boat.obs$filename=="Final_raw_summer04" & boat.obs$Longitude>(-73.35)],
+                                                                                                                             "; Changed TRANSECT from 9; Changed filename to _v2", sep = " ")
+boat.obs$filename[boat.obs$TRANSECT == "9"& boat.obs$filename=="Final_raw_summer04" & boat.obs$Longitude>(-73.35)] = "Final_raw_summer04_v2"
+boat.obs$TRANSECT[boat.obs$TRANSECT == "9"& boat.obs$filename=="Final_raw_summer04_v2" & boat.obs$Longitude>(-73.35)] = "6"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "9"& boat.obs$filename=="Final_raw_Spring_data_04b"] = paste(boat.obs$dataChange[boat.obs$TRANSECT == "9"& boat.obs$filename=="Final_raw_Spring_data_04b"] ,
+                                                                                                      "Changed TRANSECT from 9", sep = " ")
+boat.obs$filename[boat.obs$TRANSECT == "9"& boat.obs$filename=="Final_raw_Spring_data_04b"] = "Final_raw_Spring_data_04b_v2"
+boat.obs$TRANSECT[boat.obs$TRANSECT == "9"& boat.obs$filename=="Final_raw_Spring_data_04b_v2"] = "6"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "10"& boat.obs$filename=="Final_raw_summer04"& boat.obs$Longitude>(-73.35)] = paste(boat.obs$dataChange[boat.obs$TRANSECT == "10"& boat.obs$filename=="Final_raw_summer04"& boat.obs$Longitude>(-73.35)],
+                                                                                                                             "; Changed TRANSECT from 1-; Changed filename to _v3", sep = " ")
+boat.obs$filename[boat.obs$TRANSECT == "10"& boat.obs$filename=="Final_raw_summer04"& boat.obs$Longitude>(-73.35)] = "Final_raw_summer04_v3"
+boat.obs$TRANSECT[boat.obs$TRANSECT == "10"& boat.obs$filename=="Final_raw_summer04_v3"& boat.obs$Longitude>(-73.35)] = "6"
+#
+boat.obs$dataChange[boat.obs$TRANSECT == "10"& boat.obs$filename=="Final_raw_Spring_data_04b"] = paste(boat.obs$dataChange[boat.obs$TRANSECT == "10"& boat.obs$filename=="Final_raw_Spring_data_04b"], 
+                                                                                                       "; Changed TRANSECT from 1-; Changed filename to _v3", sep = " ")
+boat.obs$filename[boat.obs$TRANSECT == "10"& boat.obs$filename=="Final_raw_Spring_data_04b"] = "Final_raw_Spring_data_04b_v3"
+boat.obs$TRANSECT[boat.obs$TRANSECT == "10"& boat.obs$filename=="Final_raw_Spring_data_04b_v3"] = "6"
+#
+boat.obs$dataChange[boat.obs$TRANSECT %in% "11"& boat.obs$filename %in% "Final_raw_summer04"] = "Changed TRANSECT from 11"
+boat.obs$TRANSECT[boat.obs$TRANSECT %in% "11"& boat.obs$filename %in% "Final_raw_summer04"] = "7"
+#
+boat.obs$dataChange[boat.obs$TRANSECT %in% "11"& boat.obs$filename %in% "Final_raw_Spring_data_04b"] = paste(boat.obs$dataChange[boat.obs$TRANSECT %in% "11"& boat.obs$filename %in% "Final_raw_Spring_data_04b"],
+                                                                                                             "; Changed TRANSECT from 11")
+boat.obs$filename[boat.obs$TRANSECT %in% "11"& boat.obs$filename %in% "Final_raw_Spring_data_04b"] = "Final_raw_Spring_data_04b_v2"
+boat.obs$TRANSECT[boat.obs$TRANSECT %in% "11"& boat.obs$filename %in% "Final_raw_Spring_data_04b_v2"] = "7"
+#
+#
+boat.obs$dataChange[boat.obs$TRANSECT %in% "12"& boat.obs$filename %in% "Final_raw_summer04"] = "Changed TRANSECT from 12; Changed filename to _v2"
+boat.obs$filename[boat.obs$TRANSECT %in% "12"& boat.obs$filename %in% "Final_raw_summer04"] = "Final_raw_summer04_v2"
+boat.obs$TRANSECT[boat.obs$TRANSECT %in% "12"& boat.obs$filename %in% "Final_raw_summer04_v2"] = "7"
+#
+boat.obs$dataChange[boat.obs$TRANSECT %in% "12"& boat.obs$filename %in% "Final_raw_Spring_data_04b"] = paste(boat.obs$dataChange[boat.obs$TRANSECT %in% "12"& boat.obs$filename %in% "Final_raw_Spring_data_04b"],
+                                                                                                             "; Changed TRANSECT from 12")
+boat.obs$filename[boat.obs$TRANSECT %in% "12"& boat.obs$filename %in% "Final_raw_Spring_data_04b"] = "Final_raw_Spring_data_04b_v3"
+boat.obs$TRANSECT[boat.obs$TRANSECT %in% "12"& boat.obs$filename %in% "Final_raw_Spring_data_04b_v3"] = "7"
+
+# remove N and S from transect
+boat.obs$TRANSECT = as.numeric(str_extract(boat.obs$TRANSECT, "[0-9]+"))
+
+# fix Date
+x = sapply(str_split(boat.obs$GPS_Date," "),tail,1)
+boat.obs$GPS_Date = sapply(str_split(boat.obs$GPS_Date," "),head,1)
+boat.obs$GPS_Date[boat.obs$filename %in% "Final_raw_data_101804"] = "2004-10-18"
+boat.obs$datafile[boat.obs$filename %in% "Final_raw_data_101804"] = "R101807A.cor"
+
+# check if each transect has a BEG and END count
+# if not, need to grab the first or last in the series
+# but look in the transect file to make sure if there is a 
+# defined start aside from the first location in the series
+x = boat.obs %>% filter(!is.na(TRANSECT)) %>% mutate(fn_t = paste(filename, TRANSECT, GPS_Date, sep="_")) %>% 
+  group_by(fn_t) %>% filter(row_number()==1) %>% 
+  select(fn_t, SPECIES1, GPS_Date, GPS_Time, Datafile, Latitude, Longitude, filename, TRANSECT, index) %>%
+  mutate(SPECIES1 = "BEGCNT") %>% mutate(index = as.numeric(index) - 0.0001) %>% as.data.frame() 
+xx = boat.obs %>% filter(!is.na(TRANSECT)) %>% mutate(fn_t = paste(filename, TRANSECT, GPS_Date, sep="_")) %>% 
+  group_by(fn_t) %>% filter(row_number()==n()) %>% 
+  select(fn_t, SPECIES1, GPS_Date, GPS_Time, Datafile, Latitude, Longitude, filename, TRANSECT, index) %>%
+  mutate(SPECIES1 = "ENDCNT") %>% mutate(index = as.numeric(index) + 0.0001) %>% as.data.frame() 
+new = rbind(x,xx) 
+new = arrange(new, index)
+
+boat.obs = bind_rows(boat.obs, new) %>% arrange(index)
+
 #-----------------#
 
 
 #-----------------#
 # TRANSECTS
 #-----------------#
+boat.transect$TRANSECT = as.character(boat.transect$TRANSECT)
 boat.transect$TRANSECT = as.numeric(str_extract(boat.transect$TRANSECT, "[0-9]+"))
 
 # format to have start time, end time etc... 
 
-##### NEXT STEPS. CHANGE THE NA's TO TRANSECT NUMBERS BASED ON LOCATION (INTERP EXISTING POINTS TO GET A LINE) AND TIME
+
 
 
 #--------------------------------------------------------------------------- #
