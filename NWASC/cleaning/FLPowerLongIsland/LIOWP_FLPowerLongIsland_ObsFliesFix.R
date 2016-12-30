@@ -217,6 +217,8 @@ boat.obs$Datafile[boat.obs$filename %in% "Final_raw_data_101804"] = "R101807A.co
 boat.obs$GPS_DateTime = as.POSIXct(paste(boat.obs$GPS_Date, boat.obs$GPS_Time, sep= " "), format = "%Y-%m-%d %I:%M:%S%p")
 boat.point.ge$GPS_DateTime = as.POSIXct(paste(boat.point.ge$GPS_Date, boat.point.ge$GPS_Time, sep= " "), format = "%Y-%m-%d %I:%M:%S%p")
 # join 
+boat.obs$offline = 0 
+boat.point.ge$offline = 1 
 boat.obs = bind_rows(boat.obs, boat.point.ge)
 # add index numbers based on last in group 
 boat.obs = boat.obs %>% mutate(fn_t = paste(filename, TRANSECT, GPS_Date, sep="_")) %>%
@@ -747,6 +749,11 @@ boat.transect$SPECIES1[boat.transect$fn_t %in% "Final_raw_data_081105_6_2005-08-
                          boat.transect$SPECIES1 %in% "CNT"] = "BEGCNT"
 boat.transect$SPECIES1[boat.transect$fn_t %in% "Final_raw_data_071105_10_2005-07-11" & 
                          boat.transect$SPECIES1 %in% "CNT"] = "ENDCNT"
+boat.transect$TRANSECT[boat.transect$fn_t %in% "GPS_04-25-2006_3_2006-04-25" & 
+                         boat.transect$GPS_Time %in% "10:51:02am"] = "5"
+boat.transect$fn_t[boat.transect$fn_t %in% "GPS_04-25-2006_3_2006-04-25" & 
+                         boat.transect$GPS_Time %in% "10:51:02am"] = "GPS_04-25-2006_5_2006-04-25"
+
 #duplicates/kinda
 boat.transect[boat.transect$fn_t %in% "GPS_05-17-2006_10_2006-05-17" & 
                 boat.transect$SPECIES1 %in% "BEGCNT",] = NA
@@ -759,31 +766,94 @@ boat.transect$SPECIES1[boat.transect$fn_t %in% "GPS_05-17-2006_1_2006-05-17" &
 boat.transect$fn_t[boat.transect$fn_t %in% "GPS_05-17-2006_1_2006-05-17" & 
                      boat.transect$GPS_Time %in% "01:25:32pm"] = "GPS_05-17-2006_10_2006-05-17"
 boat.transect = boat.transect[!is.na(boat.transect$fn_t),]
-
+boat.transect$index=NA
 x = select(boat.transect, TRANSECT, GPS_DateTime, GPS_Date, GPS_Time, Datafile, Latitude, Longitude, filename, SPECIES1, fn_t) %>%
   mutate(GPS_Date = as.POSIXct(GPS_Date, format = "%Y-%m-%d"))
 boat.obs =  boat.obs %>% mutate(fn_t = paste(filename, TRANSECT, GPS_Date, sep="_")) #redo after fixed errors
-ind = sort(unique(boat.obs$fn_t[boat.obs$SPECIES1 %in% c("BEGCNT","ENDCNT")]))
-x = x[!x$fn_t %in% ind,]
-# add index for x based on Beg/end if time is not available
-ind = sort(unique(boat.transect$fn_t[boat.transect$GPS_Time == "NULL"]))
-boat.transect$index=NA
-ind_ind = boat.obs %>% select(fn_t, index) %>% group_by(fn_t) %>% summarise(min_ind = min(index),max_ind = max(index))
-for (a in 1:length(ind)) {
-  b = ind[a]
+boat.obs$fn_t_c = paste(boat.obs$fn_t, boat.obs$SPECIES1, sep="_")
+boat.obs$fn_t_c[!boat.obs$SPECIES1 %in% c("BEGCNT","ENDCNT")] = NA
+x$fn_t_c = paste(x$fn_t, x$SPECIES1, sep="_")
+ind = sort(unique(x$fn_t_c[!x$fn_t_c %in% boat.obs$fn_t_c])) #BEG or END in transect table not in obs
+x = x[x$fn_t_c %in% ind,]
+# add index for x 
+ind_ind = boat.obs %>% select(fn_t, index) %>% group_by(fn_t) %>% 
+  summarise(min_ind = min(as.numeric(index)),max_ind = max(as.numeric(index)))
+x$dataChange = NA
+for (a in 1:length(x$fn_t)) {
+  b = x$fn_t[a]
   if(any(ind_ind$fn_t %in% b)) {
-    boat.transect$index[boat.transect$fn_t %in% b & boat.transect$SPECIES %in% "BEGCNT"] = as.numeric(ind_ind$min_ind[ind_ind$fn_t %in% b]) - 0.00001
-    boat.transect$index[boat.transect$fn_t %in% b & boat.transect$SPECIES %in% "ENDCNT"] = as.numeric(ind_ind$max_ind[ind_ind$fn_t %in% b]) + 0.00001
+    if(any(x$fn_t %in% b & x$SPECIES1 %in% "BEGCNT")) {
+      x$index[x$fn_t %in% b & x$SPECIES1 %in% "BEGCNT"] = as.numeric(ind_ind$min_ind[ind_ind$fn_t %in% b]) - 0.00001
+    }
+    if(any(x$fn_t %in% b & x$SPECIES1 %in% "ENDCNT")) {
+      x$index[x$fn_t %in% b & x$SPECIES1 %in% "ENDCNT"] = as.numeric(ind_ind$max_ind[ind_ind$fn_t %in% b]) + 0.00001
+    }
+    x$dataChange[x$fn_t %in% b & x$SPECIES1 %in% c("ENDCNT","BEGCNT")] = "Added from transect table"
   }
- }                                                                            
+}                                                                            
 
 # combine and arrange based on time for the rest and make a new index
 x$TRANSECT = as.numeric(x$TRANSECT)
-boat.obs = bind_rows(boat.obs, x) %>% arrange(GPS_Date, GPS_DateTime, index) %>% mutate(index = 1:length(SPECIES1))
+boat.obs = bind_rows(boat.obs, x) %>% arrange(GPS_Date, index, GPS_DateTime) 
 
+#geo-reference online points that have NA as transect (AvG was not correct, have to visualize)
+library(sp)
+l2 = cbind(c(-73.3945,-73.3752),c(40.613,40.51893))
+l3 = cbind(c(-73.381,-73.3625),c(40.616,40.522))  
+l4 = cbind(c(-73.368,-73.348),c(40.62,40.525))  
+l5 = cbind(c(-73.353,-73.334),c(40.622,40.526))  
+l6 = cbind(c(-73.3388,-73.32),c(40.6175,40.52828))  
+l7 = cbind(c(-73.324,-73.305),c(40.615,40.52868))  
+l8 = cbind(c(-73.409,-73.39),c(40.610,40.518))  
+l9 = cbind(c(-73.423,-73.40404),c(40.605,40.517))  
+l10 = cbind(c(-73.436,-73.419),c(40.603,40.516))  
+l11 = cbind(c(-73.44927,-73.43212),c(40.598,40.515))  
+l12 = cbind(c(-73.462,-73.44459),c(40.59452,40.512))  
+
+Sl2 <- Line(l2)
+Sl3 <- Line(l3)
+Sl4 <- Line(l4)
+Sl5 <- Line(l5)
+Sl6 <- Line(l6)
+Sl7 <- Line(l7)
+Sl8 <- Line(l8)
+Sl9 <- Line(l9)
+Sl10 <- Line(l10)
+Sl11 <- Line(l11)
+Sl12 <- Line(l12)
+
+S2 <- Lines(list(Sl2), ID = "2")
+S3 <- Lines(list(Sl3), ID = "3")
+S4 <- Lines(list(Sl4), ID = "4")
+S5 <- Lines(list(Sl5), ID = "5")
+S6 <- Lines(list(Sl6), ID = "6")
+S7 <- Lines(list(Sl7), ID = "7")
+S8 <- Lines(list(Sl8), ID = "8")
+S9 <- Lines(list(Sl9), ID = "9")
+S10 <- Lines(list(Sl10), ID = "10")
+S11 <- Lines(list(Sl11), ID = "11")
+S12 <- Lines(list(Sl12), ID = "12")
+
+rm(l2,l3,l4,l5,l6,l7,l8,l9,l10,l11,l12)
+
+SL <- SpatialLines(list(S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12))
+survey_design = SpatialLinesDataFrame(SL, data.frame(Transect = c("2","3","4","5","6","7","8","9","10","11","12"), 
+                                                     row.names = c("2","3","4","5","6","7","8","9","10","11","12")))
+
+#grab data where Transect is NA
+x = boat.obs[is.na(boat.obs$TRANSECT),]
+x = x[x$offline == 0,] #ignore offline points
+# find closest line
+coordinates(x) = cbind(x$Longitude, x$Latitude)
+boat.obs$TRANSECT[boat.obs$index %in% x$index] = as.character(apply(gDistance(x,survey_design, byid=TRUE), 2, function(X) rownames(m)[order(X)][1]))  
+boat.obs$dataChange[boat.obs$index %in% x$index] = paste(boat.obs$dataChange[boat.obs$index %in% x$index],
+                                                         "; Changed TRANSECT from NA", sep = " ")
+boat.obs = mutate(boat.obs, fn_t = paste(filename, TRANSECT, GPS_Date, sep="_")) 
+  
 #remove transects that already have beg and end
 boat.obs2 = boat.obs
-boat.obs2 = boat.obs2[!boat.obs2$fn_t %in% ind,] #ind created above
+ind = sort(unique(boat.obs$fn_t[boat.obs$SPECIES1 %in% c("BEGCNT","ENDCNT")]))
+boat.obs2 = boat.obs2[!boat.obs2$fn_t %in% ind,] 
 
 # create beg end for those that dont have them 
 x = boat.obs2 %>% filter(!is.na(TRANSECT)) %>% group_by(fn_t) %>% filter(row_number()==1) %>% 
@@ -799,10 +869,17 @@ boat.obs = bind_rows(boat.obs, new) %>% arrange(index)
 rm(boat.obs2,new,x,xx)
 
 # fix transects that have a BEG or and END but not both
-+=====================================================PICK UP HERE+++++++++++++++++++++++++++++++++++++++++++++
+is.odd <- function(x) x %% 2 != 0
+ind = boat.obs %>% filter(SPECIES1 %in% c("BEGCNT","ENDCNT","CNT")) %>% group_by(fn_t) %>% 
+  summarise(n=n()) %>% filter(is.odd(n))
+
+
+
+ + ============================================== PICK UP HERE ==================================== + 
+
   
   
-  
+    
 #-----------------#
 
 
