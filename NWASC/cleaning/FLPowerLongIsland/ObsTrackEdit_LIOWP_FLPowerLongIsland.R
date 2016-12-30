@@ -21,6 +21,8 @@ require(zoo) #na.locf
 require(dplyr) # %>% 
 library(dtplyr) #data.table
 library(stringr) #extract parts of a string
+require(rgeos)
+require(sp)
 # -------------------------------- #
 
 
@@ -117,7 +119,8 @@ for (i in seq(along = boat.raw.list)) {
     if (exists("transect") == TRUE && dim(transect)[1] >1) {
       if ("F18" %in% colnames(transect)) {transect = select(transect, -F18)}
       transect$filename = strsplit(boat.raw.list[i],"[.]")[[1]][1]
-      if (nchar(transect$GPS_Date[1]) == 5) {transect$GPS_Date = as.Date(transect$GPS_Date, origin = "1899-12-30")} # excel date
+      if (nchar(transect$GPS_Date[1]) == 5) {
+        transect$GPS_Date = as.Date(transect$GPS_Date, origin = "1899-12-30")} # excel date
       transect$GPS_Time = format(transect$'GPS Time', "%H:%M:%S")
     } else rm(transect)
 
