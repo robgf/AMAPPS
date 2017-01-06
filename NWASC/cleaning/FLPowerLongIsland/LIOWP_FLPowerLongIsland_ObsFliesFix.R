@@ -753,6 +753,7 @@ boat.transect$TRANSECT[boat.transect$fn_t %in% "GPS_04-25-2006_3_2006-04-25" &
                          boat.transect$GPS_Time %in% "10:51:02am"] = "5"
 boat.transect$fn_t[boat.transect$fn_t %in% "GPS_04-25-2006_3_2006-04-25" & 
                          boat.transect$GPS_Time %in% "10:51:02am"] = "GPS_04-25-2006_5_2006-04-25"
+boat.transect$TRANSECT[boat.transect$filename %in% "GPS_05-17-2006" & boat.transect$TRANSECT %in% "1"] = "10"
 
 #duplicates/kinda
 boat.transect[boat.transect$fn_t %in% "GPS_05-17-2006_10_2006-05-17" & 
@@ -791,13 +792,13 @@ for (a in 1:length(x$fn_t)) {
     x$dataChange[x$fn_t %in% b & x$SPECIES1 %in% c("ENDCNT","BEGCNT")] = "Added from transect table"
   }
 }                                                                            
+rm(ind_ind)
 
 # combine and arrange based on time for the rest and make a new index
 x$TRANSECT = as.numeric(x$TRANSECT)
 boat.obs = bind_rows(boat.obs, x) %>% arrange(GPS_Date, index, GPS_DateTime) 
 
-#geo-reference online points that have NA as transect (AvG was not correct, have to visualize)
-library(sp)
+#geo-reference online points that have NA as transect (AvG was not correct, had to manually define)
 l2 = cbind(c(-73.3945,-73.3752),c(40.613,40.51893))
 l3 = cbind(c(-73.381,-73.3625),c(40.616,40.522))  
 l4 = cbind(c(-73.368,-73.348),c(40.62,40.525))  
@@ -834,20 +835,29 @@ S10 <- Lines(list(Sl10), ID = "10")
 S11 <- Lines(list(Sl11), ID = "11")
 S12 <- Lines(list(Sl12), ID = "12")
 
-rm(l2,l3,l4,l5,l6,l7,l8,l9,l10,l11,l12)
-
 SL <- SpatialLines(list(S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12))
 survey_design = SpatialLinesDataFrame(SL, data.frame(Transect = c("2","3","4","5","6","7","8","9","10","11","12"), 
                                                      row.names = c("2","3","4","5","6","7","8","9","10","11","12")))
+rm(l2,l3,l4,l5,l6,l7,l8,l9,l10,l11,l12,
+   Sl2,Sl3,Sl4,Sl5,Sl6,Sl7,Sl8,Sl9,Sl10,Sl11,Sl12,
+   S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12)
 
 #grab data where Transect is NA
 x = boat.obs[is.na(boat.obs$TRANSECT),]
 x = x[x$offline == 0,] #ignore offline points
 # find closest line
 coordinates(x) = cbind(x$Longitude, x$Latitude)
-boat.obs$TRANSECT[boat.obs$index %in% x$index] = as.character(apply(gDistance(x,survey_design, byid=TRUE), 2, function(X) rownames(m)[order(X)][1]))  
+m = gDistance(x,survey_design, byid=TRUE)
+boat.obs$TRANSECT[boat.obs$index %in% x$index] = as.character(apply(m, 2, function(X) rownames(m)[order(X)][1]))  
 boat.obs$dataChange[boat.obs$index %in% x$index] = paste(boat.obs$dataChange[boat.obs$index %in% x$index],
                                                          "; Changed TRANSECT from NA", sep = " ")
+rm(m)
+
+# fix date
+boat.obs$GPS_Date[boat.obs$fn_t %in% "Final_raw_data_072705_6_NA"] = "2005-07-27 EDT"
+boat.obs$fn_t[boat.obs$fn_t %in% "Final_raw_data_072705_6_NA"] = "Final_raw_data_072705_6_2005-07-27"
+
+# redo filename-transect label
 boat.obs = mutate(boat.obs, fn_t = paste(filename, TRANSECT, GPS_Date, sep="_")) 
   
 #remove transects that already have beg and end
@@ -870,27 +880,56 @@ rm(boat.obs2,new,x,xx)
 
 # fix transects that have a BEG or and END but not both
 is.odd <- function(x) x %% 2 != 0
-ind = boat.obs %>% filter(SPECIES1 %in% c("BEGCNT","ENDCNT","CNT")) %>% group_by(fn_t) %>% 
-  summarise(n=n()) %>% filter(is.odd(n))
+ind = boat.obs %>% filter(SPECIES1 %in% c("BEGCNT","ENDCNT","CNT")) %>% 
+  group_by(fn_t) %>% summarise(n=n()) %>% filter(is.odd(n))
+ind = boat.obs[boat.obs$fn_t %in% ind$fn_t,] %>% filter(SPECIES1 %in% c("BEGCNT","ENDCNT","CNT")) %>% 
+  select(fn_t, SPECIES1)
+#have BEG, get last in group and add 0.0001 to index and change to END
+ends.to.add = boat.obs[boat.obs$fn_t %in% ind$fn_t[ind$SPECIES1 %in% "BEGCNT"],] %>% 
+  select(index, GPS_Date, GPS_Time, filename, fn_t, TRANSECT, SPECIES1, dataChange, Latitude, Longitude) %>% 
+  group_by(fn_t) %>% filter(row_number()==n()) %>% mutate(SPECIES1 = "ENDCNT", index = as.numeric(index) + 0.0001,
+                                                          dataChange = "Added ENDCNT")
+begs.to.add = boat.obs[boat.obs$fn_t %in% ind$fn_t[ind$SPECIES1 %in% "ENDCNT"],] %>% 
+  select(index, GPS_Date, GPS_Time, filename, fn_t, TRANSECT, SPECIES1, dataChange, Latitude, Longitude) %>% 
+  group_by(fn_t) %>% filter(row_number()==n()) %>% mutate(SPECIES1 = "BEGCNT", index = as.numeric(index) - 0.0001,
+                                                          dataChange = "Added BEGCNT")
+boat.obs = bind_rows(boat.obs, ends.to.add, begs.to.add) %>% arrange(index)
+rm(ends.to.add, begs.to.add, ind)
 
-
-
- + ============================================== PICK UP HERE ==================================== + 
-
-  
-  
-    
+# remove not used variables, fix groupsize and number, and rename
+boat.obs$NO[is.na(boat.obs$NO)] = boat.obs$GROUPSZ[is.na(boat.obs$NO)]
+boat.obs = select(boat.obs, -SPECIES2, -fn_t, -fn_t_c, -GROUPSZ, -ZONE, -NOTES)
+boat.obs = rename(boat.obs, type = SPECIES1, count = NO, source_transect_id=TRANSECT)
+colnames(boat.obs) = tolower(names(boat.obs))
 #-----------------#
 
 
 #-----------------#
-# TRANSECTS
+# TRACK
 #-----------------#
+# pull out BEG and ENDS from obs
+boat.track = boat.obs[boat.obs$type %in% c("BEGCNT","ENDCNT"),]
+boat.track = select(boat.track, type, filename, gps_date, gps_time, latitude, longitude, source_transect_id,datachange)
+boat.obs = boat.obs[!boat.obs$type %in% c("BEGCNT","ENDCNT"),]
 
-# format to have start time, end time etc... 
 
-
-
+#-----------------#
+# TRANSECT
+#-----------------#
+# since there are multiple visits on one transect in one day, need to include filename
+transect_pieces = boat.track %>% select(latitude, longitude, gps_date, source_transect_id, type, filename, gps_time) %>% 
+  mutate(source_transect_id = factor(source_transect_id)) %>% 
+  group_by(source_transect_id, gps_date, filename) %>% arrange(type) %>%
+  summarize(start_lon = first(longitude), start_lat = first(latitude), 
+            end_lon = last(longitude), end_lat = last(latitude),
+            start_time = first(gps_time),end_time = last(gps_time)) %>% 
+  ungroup %>% as.data.frame %>% 
+  rowwise %>% mutate(distance =  distm(c(start_lat, start_lon), c(end_lat, end_lon), fun = distHaversine)) 
+#combine data from transect to transect pieces
+transect_pieces = mutate(transect_pieces, fn_t = paste(filename, source_transect_id, gps_date)) 
+transect_summ = boat.transect %>% select(fn_t, SPEED,WIND_SPD,SWELL_HT,COND,TIDE,WEATHER,TEMP,SEASTATE) %>% 
+  group_by(fn_t) %>% filter(row_number()==1) 
+colnames(transect_summ) = tolower(names(transect_summ))
 
 #--------------------------------------------------------------------------- #
 # Plane
