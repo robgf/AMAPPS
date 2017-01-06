@@ -23,6 +23,7 @@ library(dtplyr) #data.table
 library(stringr) #extract parts of a string
 require(rgeos)
 require(sp)
+library(geosphere)
 # -------------------------------- #
 
 
