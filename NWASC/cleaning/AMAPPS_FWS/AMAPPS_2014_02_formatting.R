@@ -111,11 +111,6 @@ track$replicate[track$source_transect_id %in% "343100_rms" & track$day == 7] = 2
 track$replicate[track$source_transect_id %in% "343100_jsw" & track$day == 7] = 2
 obs$replicate[obs$source_transect_id %in% "343100_rms" & obs$day == 7] = 2
 obs$replicate[obs$source_transect_id %in% "343100_jsw" & obs$day == 7] = 2
-track$type[track$source_transect_id %in% "343100_rms" & track$type %in% "BEGCNT"] = "BEGSEG"
-track$type[track$source_transect_id %in% "343100_jsw" & track$type %in% "BEGCNT"] = "BEGSEG"
-track$type[track$source_transect_id %in% "343100_rms" & track$type %in% "ENDCNT"] = "ENDSEG"
-track$type[track$source_transect_id %in% "343100_jsw" & track$type %in% "ENDCNT"] = "ENDSEG"
-
 track$source_transect_id[track$source_transect_id %in% "343100_rms" & track$day == 7] = "343100_rms_2"
 track$source_transect_id[track$source_transect_id %in% "343100_jsw" & track$day == 7] = "343100_jsw_2"
 obs$source_transect_id[obs$source_transect_id %in% "343100_rms" & obs$day == 7] = "343100_rms_2"
