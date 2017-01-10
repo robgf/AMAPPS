@@ -92,15 +92,16 @@ obs$type[obs$type %in% "USHO"] = "SHOR"
 # get rid of COCH (code change)
 obs = obs[!obs$type %in% "COCH",] 
 
-# rename transect
-obs = rename(obs, source_transect_id = transect)
+# formatting
+obs = rename(obs, source_transect_id = transect, seastate_beaufort_nb = condition, obs_position = seat)
 obs = mutate(obs, source_transect_id = paste(source_transect_id, obs, sep="_"))
+obs$obs_dt = as.POSIXct(paste(obs$year, obs$month, obs$day, sep="/"), format="%Y/%m/%d")
 #---------------------#
 
 
 #---------------------#
 #track formating
-track = rename(track, source_transect_id = transect)
+track = rename(track, source_transect_id = transect, seastate = condition, observer_position = seat)
 track = mutate(track, source_transect_id = paste(source_transect_id, obs, sep="_"))
 track$track_dt = as.POSIXct(paste(track$year, track$month, track$day, sep="/"), format="%Y/%m/%d")
 track$type[track$type %in% "BEGSEG"] = "BEGCNT"
