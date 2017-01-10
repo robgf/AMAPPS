@@ -8,6 +8,7 @@
 require(dplyr)
 require(gdata)
 require(RODBC)
+library(geosphere)
 #---------------------#
 
 
@@ -90,4 +91,50 @@ obs$type[obs$type %in% "USHO"] = "SHOR"
 
 # get rid of COCH (code change)
 obs = obs[!obs$type %in% "COCH",] 
+
+# rename transect
+obs = rename(obs, source_transect_id = transect)
+obs = mutate(obs, source_transect_id = paste(source_transect_id, obs, sep="_"))
 #---------------------#
+
+
+#---------------------#
+#track formating
+track = rename(track, source_transect_id = transect)
+track = mutate(track, source_transect_id = paste(source_transect_id, obs, sep="_"))
+track$track_dt = as.POSIXct(paste(track$year, track$month, track$day, sep="/"), format="%Y/%m/%d")
+track$type[track$type %in% "BEGSEG"] = "BEGCNT"
+track$type[track$type %in% "ENDSEG"] = "ENDCNT"
+
+# fix track error (in track and obs)
+track$replicate[track$source_transect_id %in% "343100_rms" & track$day == 7] = 2
+track$replicate[track$source_transect_id %in% "343100_jsw" & track$day == 7] = 2
+obs$replicate[obs$source_transect_id %in% "343100_rms" & obs$day == 7] = 2
+obs$replicate[obs$source_transect_id %in% "343100_jsw" & obs$day == 7] = 2
+track$type[track$source_transect_id %in% "343100_rms" & track$type %in% "BEGCNT"] = "BEGSEG"
+track$type[track$source_transect_id %in% "343100_jsw" & track$type %in% "BEGCNT"] = "BEGSEG"
+track$type[track$source_transect_id %in% "343100_rms" & track$type %in% "ENDCNT"] = "ENDSEG"
+track$type[track$source_transect_id %in% "343100_jsw" & track$type %in% "ENDCNT"] = "ENDSEG"
+
+track$source_transect_id[track$source_transect_id %in% "343100_rms" & track$day == 7] = "343100_rms_2"
+track$source_transect_id[track$source_transect_id %in% "343100_jsw" & track$day == 7] = "343100_jsw_2"
+obs$source_transect_id[obs$source_transect_id %in% "343100_rms" & obs$day == 7] = "343100_rms_2"
+obs$source_transect_id[obs$source_transect_id %in% "343100_jsw" & obs$day == 7] = "343100_jsw_2"
+#---------------------#
+
+
+#---------------------#
+# make transects table, since each obs for one transect is technically a diff transect
+transects = track %>% select(lat, long, sec, source_transect_id, type, seat, track_dt) %>% 
+  filter(type %in% c("BEGCNT","ENDCNT")) %>%
+  group_by(source_transect_id) %>% 
+  arrange(type) %>% summarize(start_lon = first(long), start_lat = first(lat), 
+                              end_lon = last(long), end_lat = last(lat),
+                              time_from_midnight_start = first(sec), time_from_midnight_stop = last(sec),
+                              obs_position = first(seat), start_dt = first(track_dt), 
+                              end_dt = last(track_dt)) %>% rowwise %>% 
+  mutate(distance =  as.numeric(distm(c(start_lat, start_lon), c(end_lat, end_lon), fun = distHaversine)),
+         transect_time_min_nb = (time_from_midnight_stop - time_from_midnight_start)/60) %>% 
+  as.data.frame()
+#---------------------#
+
