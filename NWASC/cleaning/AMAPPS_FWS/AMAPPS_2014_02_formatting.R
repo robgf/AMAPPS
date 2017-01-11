@@ -92,7 +92,7 @@ obs$type[obs$type %in% "USHO"] = "SHOR"
 # get rid of COCH (code change)
 obs = obs[!obs$type %in% "COCH",] 
 
-# formatting
+# obs formatting
 obs = rename(obs, source_transect_id = transect, seastate_beaufort_nb = condition, obs_position = seat)
 obs = mutate(obs, source_transect_id = paste(source_transect_id, obs, sep="_"))
 obs$obs_dt = as.POSIXct(paste(obs$year, obs$month, obs$day, sep="/"), format="%Y/%m/%d")
@@ -101,34 +101,37 @@ obs$obs_dt = as.POSIXct(paste(obs$year, obs$month, obs$day, sep="/"), format="%Y
 
 #---------------------#
 #track formating
-track = rename(track, source_transect_id = transect, seastate = condition, observer_position = seat)
+track = rename(track, source_transect_id = transect, seastate = condition, 
+               observer_position = seat, seconds_from_midnight_nb = sec, observer = obs)
 track = mutate(track, source_transect_id = paste(source_transect_id, obs, sep="_"))
 track$track_dt = as.POSIXct(paste(track$year, track$month, track$day, sep="/"), format="%Y/%m/%d")
 track$type[track$type %in% "BEGSEG"] = "BEGCNT"
 track$type[track$type %in% "ENDSEG"] = "ENDCNT"
 
+
 # fix track error (in track and obs)
-track$replicate[track$source_transect_id %in% "343100_rms" & track$day == 7] = 2
-track$replicate[track$source_transect_id %in% "343100_jsw" & track$day == 7] = 2
-obs$replicate[obs$source_transect_id %in% "343100_rms" & obs$day == 7] = 2
-obs$replicate[obs$source_transect_id %in% "343100_jsw" & obs$day == 7] = 2
-track$source_transect_id[track$source_transect_id %in% "343100_rms" & track$day == 7] = "343100_rms_2"
-track$source_transect_id[track$source_transect_id %in% "343100_jsw" & track$day == 7] = "343100_jsw_2"
-obs$source_transect_id[obs$source_transect_id %in% "343100_rms" & obs$day == 7] = "343100_rms_2"
-obs$source_transect_id[obs$source_transect_id %in% "343100_jsw" & obs$day == 7] = "343100_jsw_2"
+track$source_transect_id[track$source_transect_id %in% "343100_rms" & track$day == 7] = "343100_rms_half2"
+track$source_transect_id[track$source_transect_id %in% "343100_jsw" & track$day == 7] = "343100_jsw_half2"
+obs$source_transect_id[obs$source_transect_id %in% "343100_rms" & obs$day == 7] = "343100_rms_half2"
+obs$source_transect_id[obs$source_transect_id %in% "343100_jsw" & obs$day == 7] = "343100_jsw_half2"
+track$source_transect_id[track$source_transect_id %in% "343100_rms" & track$day == 6] = "343100_rms_half1"
+track$source_transect_id[track$source_transect_id %in% "343100_jsw" & track$day == 6] = "343100_jsw_half1"
+obs$source_transect_id[obs$source_transect_id %in% "343100_rms" & obs$day == 6] = "343100_rms_half1"
+obs$source_transect_id[obs$source_transect_id %in% "343100_jsw" & obs$day == 6] = "343100_jsw_half1"
 #---------------------#
 
 
 #---------------------#
 # make transects table, since each obs for one transect is technically a diff transect
-transects = track %>% select(lat, long, sec, source_transect_id, type, seat, track_dt) %>% 
+transects = track %>% select(lat, long, seconds_from_midnight_nb, source_transect_id, type, observer_position, track_dt, seastate) %>% 
   filter(type %in% c("BEGCNT","ENDCNT")) %>%
   group_by(source_transect_id) %>% 
   arrange(type) %>% summarize(start_lon = first(long), start_lat = first(lat), 
                               end_lon = last(long), end_lat = last(lat),
-                              time_from_midnight_start = first(sec), time_from_midnight_stop = last(sec),
-                              obs_position = first(seat), start_dt = first(track_dt), 
-                              end_dt = last(track_dt)) %>% rowwise %>% 
+                              time_from_midnight_start = first(seconds_from_midnight_nb), 
+                              time_from_midnight_stop = last(seconds_from_midnight_nb),
+                              obs_position = first(observer_position), start_dt = first(track_dt), 
+                              end_dt = last(track_dt), seastate_beaufort_nb = median(seastate)) %>% rowwise %>% 
   mutate(distance =  as.numeric(distm(c(start_lat, start_lon), c(end_lat, end_lon), fun = distHaversine)),
          transect_time_min_nb = (time_from_midnight_stop - time_from_midnight_start)/60) %>% 
   as.data.frame()
