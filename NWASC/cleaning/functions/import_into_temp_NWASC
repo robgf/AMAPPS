@@ -197,7 +197,8 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
                                      dataset_id = as.numeric(dataset_id),              
                                      track_gs = as.character(track_gs),            
                                      piece = as.numeric(piece),                 
-                                     source_track_id = as.numeric(source_track_id))
+                                     source_track_id = as.numeric(source_track_id),
+                                     seconds_from_midnight_nb = as.numeric(seconds_from_midnight_nb))
   }
   # ------------------------ #
   
@@ -244,9 +245,12 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
       dat_transect$traversal_speed_nb = data_transect[,which(colnames(data_transect) %in% c("speed","mean_speed","mean_speed_knots"))]}
     
     # calculations
-    dat_transect$transect_time_min_nb = difftime(as.POSIXct(paste(dat_transect$end_dt, dat_transect$end_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
+    if(all(is.na(dat_transect$transect_time_min_nb))) {
+      dat_transect$transect_time_min_nb = difftime(as.POSIXct(paste(dat_transect$end_dt, dat_transect$end_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
                                                  as.POSIXct(paste(dat_transect$start_dt, dat_transect$start_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
                                                  units = "mins")
+    }
+    
   }
   
   # if the transect information needs to be pulled from the track files
