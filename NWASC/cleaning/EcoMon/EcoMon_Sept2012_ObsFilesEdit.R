@@ -68,7 +68,7 @@ obs = mutate(obs,date = as.POSIXct(paste(paste(YYYY,MM1,DD,sep="/")," ", paste(h
 #---------------------#
 # break apart obs and track
 #---------------------#  
-obs = rename(obs, source_transect_id = transect) 
+obs = rename(obs, source_transect_id = Transect) 
 
 track = obs[is.na(obs$Spp),]
 obs = obs[!is.na(obs$Spp),]
