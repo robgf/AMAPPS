@@ -969,8 +969,8 @@ transect_pieces = boat.track %>%
   ungroup %>% as.data.frame %>% 
   rowwise %>% mutate(distance =  distm(c(start_lat, start_lon), c(end_lat, end_lon), fun = distHaversine)) 
 transect_pieces$distance = as.vector(transect_pieces$distance) #was a matrix in a cell
-transect_pieces$start_time[transect_pieces$start_time=="NULL"] = NA
-transect_pieces$end_time[transect_pieces$end_time=="NULL"] = NA
+transect_pieces$start_tm[transect_pieces$start_tm=="NULL"] = NA
+transect_pieces$end_tm[transect_pieces$end_tm=="NULL"] = NA
 if(any(transect_pieces$distance==0 | is.na(transect_pieces$distance))) {stop("\n
                                           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n
                                           !!!!!!!!!!!!!!!!!!!!   STOP   !!!!!!!!!!!!!!!!!!!\n
@@ -1406,7 +1406,7 @@ transect_pieces = plane.track %>% select(latitude, longitude, gps_date,
   group_by(gps_date, filename, source_transect_id) %>% arrange(point_type) %>%
   summarize(start_lon = first(longitude), start_lat = first(latitude), 
             end_lon = last(longitude), end_lat = last(latitude),
-            start_time = first(gps_time),end_time = last(gps_time)) %>% ungroup %>% as.data.frame()
+            start_tm = first(gps_time),end_tm = last(gps_time)) %>% ungroup %>% as.data.frame()
   
 distances = transect_pieces %>% as.data.frame() %>% rowwise %>% 
   mutate(distance =  distm(cbind(start_lat, start_lon), cbind(end_lat, end_lon), fun = distHaversine)) %>% 
@@ -1427,7 +1427,7 @@ plane.transect = left_join(transect_pieces, plane.transect, by = "fn_t")
 rm(transect_pieces)
 plane.transect$gps_height[plane.transect$gps_height=="NaN"] = NA
 plane.transect$speed = 12
-plane.transect = plane.transect %>% mutate(start_dt = gps_date) %>% rename(end_dt = gps_date, start_tm = start_time, end_tm = end_time)
+plane.transect = plane.transect %>% mutate(start_dt = gps_date) %>% rename(end_dt = gps_date)
 plane.transect$transect_time_min_nb = difftime(as.POSIXct(paste(plane.transect$end_dt, plane.transect$end_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
                                              as.POSIXct(paste(plane.transect$start_dt, plane.transect$start_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
                                              units = "mins")  
