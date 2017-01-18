@@ -1,4 +1,7 @@
-#Data
+#---------------- #
+# boat data
+#---------------- #
+#Data (before processing)
 plot(boat.obs$Longitude,boat.obs$Latitude, col = "grey")
 points(boat.obs$Longitude[boat.obs$TRANSECT == "1"],boat.obs$Latitude[boat.obs$TRANSECT == "1"], col = "magenta")
 points(boat.obs$Longitude[boat.obs$TRANSECT == "2"],boat.obs$Latitude[boat.obs$TRANSECT == "2"], col = "orange")
@@ -12,6 +15,22 @@ points(boat.obs$Longitude[boat.obs$TRANSECT == "9"],boat.obs$Latitude[boat.obs$T
 points(boat.obs$Longitude[boat.obs$TRANSECT == "10"],boat.obs$Latitude[boat.obs$TRANSECT == "10"], col = "forest green")
 points(boat.obs$Longitude[boat.obs$TRANSECT == "11"],boat.obs$Latitude[boat.obs$TRANSECT == "11"], col = "violet")
 points(boat.obs$Longitude[boat.obs$TRANSECT == "12"],boat.obs$Latitude[boat.obs$TRANSECT == "12"], col = "black")
+
+#Data after processing
+plot(boat.obs$longitude,boat.obs$latitude, col = "grey")
+points(boat.obs$longitude[boat.obs$source_transect_id == "1"],boat.obs$latitude[boat.obs$source_transect_id == "1"], col = "magenta")
+points(boat.obs$longitude[boat.obs$source_transect_id == "2"],boat.obs$latitude[boat.obs$source_transect_id == "2"], col = "orange")
+points(boat.obs$longitude[boat.obs$source_transect_id == "3"],boat.obs$latitude[boat.obs$source_transect_id == "3"], col = "red")
+points(boat.obs$longitude[boat.obs$source_transect_id == "4"],boat.obs$latitude[boat.obs$source_transect_id == "4"], col = "brown")
+points(boat.obs$longitude[boat.obs$source_transect_id == "5"],boat.obs$latitude[boat.obs$source_transect_id == "5"], col = "purple")
+points(boat.obs$longitude[boat.obs$source_transect_id == "6"],boat.obs$latitude[boat.obs$source_transect_id == "6"], col = "navy")
+points(boat.obs$longitude[boat.obs$source_transect_id == "7"],boat.obs$latitude[boat.obs$source_transect_id == "7"], col = "blue")
+points(boat.obs$longitude[boat.obs$source_transect_id == "8"],boat.obs$latitude[boat.obs$source_transect_id == "8"], col = "cyan")
+points(boat.obs$longitude[boat.obs$source_transect_id == "9"],boat.obs$latitude[boat.obs$source_transect_id == "9"], col = "green")
+points(boat.obs$longitude[boat.obs$source_transect_id == "10"],boat.obs$latitude[boat.obs$source_transect_id == "10"], col = "forest green")
+points(boat.obs$longitude[boat.obs$source_transect_id == "11"],boat.obs$latitude[boat.obs$source_transect_id == "11"], col = "violet")
+points(boat.obs$longitude[boat.obs$source_transect_id == "12"],boat.obs$latitude[boat.obs$source_transect_id == "12"], col = "black")
+
 
 #Transect Text
 text(-73.463,40.5999, labels = "12")
@@ -80,4 +99,52 @@ S12 <- Lines(list(Sl12), ID = "12")
 SL <- SpatialLines(list(S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12))
 survey_design = SpatialLinesDataFrame(SL, data.frame(Transect = c("2","3","4","5","6","7","8","9","10","11","12"), 
                                                      row.names = c("2","3","4","5","6","7","8","9","10","11","12")))
+#---------------- #
 
+#---------------- #
+# plane data
+#---------------- #
+#---------------- #
+#data before processing
+plot(plane.obs$Longitude, plane.obs$Latitude, col="grey")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "1"],plane.obs$Latitude[plane.obs$TRANSECT == "1"], col = "darkred")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "2"],plane.obs$Latitude[plane.obs$TRANSECT == "2"], col = "red")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "3"],plane.obs$Latitude[plane.obs$TRANSECT == "3"], col = "darkorange")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "4"],plane.obs$Latitude[plane.obs$TRANSECT == "4"], col = "gold")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "5"],plane.obs$Latitude[plane.obs$TRANSECT == "5"], col = "yellow")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "6"],plane.obs$Latitude[plane.obs$TRANSECT == "6"], col = "green")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "7"],plane.obs$Latitude[plane.obs$TRANSECT == "7"], col = "forestgreen")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "8"],plane.obs$Latitude[plane.obs$TRANSECT == "8"], col = "lightblue")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "9"],plane.obs$Latitude[plane.obs$TRANSECT == "9"], col = "cyan")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "10"],plane.obs$Latitude[plane.obs$TRANSECT == "10"], col = "darkcyan")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "11"],plane.obs$Latitude[plane.obs$TRANSECT == "11"], col = "blue")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "12"],plane.obs$Latitude[plane.obs$TRANSECT == "12"], col = "navyblue")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "13"],plane.obs$Latitude[plane.obs$TRANSECT == "13"], col = "purple")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "14"],plane.obs$Latitude[plane.obs$TRANSECT == "14"], col = "violet")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "15"],plane.obs$Latitude[plane.obs$TRANSECT == "15"], col = "pink")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "16"],plane.obs$Latitude[plane.obs$TRANSECT == "16"], col = "indianred")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "17"],plane.obs$Latitude[plane.obs$TRANSECT == "17"], col = "brown")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "18"],plane.obs$Latitude[plane.obs$TRANSECT == "18"], col = "black")
+points(plane.obs$Longitude[plane.obs$TRANSECT == "19"],plane.obs$Latitude[plane.obs$TRANSECT == "19"], col = "magenta")
+
+#data after processing
+plot(plane.obs$longitude, plane.obs$latitude, col="grey")
+points(plane.obs$longitude[plane.obs$source_transect_id == "1"],plane.obs$latitude[plane.obs$source_transect_id == "1"], col = "darkred")
+points(plane.obs$longitude[plane.obs$source_transect_id == "2"],plane.obs$latitude[plane.obs$source_transect_id == "2"], col = "red")
+points(plane.obs$longitude[plane.obs$source_transect_id == "3"],plane.obs$latitude[plane.obs$source_transect_id == "3"], col = "darkorange")
+points(plane.obs$longitude[plane.obs$source_transect_id == "4"],plane.obs$latitude[plane.obs$source_transect_id == "4"], col = "gold")
+points(plane.obs$longitude[plane.obs$source_transect_id == "5"],plane.obs$latitude[plane.obs$source_transect_id == "5"], col = "yellow")
+points(plane.obs$longitude[plane.obs$source_transect_id == "6"],plane.obs$latitude[plane.obs$source_transect_id == "6"], col = "green")
+points(plane.obs$longitude[plane.obs$source_transect_id == "7"],plane.obs$latitude[plane.obs$source_transect_id == "7"], col = "forestgreen")
+points(plane.obs$longitude[plane.obs$source_transect_id == "8"],plane.obs$latitude[plane.obs$source_transect_id == "8"], col = "lightblue")
+points(plane.obs$longitude[plane.obs$source_transect_id == "9"],plane.obs$latitude[plane.obs$source_transect_id == "9"], col = "cyan")
+points(plane.obs$longitude[plane.obs$source_transect_id == "10"],plane.obs$latitude[plane.obs$source_transect_id == "10"], col = "darkcyan")
+points(plane.obs$longitude[plane.obs$source_transect_id == "11"],plane.obs$latitude[plane.obs$source_transect_id == "11"], col = "blue")
+points(plane.obs$longitude[plane.obs$source_transect_id == "12"],plane.obs$latitude[plane.obs$source_transect_id == "12"], col = "navyblue")
+points(plane.obs$longitude[plane.obs$source_transect_id == "13"],plane.obs$latitude[plane.obs$source_transect_id == "13"], col = "purple")
+points(plane.obs$longitude[plane.obs$source_transect_id == "14"],plane.obs$latitude[plane.obs$source_transect_id == "14"], col = "violet")
+points(plane.obs$longitude[plane.obs$source_transect_id == "15"],plane.obs$latitude[plane.obs$source_transect_id == "15"], col = "pink")
+points(plane.obs$longitude[plane.obs$source_transect_id == "16"],plane.obs$latitude[plane.obs$source_transect_id == "16"], col = "indianred")
+points(plane.obs$longitude[plane.obs$source_transect_id == "17"],plane.obs$latitude[plane.obs$source_transect_id == "17"], col = "brown")
+points(plane.obs$longitude[plane.obs$source_transect_id == "18"],plane.obs$latitude[plane.obs$source_transect_id == "18"], col = "black")
+points(plane.obs$longitude[plane.obs$source_transect_id == "19"],plane.obs$latitude[plane.obs$source_transect_id == "19"], col = "magenta")
