@@ -651,6 +651,7 @@ boat.obs$TRANSECT = as.numeric(str_extract(boat.obs$TRANSECT, "[0-9]+"))
 boat.transect$GPS_Date = sapply(strsplit(as.character(boat.transect$GPS_Date), split = " "),head,1)
 boat.transect$GPS_Date[boat.transect$filename %in% "Final_raw_data_071105"] = "2005-07-11"
 boat.obs$GPS_Date[boat.obs$filename %in% "Final_raw_data_071105"] = "2005-07-11"
+
 # add begend from transects table
 boat.transect$TRANSECT = as.character(boat.transect$TRANSECT)
 boat.transect$TRANSECT = as.numeric(str_extract(boat.transect$TRANSECT, "[0-9]+"))
@@ -754,6 +755,9 @@ boat.transect$TRANSECT[boat.transect$fn_t %in% "GPS_04-25-2006_3_2006-04-25" &
 boat.transect$fn_t[boat.transect$fn_t %in% "GPS_04-25-2006_3_2006-04-25" & 
                          boat.transect$GPS_Time %in% "10:51:02am"] = "GPS_04-25-2006_5_2006-04-25"
 boat.transect$TRANSECT[boat.transect$filename %in% "GPS_05-17-2006" & boat.transect$TRANSECT %in% "1"] = "10"
+boat.transect$SPECIES1[boat.transect$SPECIES1=="ENDCNT" & boat.transect$filename=="Final_raw_data_101905" & 
+                  boat.transect$TRANSECT=="6"] = "BEGCNT"
+
 
 #duplicates/kinda
 boat.transect[boat.transect$fn_t %in% "GPS_05-17-2006_10_2006-05-17" & 
@@ -889,12 +893,50 @@ ends.to.add = boat.obs[boat.obs$fn_t %in% ind$fn_t[ind$SPECIES1 %in% "BEGCNT"],]
   select(index, GPS_Date, GPS_Time, filename, fn_t, TRANSECT, SPECIES1, dataChange, Latitude, Longitude) %>% 
   group_by(fn_t) %>% filter(row_number()==n()) %>% mutate(SPECIES1 = "ENDCNT", index = as.numeric(index) + 0.0001,
                                                           dataChange = "Added ENDCNT")
+ends.to.add = ends.to.add[!is.na(ends.to.add$index),]
 begs.to.add = boat.obs[boat.obs$fn_t %in% ind$fn_t[ind$SPECIES1 %in% "ENDCNT"],] %>% 
   select(index, GPS_Date, GPS_Time, filename, fn_t, TRANSECT, SPECIES1, dataChange, Latitude, Longitude) %>% 
-  group_by(fn_t) %>% filter(row_number()==n()) %>% mutate(SPECIES1 = "BEGCNT", index = as.numeric(index) - 0.0001,
+  group_by(fn_t) %>% filter(row_number()==1) %>% mutate(SPECIES1 = "BEGCNT", index = as.numeric(index) - 0.0001,
                                                           dataChange = "Added BEGCNT")
 boat.obs = bind_rows(boat.obs, ends.to.add, begs.to.add) %>% arrange(index)
 rm(ends.to.add, begs.to.add, ind)
+
+# special cases where BEG doesn't have index so BEG count was last in the list, so forming an END was equal to BEG count
+y = boat.obs %>% filter(filename %in% "GPS_02-16-2006" & TRANSECT %in% 5 & SPECIES1 != "BEGCNT") %>% 
+  arrange(index) %>% filter(row_number()==n())
+y$dataChange = "estimated end point"
+y$SPECIES1 = "ENDCNT"
+y$index = y$index+0.1
+y = select(y, SPECIES1, dataChange, GPS_Time, GPS_Date, Datafile, filename, index, TRANSECT, Latitude, Longitude)
+boat.obs = bind_rows(boat.obs,y); rm(y)
+x = boat.obs %>% filter(filename %in% "GPS_02-16-2006" & TRANSECT %in% 5) %>% 
+  arrange(index) %>% filter(row_number()==1) %>% select(index)
+boat.obs$index[boat.obs$filename %in% "GPS_02-16-2006" & boat.obs$TRANSECT %in% 5 & 
+                 boat.obs$SPECIES1 == "BEGCNT"]=as.numeric(x)-0.1; rm(x)
+#
+y = boat.obs %>% filter(filename %in% "GPS_11-18-2005" & TRANSECT %in% 12 & SPECIES1 != "BEGCNT") %>% 
+  arrange(index) %>% filter(row_number()==n())
+y$dataChange = "estimated end point"
+y$SPECIES1 = "ENDCNT"
+y$index = y$index+0.1
+y = select(y, SPECIES1, dataChange, GPS_Time, GPS_Date, Datafile, filename, index, TRANSECT, Latitude, Longitude)
+boat.obs = bind_rows(boat.obs,y); rm(y)
+x = boat.obs %>% filter(filename %in% "GPS_11-18-2005" & TRANSECT %in% 12) %>% 
+  arrange(index) %>% filter(row_number()==1) %>% select(index)
+boat.obs$index[boat.obs$filename %in% "GPS_11-18-2005" & boat.obs$TRANSECT %in% 12 & 
+                 boat.obs$SPECIES1 == "BEGCNT"]=as.numeric(x)-0.1; rm(x)
+#
+y = boat.obs %>% filter(filename %in% "GPS_12-15-2005" & TRANSECT %in% 12 & SPECIES1 != "BEGCNT") %>% 
+  arrange(index) %>% filter(row_number()==n())
+y$dataChange = "estimated end point"
+y$SPECIES1 = "ENDCNT"
+y$index = y$index+0.1
+y = select(y, SPECIES1, dataChange, GPS_Time, GPS_Date, Datafile, filename, index, TRANSECT, Latitude, Longitude)
+boat.obs = bind_rows(boat.obs,y); rm(y)
+x = boat.obs %>% filter(filename %in% "GPS_12-15-2005" & TRANSECT %in% 12) %>% 
+  arrange(index) %>% filter(row_number()==1) %>% select(index)
+boat.obs$index[boat.obs$filename %in% "GPS_12-15-2005" & boat.obs$TRANSECT %in% 12 & 
+                 boat.obs$SPECIES1 == "BEGCNT"]=as.numeric(x)-0.1; rm(x)
 
 # remove not used variables, fix groupsize and number, and rename
 boat.obs$NO[is.na(boat.obs$NO)] = boat.obs$GROUPSZ[is.na(boat.obs$NO)]
@@ -911,26 +953,60 @@ colnames(boat.obs) = tolower(names(boat.obs))
 boat.track = boat.obs[boat.obs$type %in% c("BEGCNT","ENDCNT"),]
 boat.track = select(boat.track, type, filename, gps_date, gps_time, latitude, longitude, source_transect_id,datachange)
 boat.obs = boat.obs[!boat.obs$type %in% c("BEGCNT","ENDCNT"),]
-
+boat.track = mutate(boat.track, fn_t = paste(filename, source_transect_id, sep="_"))
 
 #-----------------#
 # TRANSECT
 #-----------------#
 # since there are multiple visits on one transect in one day, need to include filename
-transect_pieces = boat.track %>% select(latitude, longitude, gps_date, source_transect_id, type, filename, gps_time) %>% 
+transect_pieces = boat.track %>% 
+  select(latitude, longitude, gps_date, source_transect_id, type, filename, gps_time, fn_t) %>% 
   mutate(source_transect_id = factor(source_transect_id)) %>% 
-  group_by(source_transect_id, gps_date, filename) %>% arrange(type) %>%
+  group_by(fn_t) %>% arrange(type) %>%
   summarize(start_lon = first(longitude), start_lat = first(latitude), 
             end_lon = last(longitude), end_lat = last(latitude),
-            start_time = first(gps_time),end_time = last(gps_time)) %>% 
+            start_tm = first(gps_time),end_tm = last(gps_time)) %>% 
   ungroup %>% as.data.frame %>% 
   rowwise %>% mutate(distance =  distm(c(start_lat, start_lon), c(end_lat, end_lon), fun = distHaversine)) 
-#combine data from transect to transect pieces
-transect_pieces = mutate(transect_pieces, fn_t = paste(filename, source_transect_id, gps_date)) 
-transect_summ = boat.transect %>% select(fn_t, SPEED,WIND_SPD,SWELL_HT,COND,TIDE,WEATHER,TEMP,SEASTATE) %>% 
-  group_by(fn_t) %>% filter(row_number()==1) 
-colnames(transect_summ) = tolower(names(transect_summ))
+transect_pieces$distance = as.vector(transect_pieces$distance) #was a matrix in a cell
+transect_pieces$start_time[transect_pieces$start_time=="NULL"] = NA
+transect_pieces$end_time[transect_pieces$end_time=="NULL"] = NA
+if(any(transect_pieces$distance==0 | is.na(transect_pieces$distance))) {stop("\n
+                                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n
+                                          !!!!!!!!!!!!!!!!!!!!   STOP   !!!!!!!!!!!!!!!!!!!\n
+                                          There's a END/BEG without a corresponding BEG/END\n
+                                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")}
 
+#combine data from transect to transect pieces
+colnames(boat.transect) = tolower(names(boat.transect))
+boat.transect$fn_t = paste(boat.transect$filename, boat.transect$transect, sep="_")
+boat.transect = boat.transect %>% group_by(fn_t) %>% summarise(direction = first(direction),
+                                                               horz_prec = mean(horz_prec, na.rm=TRUE),
+                                                               gps_height = mean(gps_height, na.rm=TRUE),
+                                                               temp = mean(temp, na.rm=TRUE),
+                                                               wind_spd = mean(wind_spd, na.rm=TRUE),
+                                                               swell_ht = mean(swell_ht, na.rm=TRUE),
+                                                               condition = first(cond),
+                                                               weather = first(weather),
+                                                               seastate = first(seastate),
+                                                               gps_date = first(gps_date))
+boat.transect$horz_prec[boat.transect$horz_prec=="NaN"] = NA
+boat.transect$gps_height[boat.transect$gps_height=="NaN"] = NA
+boat.transect = left_join(transect_pieces, boat.transect, by = "fn_t")
+boat.transect$speed = 12
+rm(transect_pieces)
+boat.transect = boat.transect %>% mutate(start_dt = gps_date) %>% rename(end_dt = gps_date)
+boat.transect$transect_time_min_nb = difftime(as.POSIXct(paste(boat.transect$end_dt, boat.transect$end_tm, sep = " "), format = "%Y-%m-%d %I:%M:%S%p"), 
+                                               as.POSIXct(paste(boat.transect$start_dt, boat.transect$start_tm, sep = " "), format = "%Y-%m-%d %I:%M:%S%p"), 
+                                               units = "mins")  
+boat.transect$start_tm = sapply(strsplit(as.character(as.POSIXct(boat.transect$start_tm, format="%I:%M:%S%p", tz="EST")), " "),tail,1)
+boat.transect$end_tm = sapply(strsplit(as.character(as.POSIXct(boat.transect$end_tm, format="%I:%M:%S%p", tz="EST")), " "),tail,1)
+#--------------------------------------------------------------------------- #
+#--------------------------------------------------------------------------- #
+
+
+
+#--------------------------------------------------------------------------- #
 #--------------------------------------------------------------------------- #
 # Plane
 #----------------------------------------------------------------------------#
@@ -941,13 +1017,32 @@ plane.point.ge = select(plane.point.ge, -F1,-F2,-F3,-F4,-F5,-F6,-F7)
 plane.obs = plane.obs[!is.na(plane.obs$Latitude),]
 plane.point.ge = plane.point.ge[!is.na(plane.point.ge$Latitude),]
 
+# transects where not defined, but is defined in SPECIES1
+plane.obs$TRANSECT = as.character(plane.obs$TRANSECT)
+plane.obs$SPECIES1 = as.character(plane.obs$SPECIES1)
+plane.obs$TRANSECT[plane.obs$SPECIES1 %in% c("1n","1s","2n","2s","3n","3s","4n","4s","5n","5s","6n","6s",
+                                             "7n","7s","8n","8s","9n","9s","10n","10s","11n","11s",
+                                             "12n","12s","13n","13s","14n","14s","15n","15s","16n","16s",
+                                             "17n","17s","18n","18s","19n","19s")] = 
+  plane.obs$SPECIES1[plane.obs$SPECIES1 %in% c("1n","1s","2n","2s","3n","3s","4n","4s","5n","5s","6n","6s",
+                                               "7n","7s","8n","8s","9n","9s","10n","10s","11n","11s",
+                                               "12n","12s","13n","13s","14n","14s","15n","15s","16n","16s",
+                                               "17n","17s","18n","18s","19n","19s")]
+
 # combine point.ge and obs
-plane.point.ge = rename(plane.point.ge, NOTES = Comment)
-plane.point.ge$NOTES = as.character(plane.point.ge$NOTES)
-plane.point.ge$SPECIES1 = plane.point.ge$NOTES
-plane.point.ge$NO = 1
-plane.point.ge$NO[plane.point.ge$SPECIES1 %in% "2 porp"] = 2
-plane.point.ge$SPECIES1[plane.point.ge$SPECIES1 %in% c("2 porp","1 porp","porp")] = "UNPO"
+plane.obs$original_species_tx = paste(plane.obs$SPECIES1, plane.obs$SPECIES2, sep="; ")
+plane.point.ge = rename(plane.point.ge, original_species_tx = Comment)
+plane.point.ge$SPECIES1 = plane.point.ge$original_species_tx
+plane.point.ge = plane.point.ge[!is.na(plane.point.ge$SPECIES1),]
+plane.point.ge$original_species_tx = as.character(plane.point.ge$original_species_tx)
+plane.point.ge$SPECIES1 = as.character(plane.point.ge$SPECIES1)
+plane.point.ge$NO = NA
+plane.point.ge$obs_count_general_nb = 1
+plane.point.ge$obs_count_general_nb[plane.point.ge$SPECIES1 %in% "2 porp"] = 2
+plane.point.ge$SPECIES1[plane.point.ge$original_species_tx %in% c("2 porp","1 porp","porp")] = "UNPO"
+plane.point.ge$SPECIES1[plane.point.ge$original_species_tx %in% "seal"] = "UNSE"
+plane.point.ge$Datafile = as.character(plane.point.ge$Datafile)
+plane.obs$obs_count_general_nb = NA #fill once NO is quality controlled
 plane.obs = bind_rows(plane.obs, plane.point.ge)
 rm(plane.point.ge)
 
@@ -974,15 +1069,27 @@ plane.obs = select(plane.obs, -SPECIES2)
 
 #transect
 plane.obs$TRANSECT = as.numeric(str_extract(plane.obs$TRANSECT, "[0-9]+"))
+plane.transect$TRANSECT = as.numeric(str_extract(plane.transect$TRANSECT, "[0-9]+"))
 
 # pull transect info out
 plane.obs$index = seq.int(nrow(plane.obs))
+plane.obs$TRANSECT[plane.obs$SPECIES1 %in% c("10n","10s","11n","11s","12n","12s","13n","13s","14n",
+                                             "14s","15n","15s","16n","16s","17n","17s","18n","18s",
+                                             "19n","19s","1n","1s","2n","2s","3n","3s","4n","4s","5n",
+                                             "5s","6n","6s","7n","7s","8n","8s","9n","9s")] = 
+  as.numeric(strsplit(as.character(plane.obs$SPECIES1[plane.obs$SPECIES1 %in% c("10n","10s","11n","11s","12n",
+                                                                                "12s","13n","13s","14n","14s",
+                                                                                "15n","15s","16n","16s","17n",
+                                                                                "17s","18n","18s","19n","19s",
+                                                                                "1n","1s","2n","2s","3n","3s",
+                                                                                "4n","4s","5n","5s","6n","6s",
+                                                                                "7n","7s","8n","8s","9n","9s")]), 
+                      "[^0-9]+"))
 tmp = plane.obs[plane.obs$SPECIES1 %in% c("10n","10s","11n","11s","12n","12s","13n",
                                           "13s","14n","14s","15n","15s","16n","16s",
                                           "17n","17s","18n","18s","19n","19s","1n",
                                           "1s","2n","2s","3n","3s","4n","4s","5n",
                                           "5s","6n","6s","7n","7s","8n","8s","9n","9s"),]
-tmp$TRANSECT = as.numeric(strsplit(as.character(tmp$SPECIES1), "[^0-9]+"))
 plane.obs$SPECIES1 = as.character(plane.obs$SPECIES1)
 
 for(a in 1:(nrow(tmp)-1)) {
@@ -999,9 +1106,8 @@ for(a in 1:(nrow(tmp)-1)) {
 plane.obs$NO[tmp$index] = NA
 plane.obs$AGE[tmp$index] = NA
 plane.obs$SEX[tmp$index] = NA
-plane.obs = plane.obs[!plane.obs$index %in% tmp$index,]
-plane.obs$index = seq.int(nrow(plane.obs))
 rm(tmp)
+plane.obs$SPECIES1[plane.obs$SPECIES1 %in% c("4s","12s","14s","14n","15n","15s","7n","16s","18s","10s")] = "CNT" 
 
 # fix transects that didnt have a BEG and END
 plane.obs$filename = as.character(plane.obs$filename)
@@ -1125,3 +1231,207 @@ plane.obs = rbind(plane.obs, new)
 rm(new)
 #
 plane.obs = arrange(plane.obs, index)
+
+
+#rename
+plane.obs = rename(plane.obs, obs_count_intrans_nb = NO, spp_cd = SPECIES1, source_transect_id = TRANSECT)
+colnames(plane.obs) = tolower(names(plane.obs))
+
+## track
+plane.track = plane.obs[plane.obs$spp_cd %in% c("BEGCNT","ENDCNT", "CNT","12"),]
+
+plane.track$source_transect_id = as.character(plane.track$source_transect_id)
+plane.track$filename = as.character(plane.track$filename)
+for(a in 1:(nrow(plane.track)-1)) {
+  if(plane.track$source_transect_id[a] == plane.track$source_transect_id[a+1] & plane.track$filename[a] == plane.track$filename[a+1]) {
+      plane.track$spp_cd[a] = "BEGCNT"
+      plane.track$spp_cd[a+1] = "ENDCNT"
+  }
+}
+plane.track$spp_cd[plane.track$spp_cd == "12"] = "CNT"
+
+plane.track$spp_cd[plane.track$gps_time %in% "10:58:37am" & plane.track$datafile %in% "R103109A.cor"] = "BEGCNT"     
+plane.track$spp_cd[plane.track$gps_time %in% "11:32:12pm" & plane.track$datafile %in% "R103109A.cor"] = "BEGCNT"       
+plane.track$spp_cd[plane.track$gps_time %in% "11:48:17am" & plane.track$datafile %in% "R101310A.SSF"] = "BEGCNT"         
+plane.track$spp_cd[plane.track$gps_time %in% "12:01:37pm" & plane.track$datafile %in% "R101310A.SSF"] = "BEGCNT"         
+plane.track$spp_cd[plane.track$gps_time %in% "12:14:52pm" & plane.track$datafile %in% "R101310A.SSF"] = "BEGCNT"         
+plane.track$spp_cd[plane.track$gps_time %in% "12:24:12pm" & plane.track$datafile %in% "R101310A.SSF"] = "BEGCNT"         
+plane.track$spp_cd[plane.track$gps_time %in% "12:41:17pm" & plane.track$datafile %in% "R101310A.SSF"] = "BEGCNT"         
+plane.track$spp_cd[plane.track$gps_time %in% "12:50:02pm" & plane.track$datafile %in% "R101310A.SSF"] = "BEGCNT"  
+
+
+# check if there is information is the transect table thats not in the track one (BEG and ENDs)
+plane.track$fn_t = paste(plane.track$filename, plane.track$source_transect_id, sep= "_")
+plane.transect$fn_t = paste(plane.transect$filename, plane.transect$TRANSECT, sep= "_")
+to.add = filter(plane.transect, !plane.transect$fn_t %in% plane.track$fn_t) %>%
+  select(TRANSECT,GPS_Date,GPS_Time,Datafile,Horz_Prec,Latitude,Longitude,filename,GPS_Height,fn_t) %>% 
+  rename(source_transect_id = TRANSECT) %>% mutate(spp_cd = NA) %>% filter(!is.na(source_transect_id)) %>%
+  mutate(source_transect_id = as.character(source_transect_id))
+# add beg/end
+for(a in 1:(nrow(to.add)-1)) {
+  if(to.add$source_transect_id[a] == to.add$source_transect_id[a+1] & to.add$filename[a] == to.add$filename[a+1]) {
+    to.add$spp_cd[a] = "BEGCNT"
+    to.add$spp_cd[a+1] = "ENDCNT"
+  }
+}
+# add index
+x = plane.obs %>% select(filename, source_transect_id, index) %>% filter(filename == "Aerial_GPS_03-30-2006") %>% 
+  group_by(source_transect_id) %>% filter(row_number()==1) %>% 
+  mutate(index = index-0.01,spp_cd="BEGCNT", fn_t_sc = paste(filename, source_transect_id, spp_cd, sep="_")) %>%
+  ungroup
+y = plane.obs %>% select(filename, source_transect_id, index) %>% filter(filename == "Aerial_GPS_03-30-2006") %>% 
+  group_by(source_transect_id) %>% filter(row_number()==n()) %>% 
+  mutate(index = index+0.01,spp_cd="ENDCNT", fn_t_sc = paste(filename, source_transect_id, spp_cd, sep="_")) %>%
+  ungroup
+xy = bind_rows(x,y) %>% arrange(index); rm(x,y)
+to.add = to.add %>% mutate(fn_t_sc = paste(fn_t,spp_cd, sep="_")) 
+to.add = left_join(to.add, select(xy, fn_t_sc, index), by="fn_t_sc") %>% select(-fn_t_sc)
+colnames(to.add) = tolower(names(to.add))
+plane.track = bind_rows(plane.track, to.add); rm(to.add,xy)
+
+# only has one, need to add BEG or END (corresponding point is not in transect)
+#
+plane.track$source_transect_id = as.numeric(plane.track$source_transect_id)
+colnames(plane.track) = tolower(names(plane.track))
+#
+y = plane.track[plane.track$fn_t == "Final_raw_data_101304_18",]
+y$spp_cd = "ENDCNT"
+y$gps_time = "12:54:57pm"
+y$latitude = 40.69547
+y$longitude = -72.95007
+y$datachange = "added estimated endpoint"
+y$horz_prec = NA
+plane.track$datachange = NA
+y$index = plane.track$index[plane.track$fn_t=="Final_raw_data_101304_19" & plane.track$spp_cd=="BEGCNT"]-0.1
+plane.track = bind_rows(plane.track,y)
+#
+y = plane.track[plane.track$fn_t == "Final_aerial_data_103105_14" & plane.track$spp_cd=="BEGCNT",]
+y$spp_cd = "ENDCNT"
+y$datachange = "added estimated endpoint"
+y$source_transect_id = 13
+y$fn_t = "Final_aerial_data_103105_13"
+y$horz_prec = NA
+y$index = plane.track$index[plane.track$fn_t=="Final_aerial_data_103105_14" & plane.track$spp_cd=="BEGCNT"]-0.1
+plane.track = bind_rows(plane.track,y)
+#
+y = plane.track[plane.track$fn_t == "Final_aerial_data_103105_19" & plane.track$spp_cd=="BEGCNT",]
+y$spp_cd = "ENDCNT"
+y$datachange = "added estimated endpoint"
+y$horz_prec = NA
+y$gps_time = "11:40:38pm"
+y$latitude = 40.61377
+y$longitude = -72.91422
+y$source_transect_id = 19
+y$index = last(plane.obs$index[plane.obs$filename=="Final_aerial_data_103105" & plane.obs$source_transect_id %in% "19"])+0.1
+plane.track = bind_rows(plane.track,y)
+#
+y = plane.track[plane.track$fn_t == "Final_raw_data_101304_5" & plane.track$spp_cd=="BEGCNT",]
+y$spp_cd = "ENDCNT"
+y$datachange = "added estimated endpoint"
+y$source_transect_id = 4
+y$fn_t = "Final_raw_data_101304_4"
+y$horz_prec = NA
+y$gps_height = NA
+y$index = plane.track$index[plane.track$fn_t=="Final_raw_data_101304_5" & plane.track$spp_cd=="BEGCNT"]-0.1
+plane.track = bind_rows(plane.track,y)
+#
+y = plane.track[plane.track$fn_t == "Final_raw_data_101304_8" & plane.track$spp_cd=="BEGCNT",]
+y$spp_cd = "ENDCNT"
+y$datachange = "added estimated endpoint"
+y$source_transect_id = 7
+y$fn_t = "Final_raw_data_101304_7"
+y$horz_prec = NA
+y$gps_height = NA
+y$index = plane.track$index[plane.track$fn_t=="Final_raw_data_101304_8" & plane.track$spp_cd=="BEGCNT"]-0.1
+plane.track = bind_rows(plane.track,y)
+#
+y = plane.track[plane.track$fn_t == "Final_raw_data_101304_13" & plane.track$spp_cd=="BEGCNT",]
+y$spp_cd = "ENDCNT"
+y$datachange = "added estimated endpoint"
+y$source_transect_id = 12
+y$fn_t = "Final_raw_data_101304_12"
+y$horz_prec = NA
+y$gps_height = NA
+y$index = plane.track$index[plane.track$fn_t=="Final_raw_data_101304_13" & plane.track$spp_cd=="BEGCNT"]-0.1
+plane.track = bind_rows(plane.track,y)
+#
+y = plane.track[plane.track$fn_t == "Final_raw_data_101304_17" & plane.track$spp_cd=="BEGCNT",]
+y$spp_cd = "ENDCNT"
+y$datachange = "added estimated endpoint"
+y$source_transect_id = 16
+y$fn_t = "Final_raw_data_101304_16"
+y$horz_prec = NA
+y$gps_height = NA
+y$index = plane.track$index[plane.track$fn_t=="Final_raw_data_101304_17" & plane.track$spp_cd=="BEGCNT"]-0.1
+plane.track = bind_rows(plane.track,y)
+# 
+y = plane.track[plane.track$fn_t == "Final_raw_data_101304_11" & plane.track$spp_cd=="BEGCNT",]
+y$spp_cd = "ENDCNT"
+y$datachange = "added estimated endpoint"
+y$source_transect_id = 10
+y$fn_t = "Final_raw_data_101304_10"
+y$horz_prec = NA
+y$gps_height = NA
+y$index = plane.track$index[plane.track$fn_t=="Final_raw_data_101304_11" & plane.track$spp_cd=="BEGCNT"]-0.1
+plane.track = bind_rows(plane.track,y)
+#
+rm(y)
+
+# fill in missing transects
+plane.track = arrange(plane.track, index)
+plane.obs = plane.obs[!plane.obs$spp_cd %in% c("BEGCNT","ENDCNT", "CNT","12"),] #remove old track records
+plane.obs = bind_rows(plane.obs, plane.track) %>% arrange(index) #add fixed track records
+plane.obs$source_transect_id[!is.na(plane.obs$obs_count_general_nb)] = 0 #offline counts
+plane.obs$source_transect_id = na.locf(plane.obs$source_transect_id)
+#-----------------#
+
+
+#-----------------#
+# TRACK
+#-----------------#
+plane.track = plane.track %>% rename(point_type = spp_cd) %>% 
+  select(-obs_count_intrans_nb,-age,-sex,-zone,-groupsize,-original_species_tx,
+         -obs_count_general_nb,-dist_shore,-behavior,-fldir,-fl_ht,-depth_m,-data_dicti)
+plane.track$gps_time[plane.track$gps_time=="1126:32pm"]= "11:26:32pm"
+#-----------------#
+
+
+#-----------------#
+# TRANSECT
+#-----------------#
+# since there are multiple visits on one transect in one day, need to include filename
+transect_pieces = plane.track %>% select(latitude, longitude, gps_date, 
+                                        source_transect_id, point_type, filename, gps_time) %>% 
+  mutate(source_transect_id = factor(source_transect_id)) %>% 
+  group_by(gps_date, filename, source_transect_id) %>% arrange(point_type) %>%
+  summarize(start_lon = first(longitude), start_lat = first(latitude), 
+            end_lon = last(longitude), end_lat = last(latitude),
+            start_time = first(gps_time),end_time = last(gps_time)) %>% ungroup %>% as.data.frame()
+  
+distances = transect_pieces %>% as.data.frame() %>% rowwise %>% 
+  mutate(distance =  distm(cbind(start_lat, start_lon), cbind(end_lat, end_lon), fun = distHaversine)) %>% 
+  select(distance) %>% ungroup()
+transect_pieces$distance = as.vector(distances$distance)
+if(any(transect_pieces$distance==0)) {print("\n
+                                            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n
+                                            !!!!!!!!!!!!!!!!!!!!      STOP      !!!!!!!!!!!!!!!\n
+                                            There's a END/BEG without a corresponding BEG/END\n
+                                            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")}
+
+#combine data from transect to transect pieces
+colnames(plane.transect) = tolower(names(plane.transect))
+transect_pieces = mutate(transect_pieces, fn_t = paste(filename, source_transect_id, sep="_"))
+plane.transect = plane.transect %>% group_by(fn_t) %>% summarise(horz_prec = mean(horz_prec, na.rm=TRUE),
+                                                                 gps_height = mean(gps_height, na.rm=TRUE))
+plane.transect = left_join(transect_pieces, plane.transect, by = "fn_t")
+rm(transect_pieces)
+plane.transect$gps_height[plane.transect$gps_height=="NaN"] = NA
+plane.transect$speed = 12
+plane.transect = plane.transect %>% mutate(start_dt = gps_date) %>% rename(end_dt = gps_date, start_tm = start_time, end_tm = end_time)
+plane.transect$transect_time_min_nb = difftime(as.POSIXct(paste(plane.transect$end_dt, plane.transect$end_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
+                                             as.POSIXct(paste(plane.transect$start_dt, plane.transect$start_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
+                                             units = "mins")  
+plane.transect$start_tm = sapply(strsplit(as.character(as.POSIXct(plane.transect$start_tm, format="%I:%M:%S%p", tz="EST")), " "),tail,1)
+plane.transect$end_tm = sapply(strsplit(as.character(as.POSIXct(plane.transect$end_tm, format="%I:%M:%S%p", tz="EST")), " "),tail,1)
+# -------------- #
+
