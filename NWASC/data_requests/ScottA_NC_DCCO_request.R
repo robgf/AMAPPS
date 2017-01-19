@@ -48,6 +48,8 @@ transect_points = readOGR(dsn = fgdb,layer = "transect_points")
 obs = as.data.frame(obs)
 obs = obs[obs$spp_cd == "DCCO",]
 obs = rename(obs, longitude = coords.x1, latitude = coords.x2)
+obs$longitude[obs$longitude==0] = NA
+obs$latitude[obs$latitude==0] = NA
 
 ## make data.frame
 # points has different datasets in it than lines
