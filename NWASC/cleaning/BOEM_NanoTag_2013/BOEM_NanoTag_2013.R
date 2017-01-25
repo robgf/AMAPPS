@@ -11,6 +11,7 @@ require(RODBC) # odbcConnect
 require(tidyverse) # read and bind csvs
 require(rgdal) # read shapefiles
 require(foreign) # read dbf
+require(dplyr)
 # -------------------------------- #
 
 
@@ -124,5 +125,5 @@ obs$spp[obs$spp %in% "BOATS"] = ""
 #---------------------#
 # change names to lowercase
 track = rename(track, point_type = type)
-track$type[track$point_type %in% "GPS  "] = "WAYPNT"
+track$type[track$point_type %in% "GPS"] = "WAYPNT"
 #---------------------#
