@@ -151,7 +151,7 @@ boat.obs$SPECIES1[which(boat.obs$SPECIES1 == "blsc susc")] = "SUSC"
 boat.obs$SPECIES1 = as.character(boat.obs$SPECIES1)
 boat.obs$SPECIES1[boat.obs$NOTES == "ship was com. fishing  vessel/birds following"] = "BOCF"
 boat.obs$SPECIES1[boat.obs$NOTES == "pomarine jaeger"] = "POJA"
-unknown = boat.obs[is.na(boat.obs$SPECIES1),]
+#unknown = boat.obs[is.na(boat.obs$SPECIES1),]
 boat.obs = boat.obs[!is.na(boat.obs$SPECIES1),]
 
 
@@ -938,8 +938,6 @@ x = boat.obs %>% filter(filename %in% "GPS_12-15-2005" & TRANSECT %in% 12) %>%
 boat.obs$index[boat.obs$filename %in% "GPS_12-15-2005" & boat.obs$TRANSECT %in% 12 & 
                  boat.obs$SPECIES1 == "BEGCNT"]=as.numeric(x)-0.1; rm(x)
 
-
-
 # only have one datapoint (or multiple at the same location) and no effort info, distance will have to stay 0
 #"Final_raw_Spring_data_04b_2_2004-03-29"   
 #"Final_raw_Spring_data_04b_2_2004-04-07"    
@@ -962,12 +960,44 @@ boat.obs$index[boat.obs$filename %in% "GPS_12-15-2005" & boat.obs$TRANSECT %in% 
 #"Final_raw_Spring_data_04b_v3_6_2004-04-20" 
 #"Final_raw_Spring_data_04b_v3_7_2004-03-29"
 
+boat.obs$GPS_Date[boat.obs$filename == "Final_raw_data_020705"] = "2005-02-07"
+
 # remove not used variables, fix groupsize and number, and rename
 boat.obs$NO[is.na(boat.obs$NO)] = boat.obs$GROUPSZ[is.na(boat.obs$NO)]
 boat.obs = select(boat.obs, -SPECIES2, -fn_t, -fn_t_c, -GROUPSZ, -ZONE, -NOTES)
 boat.obs = rename(boat.obs, type = SPECIES1, count = NO, source_transect_id=TRANSECT)
 colnames(boat.obs) = tolower(names(boat.obs))
-boat.obs$gps_date[boat.obs$filename == "Final_raw_data_020705"] = "2005-02-07"
+boat.obs = boat.obs %>% mutate(datafile = paste("datafile=",datafile, " filename=",filename, sep="")) %>% 
+  select(-filename)
+boat.obs$gps_date[boat.obs$datafile=="datafile=R090706A.cor filename=Final_raw_data_090705"]="2005-09-07"
+#off by a day
+boat.obs$gps_date[boat.obs$gps_date=="2004-03-29" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b" | 
+                    boat.obs$gps_date=="2004-03-29" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v2" | 
+                    boat.obs$gps_date=="2004-03-29" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v3"]="2004-03-30"
+boat.obs$gps_date[boat.obs$gps_date=="2004-04-07" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b" | 
+                    boat.obs$gps_date=="2004-04-07" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v2" | 
+                    boat.obs$gps_date=="2004-04-07" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v3"]="2004-04-08"
+boat.obs$gps_date[boat.obs$gps_date=="2004-04-15" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b" | 
+                    boat.obs$gps_date=="2004-04-15" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v2" | 
+                    boat.obs$gps_date=="2004-04-15" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v3"]="2004-04-16"
+boat.obs$gps_date[boat.obs$gps_date=="2004-04-20" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b" | 
+                    boat.obs$gps_date=="2004-04-20" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v2" | 
+                    boat.obs$gps_date=="2004-04-20" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v3"]="2004-04-21"
+boat.obs$gps_date[boat.obs$gps_date=="2004-04-27" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b" | 
+                    boat.obs$gps_date=="2004-04-27" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v2" | 
+                    boat.obs$gps_date=="2004-04-27" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v3"]="2004-04-28"
+boat.obs$gps_date[boat.obs$gps_date=="2004-05-05" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b" | 
+                    boat.obs$gps_date=="2004-05-05" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v2" | 
+                    boat.obs$gps_date=="2004-05-05" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v3"]="2004-05-06"
+boat.obs$gps_date[boat.obs$gps_date=="2004-05-12" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b" | 
+                    boat.obs$gps_date=="2004-05-12" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v2" | 
+                    boat.obs$gps_date=="2004-05-12" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v3"]="2004-05-13"
+boat.obs$gps_date[boat.obs$gps_date=="2004-05-17" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b" | 
+                    boat.obs$gps_date=="2004-05-17" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v2" | 
+                    boat.obs$gps_date=="2004-05-17" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v3"]="2004-05-17"
+boat.obs$gps_date[boat.obs$gps_date=="2004-05-26" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b" | 
+                    boat.obs$gps_date=="2004-05-26" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v2" | 
+                    boat.obs$gps_date=="2004-05-26" & boat.obs$datafile=="datafile=NA filename=Final_raw_Spring_data_04b_v3"]="2004-05-27"
 #-----------------#
 
 
@@ -976,10 +1006,8 @@ boat.obs$gps_date[boat.obs$filename == "Final_raw_data_020705"] = "2005-02-07"
 #-----------------#
 # pull out BEG and ENDS from obs
 boat.track = boat.obs[boat.obs$type %in% c("BEGCNT","ENDCNT"),]
-boat.track = select(boat.track, type, filename, gps_date, gps_time, latitude, longitude, source_transect_id,datachange)
+boat.track = select(boat.track, type, datafile, gps_date, gps_time, latitude, longitude, source_transect_id, datachange)
 boat.obs = boat.obs[!boat.obs$type %in% c("BEGCNT","ENDCNT"),]
-boat.track = mutate(boat.track, fn_t = paste(filename, source_transect_id, sep="_"))
-boat.track$gps_date[boat.track$filename == "Final_raw_data_020705"] = "2005-02-07"
 #-----------------#
 
 
@@ -988,24 +1016,26 @@ boat.track$gps_date[boat.track$filename == "Final_raw_data_020705"] = "2005-02-0
 #-----------------#
 # since there are multiple visits on one transect in one day, need to include filename
 transect_pieces = boat.track %>% 
-  select(latitude, longitude, gps_date, source_transect_id, type, filename, gps_time, fn_t) %>% 
-  mutate(source_transect_id = factor(source_transect_id), fn_t = paste(fn_t, gps_date,sep="_")) %>% 
+  select(latitude, longitude, gps_date, source_transect_id, type, datafile, gps_time) %>% 
+  mutate(source_transect_id = factor(source_transect_id), 
+         fn_t = paste(datafile, source_transect_id, gps_date, sep = "_")) %>% 
   group_by(fn_t) %>% arrange(type) %>%
   summarize(start_lon = first(longitude), start_lat = first(latitude), 
             end_lon = last(longitude), end_lat = last(latitude),
             start_tm = first(gps_time),end_tm = last(gps_time),
             source_transect_id=first(source_transect_id),
-            start_dt = last(gps_date), end_dt=last(gps_date)) %>% 
+            start_dt = last(gps_date), end_dt=last(gps_date),
+            datafile = first(datafile)) %>% 
   ungroup %>% as.data.frame %>% 
   rowwise %>% mutate(distance =  distm(c(start_lat, start_lon), c(end_lat, end_lon), fun = distHaversine)) 
 transect_pieces$distance = as.vector(transect_pieces$distance) #was a matrix in a cell
 transect_pieces$start_tm[transect_pieces$start_tm=="NULL"] = NA
 transect_pieces$end_tm[transect_pieces$end_tm=="NULL"] = NA
-if(any(transect_pieces$distance==0 | is.na(transect_pieces$distance))) {stop("\n
-                                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n
-                                          !!!!!!!!!!!!!!!!!!!!   STOP   !!!!!!!!!!!!!!!!!!!\n
-                                          There's a END/BEG without a corresponding BEG/END\n
-                                          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")}
+if(any(is.na(transect_pieces$distance))) {stop("\n
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n
+        !!!!!!!!!!!!!!!!!!!!   STOP   !!!!!!!!!!!!!!!!!!!\n
+        There's a END/BEG without a corresponding BEG/END\n
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")}
 
 #combine data from transect to transect pieces
 colnames(boat.transect) = tolower(names(boat.transect))
@@ -1411,6 +1441,19 @@ plane.obs = plane.obs[!plane.obs$spp_cd %in% c("BEGCNT","ENDCNT", "CNT","12"),] 
 plane.obs = bind_rows(plane.obs, plane.track) %>% arrange(index) #add fixed track records
 plane.obs$source_transect_id[!is.na(plane.obs$obs_count_general_nb)] = 0 #offline counts
 plane.obs$source_transect_id = na.locf(plane.obs$source_transect_id)
+
+# once all errors are fixed remove track info from ons
+plane.obs = plane.obs[!plane.obs$spp_cd %in% c("BEGCNT","ENDCNT", "CNT","12"),] #remove old track records
+
+#rename
+plane.obs = plane.obs %>% mutate(datafile = paste("datafile=",datafile, " ", "filename=",filename, sep="")) %>% 
+  select(-filename)
+
+# general obs count
+plane.obs$obs_count_intrans_nb[is.na(plane.obs$obs_count_intrans_nb)] = plane.obs$groupsize[is.na(plane.obs$obs_count_intrans_nb)]
+plane.obs$obs_count_general_nb[is.na(plane.obs$obs_count_general_nb)] = plane.obs$obs_count_intrans_nb[is.na(plane.obs$obs_count_general_nb)]
+plane.obs = select(plane.obs, -groupsize)
+plane.obs$source_transect_id[plane.obs$source_transect_id==0] = NA
 #-----------------#
 
 
@@ -1421,34 +1464,40 @@ plane.track = plane.track %>% rename(point_type = spp_cd) %>%
   select(-obs_count_intrans_nb,-age,-sex,-zone,-groupsize,-original_species_tx,
          -obs_count_general_nb,-dist_shore,-behavior,-fldir,-fl_ht,-depth_m,-data_dicti)
 plane.track$gps_time[plane.track$gps_time=="1126:32pm"]= "11:26:32pm"
+plane.track = plane.track %>% mutate(datafile = paste("datafile=",datafile, " ", "filename=",filename, sep="")) %>% 
+  select(-filename)
 #-----------------#
 
 
 #-----------------#
 # TRANSECT
 #-----------------#
-# since there are multiple visits on one transect in one day, need to include filename
-transect_pieces = plane.track %>% select(latitude, longitude, gps_date, 
-                                        source_transect_id, point_type, filename, gps_time) %>% 
-  mutate(source_transect_id = factor(source_transect_id)) %>% 
-  group_by(gps_date, filename, source_transect_id) %>% arrange(point_type) %>%
+# since there are multiple visits on one transect in one day, need to include datafile/filename
+transect_pieces = plane.track %>% select(latitude, longitude, gps_date,source_transect_id, 
+                                         point_type, gps_time, gps_date, datafile) %>% 
+  mutate(source_transect_id = factor(source_transect_id), 
+         fn_t = paste(datafile, source_transect_id, gps_date, sep="_")) %>% 
+  group_by(fn_t) %>% arrange(point_type) %>%
   summarize(start_lon = first(longitude), start_lat = first(latitude), 
             end_lon = last(longitude), end_lat = last(latitude),
-            start_tm = first(gps_time),end_tm = last(gps_time)) %>% ungroup %>% as.data.frame()
+            start_tm = first(gps_time),end_tm = last(gps_time),
+            datafile = first(datafile), gps_date = first(gps_date),
+            source_transect_id= first(source_transect_id)) %>% ungroup %>% as.data.frame()
   
 distances = transect_pieces %>% as.data.frame() %>% rowwise %>% 
   mutate(distance =  distm(cbind(start_lat, start_lon), cbind(end_lat, end_lon), fun = distHaversine)) %>% 
   select(distance) %>% ungroup()
-transect_pieces$distance = as.vector(distances$distance)
+transect_pieces$distance = as.vector(distances$distance); rm(distances)
 if(any(transect_pieces$distance==0)) {print("\n
-                                            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n
-                                            !!!!!!!!!!!!!!!!!!!!      STOP      !!!!!!!!!!!!!!!\n
-                                            There's a END/BEG without a corresponding BEG/END\n
-                                            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")}
+                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n
+                     !!!!!!!!!!!!!!!!!!!!      STOP      !!!!!!!!!!!!!!!\n
+                     There's a END/BEG without a corresponding BEG/END\n
+                     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")}
 
 #combine data from transect to transect pieces
 colnames(plane.transect) = tolower(names(plane.transect))
-transect_pieces = mutate(transect_pieces, fn_t = paste(filename, source_transect_id, sep="_"))
+plane.transect = plane.transect %>% mutate(datafile = paste("datafile=", datafile, " filename=", filename, sep = ""), 
+                                           fn_t = paste(datafile, transect, gps_date)) %>% select(-filename)
 plane.transect = plane.transect %>% group_by(fn_t) %>% summarise(horz_prec = mean(horz_prec, na.rm=TRUE),
                                                                  gps_height = mean(gps_height, na.rm=TRUE))
 plane.transect = left_join(transect_pieces, plane.transect, by = "fn_t")
@@ -1461,5 +1510,6 @@ plane.transect$transect_time_min_nb = difftime(as.POSIXct(paste(plane.transect$e
                                              units = "mins")  
 plane.transect$start_tm = sapply(strsplit(as.character(as.POSIXct(plane.transect$start_tm, format="%I:%M:%S%p", tz="EST")), " "),tail,1)
 plane.transect$end_tm = sapply(strsplit(as.character(as.POSIXct(plane.transect$end_tm, format="%I:%M:%S%p", tz="EST")), " "),tail,1)
+plane.transect = plane.transect %>% arrange(start_dt, start_tm)
 # -------------- #
 
