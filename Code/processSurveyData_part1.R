@@ -169,18 +169,43 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   # STEP 8: COMBINE OBSERVATION FILES & TRACK FILES, OUTPUT EDITED
   #         TRACK FILES CONTAINING ONLY SURVEY SEGMENTS (WITH OBSERVATIONS)
   # ---------------------------------------------------------------------------- #
+  alt.list = names(obs)[!names(obs) %in% names(track)]
+  
+  if(length(alt.list)>0) {
+    if(any(substr(alt.list, 10, 10) %in% "l")) { 
+      cat("\
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\
+          !!!!!!!!! THERE IS A PILOT FILE MISSING !!!!!!!!!!\
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
+      } else {
+        alt.list = gsub("_rf_","_lf_",alt.list)
+        alt.tracks = track[names(track) %in% alt.list]
+        alt.tracks = do.call(rbind.data.frame,alt.tracks)
+        alt.tracks$key = gsub("_lf_","_rf_",alt.tracks$key)
+        alt.tracks$seat = "rf"
+    
+        track = do.call(rbind.data.frame, track)
+        obs = do.call(rbind.data.frame, obs)
+        obstrack = bind_rows(obs, track, alt.tracks) %>% arrange(key, sec)}
+    } else {
+      track = do.call(rbind.data.frame, track)
+      obs = do.call(rbind.data.frame, obs)
+      obstrack = bind_rows(obs, track) %>% arrange(key, sec)}
+  
   # alt is the alternate track to use if there isn't one supplied, like use lf if rf track not available
-  obstrack <- lapply(setNames(names(obs), names(obs)), function(x) {
-    alt <- names(track)[sapply(strsplit(names(track), "_"), 
-                               function(y) all(y[-2] == strsplit(x, "_")[[1]][-2]))]
-    combineObsTrack(obs[[x]], track[[x]], track[[alt[alt != x][1]]])
-  })
-  obstrack <- do.call(rbind.data.frame, obstrack)
+  # this took too long -> rewrote but leaving in case of error with next data set
+  #obstrack <- lapply(setNames(names(obs), names(obs)), function(x) {
+  #  alt <- names(track)[sapply(strsplit(names(track), "_"), 
+  #                             function(y) all(y[-2] == strsplit(x, "_")[[1]][-2]))]
+  #  combineObsTrack(obs[[x]], track[[x]], track[[alt[alt != x][1]]])
+  #})
+  #obstrack <- do.call(rbind.data.frame, obstrack)
+  
   obstrack <- obstrack[order(obstrack$crew, obstrack$seat, obstrack$year, obstrack$month, 
                              obstrack$day, obstrack$sec, obstrack$index), ]
   row.names(obstrack) <- NULL
   obstrack$ID <- as.numeric(row.names(obstrack))
-  rm(obs,track,trackfiles,obsfiles)
+  rm(obs, track, trackfiles, obsfiles, alt.tracks)
 
   # This file is for obvious track errors that should not be included in GIS file
   # or transects where no observations occurred but only one observer recoreded the BEG and END
@@ -200,25 +225,15 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   if (proj4string(trans) != "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0") {
     trans <- spTransform(trans, CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
   }
-  #if (all(obstrack$year == 2010 & obstrack$month == 8)) {
-  #  tmp <- (trans$transLat <= 2821 & trans$transLat %% 5 == 1) | 
-  #    (trans$transLat > 2821 & trans$transLat %% 5 != 1)
-  #  trans <- trans[!tmp, ]
-  #} else if ((all(obstrack$year %in% 2011:2012) & any(obstrack$month == 2)) | 
-  #             (all(obstrack$year == 2012 & obstrack$month == 3 & obstrack$day %in% 6:7))) {
-  #  tmp <- trans$transLat %% 5 == 0
-  #  trans <- trans[!tmp, ]
-  #} else {
-  #  tmp <- trans$transLat %% 5 != 1
-  #  trans <- trans[!tmp, ]
-  #}
-  
-  
-  ## to cut down on time, define which transect the point is on
+
+  ## define which transect the point is on
   obstrack$transect = na.locf(obstrack$transect)
-  
+
   # CALCULATE DISTANCE FROM EACH POINT TO MASTER TRANSECT FILE
   # THIS PROCESS EMPLOYS PARALLEL COMPUTING TO DECREASE PROCESSING TIME
+  
+  # find closest point to line (where data would be the bird data without transect info)
+  obstrack = obstrack[,c("lat", "long", "transect", colnames(obstrack)[!colnames(obstrack) %in% c("lat", "long", "transect")])]
   strt<-Sys.time(); 
   cl <- makeCluster(as.numeric(detectCores()))
   clusterExport(cl, "trans", envir = environment())
@@ -232,7 +247,7 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
                                  return(out)
                                })))
     
-  d <- parRapply(cl, obstrack, function(x) subFunc(x[1],x[2],x[13]))#x[27]))
+  d <- parRapply(cl, obstrack, function(x) subFunc(x[1],x[2],x[3]))
   stopCluster(cl)
   d <- matrix(d, ncol = 5, byrow = TRUE) # distance(m), long, lat, code
   print(Sys.time()-strt)
