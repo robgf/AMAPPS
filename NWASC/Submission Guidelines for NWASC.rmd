@@ -12,7 +12,7 @@
     *   vi. Please list the survey method: Christmas bird count, bycatch, continuous time strip, discrete time horizon, discrete time strip, general observation, or targeted species survey.  
     *   vii. Please indicate whether the survey was derived effort, an original general observation, or original transect.  
 
-2) If species codes were used, please include documentation describing the codes. For example, a separate column or spreadsheet defining COTE means common tern.  If you would like a list of our species codes we can supply one. We do accept observations for other marine fauna other than birds and boats.   
+2) If species codes were used, please include documentation describing the codes. For example, a separate column or spreadsheet defining COTE means common tern.  [ITIS](https://www.itis.gov/) codes are preferred. If you would like a list of our species codes we can supply one. We do accept observations for other marine fauna other than birds and boats.   
 
 3) Please only include one species per record (or row). If one record contains multiple species, break it into multiple records (e.g. break a record such as 14 birds 50% COTE/ 50% ROTE into two records of 7 COTE, 7 ROTE). If a flock is defined as 8 MIXED for the species and the notes/comments specify 5 HEGU, 2 NOGA, and 1 GBBG then break this into three separate records.   
   
