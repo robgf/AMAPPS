@@ -65,7 +65,7 @@ track18 = read.dbf(file.path(track.dir, "Track18Aug13.dbf"), as.is=FALSE)
 track04$filename = "Track04Sep13"
 track06$filename = "Track06Sep13"
 track18$filename = "Track18Aug13"
-vars = c("Latitude", "Longitude", "altitude","time_", "filename", "ltime")
+# pull the data we need and combine files
 track2 = bind_rows(select(track04, Latitude, Longitude, altitude, time_, filename, ltime), 
                    select(track06, Latitude, Longitude, altitude, time_, filename, ltime), 
                    select(track18, Latitude, Longitude, altitude, time_, filename, ltime))
@@ -116,7 +116,7 @@ obs$spp[obs$spp %in% "STTE"] = ""
 obs$spp[obs$spp %in% "UNTU"] = "" 
 obs$spp[obs$spp %in% "START"] = "BEGCNT"
 obs$spp[obs$spp %in% "END"] = "ENDCNT"
-obs$spp[obs$spp %in% "BOATS"] = ""  
+obs$spp[obs$spp %in% "BOATS"] = "BOAT"  
 #---------------------#
 
 
