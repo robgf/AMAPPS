@@ -279,7 +279,7 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
                                  out = c(ab, b[ab[4]]) #b[ab[4]] grabs which transect was the closest one returned
                                  return(out)})))
   
-  d <- parRapply(cl, obstrack[obstrack$flag1==1,], function(x) subFunc(x[1],x[2],x[13]))
+  d <- parRapply(cl, obstrack[obstrack$flag1==1,], function(x) subFunc(x[1],x[2],x[3]))
   stopCluster(cl)
   d <- matrix(d, ncol = 5, byrow = TRUE) # distance(m), long, lat, code
   print(Sys.time()-strt)
@@ -411,7 +411,7 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   coordinates(geodat) <- ~ long + lat
   proj4string(geodat) <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
   writeOGR(geodat, dsn = file.path(dir.out, "temp_shapefiles"), 
-           layer = "temp_obsTrack_09_2013", driver = "ESRI Shapefile", morphToESRI = TRUE)
+           layer = "temp_obsTrack_10_2014", driver = "ESRI Shapefile", morphToESRI = TRUE)
   
   # READ IN GENERIC GISeditObsTrack.py FILE, CHANGE NECESSARY DIRECTORIES, & SAVE 
   # NEW .py FILE
