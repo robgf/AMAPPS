@@ -195,3 +195,5 @@ obs$type=as.vector(obs$type)
 obs %>% filter(type %in% c("BEGCNT","ENDCNT")) %>% select(index, transect, seat) %>% 
   group_by(seat, transect) %>% summarise(num = n()) %>% filter((num %% 2) != 0)
 
+# change transect 0 
+obs$transect[obs$transect==0]=NA
