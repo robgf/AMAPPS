@@ -35,9 +35,7 @@ dir.out <- paste(gsub("datasets_received", "data_import/in_progress", dir), surv
 #---------------------#
 # load data 
 #---------------------#
-db = odbcConnectExcel2007(file.path(dir.in, "ecomon_feb_2013_edit_TPW.xls")) 
-obs = sqlFetch(db, "ecomon_feb_2013_edit_TPW")
-odbcClose(db)
+obs = read.csv(file.path(dir.in, "ecomon_feb2013_corrected_1_30_2017_TPW.csv"))
 #---------------------#
 
 
@@ -55,17 +53,28 @@ obs = mutate(obs, date_time = as.POSIXct(paste(paste(YYYY,MM1,DD,sep="/")," ", p
 # break apart obs and track
 #---------------------#  
 obs = rename(obs, source_transect_id = Transect) 
+colnames(obs) = tolower(names(obs))
+obs = obs %>% mutate(comments_tx = paste(comment_1, comment_2, sep = "; ")) %>% 
+  select(-comment_1, -comment_2)
+obs$comments_tx[obs$comments_tx %in% "NA; NA"] = NA
+obs$datafile = "ecomon_feb2013_corrected_1_30_2017_TPW.csv"
 
-track = obs %>% filter(Type %in% "GPS") %>% select(-Type, -F28, -Spp) %>% mutate(type = "WAYPNT")
-obs = obs %>% filter(Type %in% "USER") %>% select(-Type, -F28) %>% rename(type = Spp) %>% mutate(type = as.character(type))
-obs$type[obs$start_stop %in% c("start","stert"," start")] = "BEGCNT"
+# fix start/stops
+obs$start_stop[obs$fid %in% 13032] = "stop"
+obs$start_stop[obs$fid %in% 19403] = "stop"
+obs$start_stop[obs$fid %in% 21931] = NA
+
+track = obs %>% filter(type %in% "GPS") %>% select(-type, -f28) %>% rename(type = spp) %>% mutate(type = as.character(type))
+obs = obs %>% filter(type %in% "USER") %>% select(-type, -f28) %>% rename(type = spp) %>% mutate(type = as.character(type))
+obs$type[obs$start_stop %in% c("start","stert"," start","atrt")] = "BEGCNT"
 obs$type[obs$start_stop %in% c("stop"," stop")] = "ENDCNT"
-track$type[track$start_stop %in% c("start","stert"," start")] = "BEGCNT"
+track$type[track$start_stop %in% c("start","stert"," start","atrt")] = "BEGCNT"
 track$type[track$start_stop %in% c("stop"," stop")] = "ENDCNT"
 to.add = track[track$type %in% c("BEGCNT", "ENDCNT"),]
-obs = rbind(obs, to.add) %>% arrange(FID)
+obs = rbind(obs, to.add) %>% arrange(fid)
 rm(to.add)
 track = filter(track, !type %in% c("BEGCNT", "ENDCNT")) 
+track$type = "WAYPNT"
 #---------------------#  
 
 
@@ -85,76 +94,75 @@ sort(unique(obs$type[tmp]))
 
 
 #---------------------#
-# other edits
+# other obs edits
 #---------------------#
-# change names to lowercase
-colnames(obs) = tolower(names(obs))
-
-# merge comments
-obs = obs %>% mutate(comment = paste(comment_1, comment_2, sep = "; ")) %>% 
-  select(-comment_1, -comment_2)
-
 # remove empty cells
 obs$type[obs$type %in% " "] = NA
 obs = obs[!is.na(obs$type),]
 
-# offline
-obs$offline = 0
-obs = obs %>% mutate(date_time = as.character(date_time))
-obs$offline[obs$date_time %in% "2013-02-23 13:56:38"] = 1
-obs$offline[obs$date_time %in% "2013-02-13 21:57:09"] = 1
-obs$offline[obs$date_time %in% "2013-02-15 13:57:50"] = 1
-obs$offline[obs$date_time %in% "2013-02-15 14:00:06"] = 1
-#obs$offline[obs$date_time %in% "2013-02-11 20:50:41"] = 1
-#obs$offline[obs$date_time %in% "2013-02-11 20:56:12"] = 1
-#obs$offline[obs$date_time %in% "2013-02-23 21:45:01"] = 1
-
-# switch BEG/END 
-obs$type[obs$date_time %in% "2013-02-13 12:47:15"] = "ENDCNT"
-obs$type[obs$date_time %in% "2013-02-16 17:00:03"] = "ENDCNT"
-obs$type[obs$date_time %in% "2013-02-16 18:46:39"] = "BEGCNT"
-obs$type[obs$date_time %in% "2013-02-20 12:21:35"] = "ENDCNT"
-obs$type[obs$date_time %in% "2013-02-14 17:44:47"] = NA #???
-obs$type[obs$date_time %in% "2013-02-23 21:36:50"] = NA #???
-obs = obs[!is.na(obs$type),]
-
 # assign piece names as transect names
 to.add = obs %>% select(type, fid) %>% filter(type %in% "BEGCNT") %>% 
-                                                      mutate(source_transect_id = seq(1:n()))
+  mutate(source_transect_id = seq(1:n()))
 obs = left_join(obs, to.add, by=c("fid","type")) %>% select(-source_transect_id.x) %>% 
   rename(source_transect_id = source_transect_id.y)
 rm(to.add)
 obs$source_transect_id = na.locf(obs$source_transect_id)
-obs$source_transect_id[obs$offline %in% 1] = NA
+
+# check if there is only one BEG/END per piece
+obs %>% select(fid, type, date, time, source_transect_id) %>% 
+  filter(type %in% c("BEGCNT","ENDCNT")) %>% group_by(source_transect_id) %>% 
+  summarize(n = n()) %>% filter(n %% 2 != 0 )
 #---------------------#
 
 
 #---------------------#
 # fix track
 #---------------------#
-# change names to lowercase
-colnames(track) = tolower(names(track))
-
 # move BEG/END from obs to track
 to.add = obs %>% filter(type %in% c("BEGCNT", "ENDCNT"))
 obs = obs %>% filter(!type %in% c("BEGCNT", "ENDCNT"))
-track = track %>% mutate(date_time = as.character(date_time)) %>% bind_rows(., to.add)
+track = bind_rows(track, to.add) %>% arrange(fid)
 rm(to.add)
+track$source_transect_id = na.locf(track$source_transect_id)
 
 #get rid of unused columns
-track = select(track, -count, -behavior, -plumage, -age)
+track = select(track, -count, -behavior, -plumage, -age, -original_species_tx, -start_stop)
+track = rename(track, visibility_tx = visib, seastate = beaufort, index = fid, 
+               point_type = type, track_tm = time, track_dt = date, track_lon = longitude, 
+               track_lat = latitude)
 #---------------------#
+
+
+# ---------------------#
+# rename obs
+# ---------------------#
+obs = rename(obs, index = fid, behavior_tx = behavior, travel_direction_tx = direction, 
+             distance_to_animal_tx = distance, plumage_tx = plumage, age_tx = age, 
+             seastate_beaufort_nb = beaufort, visibility_tx = visib, spp_cd = type, 
+             angle_from_observer_nb = ang, temp_lat = latitude, temp_lon = longitude)
+obs = select(obs, -start_stop, -date_time)
+# ---------------------#
 
 
 #---------------------#
 # make transect
 #---------------------#
-transect = track %>% select(latitude, longitude, date, source_transect_id, type, time) %>% 
-  mutate(type = as.character(type)) %>% filter(type %in% c("BEGCNT","ENDCNT")) %>%  
+transect = track %>% 
+  select(track_lat, track_lon, track_dt, source_transect_id, point_type, track_tm, 
+         visibility_tx, seastate, datafile) %>% 
+  mutate(type = as.character(point_type)) %>% filter(point_type %in% c("BEGCNT","ENDCNT")) %>%  
   mutate(source_transect_id = factor(source_transect_id)) %>% 
-  group_by(source_transect_id) %>%   arrange(type) %>%
-  summarize(start_lon = first(longitude), start_lat = first(latitude), 
-            end_lon = last(longitude), end_lat = last(latitude),
-            start_tm = first(time),end_tm = last(time),
-            gps_date = first(date)) 
+  group_by(source_transect_id) %>%   arrange(point_type) %>%
+  summarize(start_lon = first(track_lon), start_lat = first(track_lat), 
+            end_lon = last(track_lon), end_lat = last(track_lat),
+            start_tm = first(track_tm),end_tm = last(track_tm),
+            end_dt = first(track_dt), visibility_tx = mean(visibility_tx, na.rm=TRUE),
+            seastate_beaufort_nb = mean(seastate, na.rm=TRUE), datafile = first(datafile)) %>% mutate(start_dt = end_dt) %>% 
+  mutate(transect_time_min_nb = difftime(as.POSIXct(paste(end_dt, end_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
+                                         as.POSIXct(paste(start_dt, start_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
+                                         units = "mins")) %>% rowwise %>% 
+  mutate(distance =  as.vector(distm(cbind(start_lat, start_lon), cbind(end_lat, end_lon), fun = distHaversine))) 
+transect$transect_width_nb = 300
+transect$transversal_speed_nb = 10 
+transect$comments_tx = "Transect numbers are simply the order in which they occurred, not defined by supplier. Speed is assumed to be ~10 knots/hr"
 #---------------------#
