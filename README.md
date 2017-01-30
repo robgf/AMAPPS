@@ -67,11 +67,16 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
         - obsFilesErrorChecks.R -> checks basic errors  
         - runArcGISpy.R -> runs the python script that generates ArcGIS shapefiles  
         
-    - ObsFilesFix\_yearlabel.R This script is unique to each input year/season file and fixes errors in the observation files:  
-           a) Flags offine/useless information  
-           b) Fixes incorrect type codings  
-           c) Fix condition change errors  
-           d) Breaks apart mixed flock records
+    - ObsFilesFix\_yearlabel.R This script is unique to each input year/season file and fixes errors in the observation files:    
+        a) Fixes incorrect type codings (species and start and stop points of transects)    
+        b) Fix condition change errors (add a record for when the weather condition changes)    
+        c) Breaks apart mixed flock records (create individual records for each species observed)  
+        d) Flag data for errors      
+          - flag1: distance from survey transect line is greater than 2 kilometers   
+          - flag2: bearing error when the difference of bearing[i] - bearing[i-1] greater than 100. An example of this would be when the plane might have taken a turn or did a loop on transect to get a closer look at something.   
+          - flag3: bearing errors of transLat equal to 0, or sbearing less than 70, or sbearing within the range of 110 to 250, or sbearing greater than 290  
+          - onLand: points that fall on land or within the land buffer. The majority of these should be cut, but they are visually inspected since the coastline or islands we are comparing the point to might not be perfectly accurate. 
+        
     - GISeditObsTrack (python file used in ArcMap to fix spatial errors in the data)
 - processSurveyData_part2.R. After the manual GIS edits, this rechecks the data for errors caused in manual editing and combines the files for entry into the Atlantic_Coast_Surveys and NWASC databases.
     - creates final_ .csv
@@ -94,8 +99,8 @@ For USFWS MB personel, all documentation is housed in M:/seabird_database folder
         - used to create shapefiles for each crew/day
 - atlanticCoastline_buffer_halfNM (shapefile)  
         - used to check if points are on land
-- all_atlantic_flylines_wNE_extended (shapefile)   
-        - used to check if transects are labeled incorrectly or if points are too far off a transect
+- amapps_transects_new2014 (shapefile)   
+        - used to check if transects are labeled incorrectly or if points are too far off a transect  
 
 
 **Manual editing in GIS (after run_processSurveyData_part1.R and before processSurveyData_part2.R):**  
