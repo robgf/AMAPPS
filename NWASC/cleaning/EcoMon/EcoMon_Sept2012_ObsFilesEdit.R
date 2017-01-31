@@ -118,7 +118,6 @@ obs$spp[obs$fid %in% 88671] = "BEGCNT" # add start
 obs$spp[obs$fid %in% 88688] = "ENDCNT" # add end
 obs$spp[obs$fid %in% 88689] = "BEGCNT" # add start
 obs$spp[obs$fid %in% 88800] = "ENDCNT" # add end
-obs$spp[obs$fid %in% 88802] = "BEGCNT" # add start
 obs$spp[obs$fid %in% 89194] = "ENDCNT" # add end
 obs$spp[obs$fid %in% 89195] = "BEGCNT" # add start
 obs$spp[obs$fid %in% 89206] = "ENDCNT" # add end
@@ -159,6 +158,12 @@ obs$spp[obs$fid %in% 74857] = "WAYPNT" # remove
 obs$spp[obs$fid %in% 102326] = "ENDCNT" # switch 
 obs$spp[obs$fid %in% 102327] = "BEGCNT" # switch 
 obs$spp[obs$fid %in% 62382] = "BEGCNT" # switch 
+
+# copy 88801 for BEGCNT since 88800 is further away and 88802 is a second too late
+to.add = obs[obs$fid %in% 88801,] 
+to.add$spp = "BEGCNT" # add start
+to.add$fid = 88800.5
+obs = bind_rows(obs, to.add) %>% arrange(fid)
 
 # make the start/stops that were added defined by the user
 obs$type[obs$spp %in% c("BEGCNT","ENDCNT")] = "USER"
