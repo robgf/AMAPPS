@@ -6,8 +6,8 @@
 # 2) open the access db and look up the id number in the dataset list (add one if it is not listed)
 # 3) if there is not a transect or track file leave these fields empty
 #
-# written by Kaycee Coleman
-# June 2016
+# written by K. Coleman, June 2016
+# updated Feb. 2017
 # -------------------------- #
 
 import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_camera) {
@@ -309,28 +309,47 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   }
   
   # if the transect information needs to be pulled from the track files
-  if(missing(data_transect)) {
-    # group by transect and day
-    # pieces in transect
-    # only works if there is a Beg and End
+  # might need to copy this bit and alter it to fit the variables the data has
+  if(missing(data_transect) & !missing(data_track)) {
     library(geosphere)
-    # pieces
-    transect_pieces = dat_track %>% select(track_lat, track_lon, track_dt, source_transect_id, piece, point_type) %>% 
+
+    # use cumulative distance between points since they are not all straight lines
+    distances=matrix(ncol=1, nrow=dim(data_track)[1], data=NA)
+    for(n in 2:length(distances)) {
+      distances[n] = distHaversine(c(data_track$track_lon[n-1],data_track$track_lat[n-1]), 
+                                   c(data_track$track_lon[n],data_track$track_lat[n])) 
+    }
+    data_track$distances = as.vector(distances); rm(distances)
+    data_track$distances[data_track$point_type %in% c("BEGTRAN","BEGCNT","BEGSEG")] = NA # not measuring between transects
+    tdists = data_track %>% select(source_transect_id, distances) %>% 
+      group_by(source_transect_id) %>% 
+      summarise(distance = sum(distances, na.rm=TRUE))
+    data_track = select(data_track, -distances)
+    
+    # transect pieces
+    transects = dat_track %>% 
+      select(track_lat, track_lon, track_dt, source_transect_id, point_type, 
+             visibility_tx, seastate_beaufort_nb, datafile) %>% 
       filter(point_type %in% c("BEGTRAN","BEGSEG","BEGCNT","ENDTRAN","ENDCNT","ENDSEG")) %>%
       mutate(source_transect_id = factor(source_transect_id)) %>% 
-      group_by(source_transect_id, piece, track_dt) %>% mutate(point_type = substring(point_type[1],1,1)) %>% 
-      arrange(point_type) %>%
-      summarize(start_lon = first(track_lon), start_lat = first(track_lat), end_lon = last(track_lon), end_lat = last(track_lat)) %>%
-      rowwise %>% 
-      mutate(distance =  distm(c(start_lat, start_lon), c(end_lat, end_lon), fun = distHaversine)) %>% 
-      ungroup %>% as.data.frame
-    
-    #summarize pieces to transects
-    transects = transect_pieces %>% 
-      mutate(source_transect_id = factor(source_transect_id)) %>% 
       group_by(source_transect_id, track_dt) %>% 
-      summarise(transect_distance_nb = sum(distance)) %>% mutate(transect_distance_nb = transect_distance_nb[1]) %>%
-      rename(start_dt = track_dt) %>% ungroup %>% as.data.frame
+      mutate(point_type = substring(point_type[1],1,1)) %>% 
+      arrange(point_type) %>%
+      summarize(start_lon = first(track_lon), start_lat = first(track_lat), 
+                end_lon = last(track_lon), end_lat = last(track_lat),
+                start_tm = first(track_tm),end_tm = last(track_tm),
+                end_dt = first(track_dt), 
+                visibility_tx = mean(as.numeric(visibility_tx), na.rm=TRUE),
+                seastate_beaufort_nb = mean(seastate, na.rm=TRUE), 
+                datafile = first(datafile)) %>% 
+      mutate(start_dt = end_dt) %>% 
+      mutate(transect_time_min_nb = difftime(as.POSIXct(paste(end_dt, end_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
+                                             as.POSIXct(paste(start_dt, start_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
+                                             units = "mins")) 
+    transects = left_join(transects, tdists, by="source_transect_id"); rm(tdists)
+    
+    # if speed isn't listed
+    transects = mutate(transects, traversal_speed_nb =  (distance/(as.numeric(transect_time_min_nb)*60))*1.94384449244)
     
     # fill in the db transects table
     dat_transect = as.data.frame(matrix(ncol=dim(transects.in.db)[2], nrow=dim(transects)[1], data=NA))
@@ -340,16 +359,6 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
     dat_transect$dataset_id = id
     dat_transect$transect_id = c((max(transects.in.db$transect_id)+1):(max(transects.in.db$transect_id)+dim(dat_transect)[1]))
     dat_transect$source_dataset_id = as.character(data.in.db$source_dataset_id[data.in.db$dataset_id==id])   
-    dat_transect = dat_transect %>% 
-      mutate(temp_start_lat = transect_pieces$start_lat[transect_pieces$track_dt == start_dt]) %>%
-      mutate(temp_start_lon = transect_pieces$start_lon[transect_pieces$track_dt == start_dt]) %>%
-      mutate(temp_stop_lat = transect_pieces$end_lat[transect_pieces$track_dt == end_dt]) %>%
-      mutate(temp_stop_lat = transect_pieces$end_lon[transect_pieces$track_dt == end_dt])
-    
-    # calculations
-    dat_transect$transect_time_min_nb = difftime(as.POSIXct(paste(dat_transect$end_dt, dat_transect$end_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
-                                                 as.POSIXct(paste(dat_transect$start_dt, dat_transect$start_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
-                                                 units = "mins")  
   }
   
   
@@ -501,5 +510,4 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   if(exists("dat_transect")){write.csv(dat_transect, file=paste(dir.out,"transect_", id, ".csv", sep=""), row.names = FALSE)}
   if(exists("dat_camera")){write.csv(dat_camera, file=paste(dir.out,"camera_effort_", id, ".csv", sep=""), row.names = FALSE)}
   # ------------------------ #
-  
 }
