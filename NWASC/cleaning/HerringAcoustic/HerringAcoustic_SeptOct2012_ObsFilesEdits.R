@@ -272,10 +272,13 @@ track$comments_tx[track$index==88800.5] = "Added start"  # neither is the added 
 # ---------------------#
 # remove segments with GPS glitch and reassign ENDCNTs where needed 
 # ---------------------#
-x = c(86988:87540, 88694:88768, 88540:88642, 89765:89880, 89925:90096,
+x = c(86987:87540, 88695:88768, 88539:88642, 89763:89880, 89923:90096,
       89211:89213, 89615:89661, 88211:88214, 88509:88511, 88490:88494,
-      88178:88180, 71200:71202, 88185:88193)
-y = c(86987, 88693, 88539, 89764, 89924, 88184, 89614)
+      88178:88180, 71200:71202, 88185:88193, 29099:29106, 29112:29134,
+      71260:71325, 88653:88658, 88665:88670, 88680:88688, 88774:88800,
+      89180:89194, 89195:89206, 89745:89759, 89896:89908, 90175:90179)
+y = c(29098, 29111, 71259, 88773, 89744, 86986, 88679, 88664, 88694, 88652, 88538, 
+      89762, 89179, 89922, 88184, 89614, 89895, 90174)
 obs_glitches = obs[obs$index %in% x,]
 track_glitches = track[track$index %in% x,]
 obs = obs[!obs$index %in% x,]
@@ -284,20 +287,35 @@ track$point_type[track$index %in% y] = "ENDCNT"
 track$comments_tx[track$index %in% y] = paste(track$comments_tx[track$index %in% y],
                                               "; Added ENDCNT due to GPS glitch after this point", sep="")
 rm(x, y)
+
+#n = "Leg2_150"
+#x = track %>% filter(source_transect_id %in% n) %>% 
+#  select(index, point_type, track_lat, track_lon, track_dt, track_tm, source_transect_id, timediff)
 # ---------------------#
 
 
 #---------------------#
 # make transect
 #---------------------#
+# use cumulative distance between points since they are not all straight lines
+distances=matrix(ncol=1,nrow=dim(track)[1],data=NA)
+for(n in 2:length(distances)) {
+  distances[n] = distHaversine(c(track$track_lon[n-1],track$track_lat[n-1]), 
+                              c(track$track_lon[n],track$track_lat[n])) 
+}
+track$distances=as.vector(distances); rm(distances)
+track$distances[track$point_type %in% "BEGCNT"] = NA
+tdists = track %>% select(source_transect_id, distances) %>% group_by(source_transect_id) %>% 
+  summarise(distance = sum(distances, na.rm=TRUE))
+  
 transect = track %>% 
   select(track_lat, track_lon, track_dt, source_transect_id, point_type, 
-         track_tm, visibility_tx, seastate, datafile, index) %>% 
+         track_tm, visibility_tx, seastate, datafile, index, distances) %>% 
   mutate(type = as.character(point_type)) %>% 
   filter(point_type %in% c("BEGCNT","ENDCNT")) %>%  
   mutate(source_transect_id = factor(source_transect_id)) %>% 
   group_by(source_transect_id) %>%   arrange(index) %>%
-  summarize(start_lon = first(track_lon), start_lat = first(track_lat), 
+  summarise(start_lon = first(track_lon), start_lat = first(track_lat), 
             end_lon = last(track_lon), end_lat = last(track_lat),
             start_tm = first(track_tm),end_tm = last(track_tm),
             end_dt = first(track_dt), visibility_tx = mean(as.numeric(visibility_tx), na.rm=TRUE),
@@ -306,9 +324,24 @@ transect = track %>%
   mutate(start_dt = end_dt) %>% 
   mutate(transect_time_min_nb = difftime(as.POSIXct(paste(end_dt, end_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
                                          as.POSIXct(paste(start_dt, start_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
-                                         units = "mins")) %>% rowwise %>% 
-  mutate(distance =  distHaversine(c(start_lon,start_lat), c(end_lon,end_lat))) 
+                                         units = "mins"))
 transect$transect_width_nb = 300
-transect$transversal_speed_nb = 10 
-transect$comments_tx = "Transect numbers are simply the order in which they occurred, not defined by supplier. Speed is assumed to be ~10 knots/hr"
+transect$comments_tx = "Transect numbers are simply the order in which they occurred, 
+only the Leg was provided by data supplier. Speed is assumed to be ~10 knots/hr but the number in the speed 
+column was calculated using distance (m) and time (min) and converted to nautical miles per hour since speed was not listed"
+transect = arrange(transect, start_dt, start_tm)
+transect$seastate_beaufort_nb[transect$seastate_beaufort_nb == "NaN"] = NA
+transect = left_join(transect, tdists, by="source_transect_id"); rm(tdists)
+transect = mutate(transect, traversal_speed_nb =  (distance/(as.numeric(transect_time_min_nb)*60))*1.94384449244)
+#---------------------#
+
+
+#---------------------#
+# export cleaned files
+#---------------------#
+write.csv(obs, file=paste(dir.out, "/", surveyFolder, "_observations.csv", sep=""), row.names = FALSE)
+write.csv(obs_glitches, file=paste(dir.out, "/", surveyFolder, "_observation_glitches.csv", sep=""), row.names = FALSE)
+write.csv(track, file=paste(dir.out, "/", surveyFolder, "_track.csv", sep=""), row.names = FALSE)
+write.csv(track_glitches, file=paste(dir.out, "/", surveyFolder, "_track_glitches.csv", sep=""), row.names = FALSE)
+write.csv(transect, file=paste(dir.out, "/", surveyFolder, "_transects.csv", sep=""), row.names = FALSE)
 #---------------------#
