@@ -314,17 +314,17 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
     library(geosphere)
 
     # use cumulative distance between points since they are not all straight lines
-    distances=matrix(ncol=1, nrow=dim(data_track)[1], data=NA)
+    distances=matrix(ncol=1, nrow=dim(dat_track)[1], data=NA)
     for(n in 2:length(distances)) {
-      distances[n] = distHaversine(c(data_track$track_lon[n-1],data_track$track_lat[n-1]), 
-                                   c(data_track$track_lon[n],data_track$track_lat[n])) 
+      distances[n] = distHaversine(c(dat_track$track_lon[n-1],dat_track$track_lat[n-1]), 
+                                   c(dat_track$track_lon[n],dat_track$track_lat[n])) 
     }
-    data_track$distances = as.vector(distances); rm(distances)
-    data_track$distances[data_track$point_type %in% c("BEGTRAN","BEGCNT","BEGSEG")] = NA # not measuring between transects
-    tdists = data_track %>% select(source_transect_id, distances) %>% 
+    dat_track$distances = as.vector(distances); rm(distances)
+    dat_track$distances[dat_track$point_type %in% c("BEGTRAN","BEGCNT","BEGSEG")] = NA # not measuring between transects
+    tdists = dat_track %>% select(source_transect_id, distances) %>% 
       group_by(source_transect_id) %>% 
       summarise(distance = sum(distances, na.rm=TRUE))
-    data_track = select(data_track, -distances)
+    dat_track = select(dat_track, -distances)
     
     # transect pieces
     transects = dat_track %>% 
