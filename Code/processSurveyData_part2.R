@@ -13,25 +13,25 @@
 # install packages
 require(rgdal) # read shapefiles
 require(parallel) # used to make a cluster
-require(RODBC) #for NWASC codes
-library(dplyr) # %>%
 library(gmt) #geodist
 require(geosphere) #dist2Line
 library(sp) #SpatialLines from SpatialLinesDataFrame
 library(FNN) #nearest neighbor
+require(xlsx) # read excel file
+require(RODBC) # odbcConnect
+library(rgeos)
+library(dplyr) # %>%
 
 # Set dir
 dir <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder"
 setwd(dir)
 surveyFolder = "AMAPPS"
 dbpath <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/DataBase"
-yearLabel = "AMAPPS_2013_09"
-survey = "2013 Fall AMAPPS"
-surveyNbr = 13
+yearLabel = "AMAPPS_2014_10"
+survey = "2014 Fall AMAPPS"
+surveyNbr = 15
 #source(file.path(paste(dir,"DataProcessing/Code",sep=""),"surveyPrompt.R"))
 dir.out <- paste(dir,"DataProcessing/Surveys", surveyFolder, yearLabel, sep = "/") 
-dir.in = paste(dir.out, "edited_shapefiles",sep="/")
-speciesPath <- paste(dir,"DataProcessing/",sep="/")
 
 # Link R functions
 source(file.path(dir, "_Rfunctions/sourceDir.R"))
@@ -43,6 +43,10 @@ sourceDir(file.path(dir, "_Rfunctions"))
 # Upload obstack 
 #obstrack = read.csv(paste(dir.out, "obstrack_part1.csv",sep="/"))
 load(paste(dir.out,"obstrack_part1.Rdata",sep="/")) # use obstrack_part1.csv if workspace corrupt
+
+# redo because dir out changed when we load part1
+dir.out <- paste(dir,"DataProcessing/Surveys", surveyFolder, yearLabel, sep = "/") 
+dir.in = paste(dir.out, "edited_shapefiles",sep="/")
 # ------------------------------------------------------------------------- #
 
 
@@ -77,12 +81,11 @@ BuildDataframe <- function(shapefile) {
   shapefileDataframe = rbind(shapefileDataframe, newShapefileDataframe)
   return(shapefileDataframe)
 }
-shapefileDataframe = lapply(fileNames, function(x) BuildDataframe(x[1]))
+shapefileDataframe = lapply(shapefileNames, function(x) BuildDataframe(x[1]))
 shapefileDataframe = as.data.frame(do.call(rbind, shapefileDataframe))
 
 # rename to compare to obstrack
-colnames(shapefileDataframe)[colnames(shapefileDataframe)=="coords.x1"] <- "long"
-colnames(shapefileDataframe)[colnames(shapefileDataframe)=="coords.x2"] <- "lat"
+shapefileDataframe = rename(shapefileDataframe, long = coords.x1, lat = coords.x2)
 
 # remove duplicates that might have occured in this process
 shapefileDataframe = shapefileDataframe[!duplicated(shapefileDataframe), ]
@@ -93,32 +96,77 @@ rownames(deletedPoints) = NULL #remove row.names
 ind = paste(deletedPoints$key,deletedPoints$sec, deletedPoints$type, sep="_")
 deletedPoints = deletedPoints[!(duplicated(ind) | duplicated(ind, fromLast=TRUE)),]
 rm(ind)
+deletedPoints = deletedPoints[!is.na(deletedPoints$day),]
 # not using all rows for duplicates since some have NA or empty which come up as different rather than duplicate
 
 # visually inspect that no files were deleted, and that edits look about right...
 plot(shapefileDataframe$long,shapefileDataframe$lat)
 points(deletedPoints$long,deletedPoints$lat,col="red")
-ifelse(any(deletedPoints$type != "WAYPNT" & 
-             deletedPoints$type != "BEGCNT" & 
-             deletedPoints$type != "ENDCNT" & 
-             deletedPoints$offline == 0),
+ifelse(any(!deletedPoints$type %in% c("WAYPNT","BEGCNT","ENDCNT") & deletedPoints$offline == 0),
        stop("You deleted an online observation point, please investigate this before continuing"),
        "No online observations were deleted in your edits")
+
+# investigate deleted points
+# grab those that are species observaitons
+# add if offline and was deleted by accident or change to offline
+db <- odbcConnectAccess2007("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
+spplist <- sqlFetch(db, "lu_species")$spp_cd
+sppcode <- sqlFetch(db, "lu_species")$spp_type_cd # used later when breaking apart data
+odbcClose(db)
+
+if(any(deletedPoints$type %in% spplist)) {
+  x = deletedPoints[deletedPoints$type %in% spplist,]
+  x$offline = 1
+  shapefileDataframe = bind_rows(shapefileDataframe,x) 
+  rm(x)
+}
+
+# corrections from investigation 
+if (file.exists(paste(dir.out,"postGISEdits.R",sep="/"))) {
+  source(paste(dir.out,"postGISEdits.R",sep="/"))}
 # ------------------------------------------------------------------------- #
 
 
 # ------------------------------------------------------------------------- #
-### STEP 15: ADD NECESSARY BEG/END ROWS TO GIS EDITED TRACK FILES
+### STEP 15: IF THERE ARE STILL DISTANCE ERRORS (e.g. labeled as wrong transect) 
+# REDEFINE TRANSECT
+# ------------------------------------------------------------------------- #
+if(any(shapefileDataframe$flag1==1)) {
+  # find closest point to line 
+  data = shapefileDataframe[shapefileDataframe$flag1==1,]
+  data$dataChange = paste(data$dataChange, "; Changed transect from ", data$transect, sep="")
+  coordinates(shapefileDataframe) = cbind(shapefileDataframe$long, shapefileDataframe$lat)
+  
+  trans <- readOGR(dsn = file.path(paste(dbpath, "GIS", sep="")), layer = "amapps_transects_new2014")
+  if (proj4string(trans) != "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0") {
+    trans <- spTransform(trans, CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
+  }
+  
+  m = gDistance(shapefileDataframe, trans, byid=TRUE)
+  shapefileDataframe$transect2 = trans@data$latidext[as.numeric(apply(m, 2, function(X) rownames(m)[order(X)][1]))+1] # +1 since row starts at 0 instead of 1
+  
+  shapefileDataframe$transect[shapefileDataframe$ID %in% data$ID] = data$transect
+  rm(data, trans, m)
+}
+# ------------------------------------------------------------------------- #
+
+
+# ------------------------------------------------------------------------- #
+### STEP 16: ADD NECESSARY BEG/END ROWS TO GIS EDITED TRACK FILES
 # this takes a while...
 # ------------------------------------------------------------------------- #
 track.final = addBegEnd_GISeditObsTrack(shapefileDataframe)
+
+# after inspection, corrections if BEG/END counts are added when not needed 
+if (file.exists(paste(dir.out,"postGIS_BEGEND_Edits.R",sep="/"))) {
+  source(paste(dir.out,"postGIS_BEGEND_Edits.R",sep="/"))}
 # ------------------------------------------------------------------------- #
 
 
 # ------------------------------------------------------------------------- #
-### STEP 16: VERIFY CONDITION CODE ERRORS ARE STILL FIXED AFTER GIS EDITS
+### STEP 17: VERIFY CONDITION CODE ERRORS ARE STILL FIXED AFTER GIS EDITS
 # ------------------------------------------------------------------------- #
-obs = subset(track.final, !type %in% c("", " "))
+obs = subset(track.final, !type %in% c("", " ", NA))
 conditionCodeErrorChecks(obs, yearLabel)
 # ------------------------------------------------------------------------- #
 
@@ -127,18 +175,23 @@ summary(track.final)
 
 
 # ------------------------------------------------------------------------- #
-### STEP 17: ADD REPLICATE COLUMN IF TRANSECT WAS FLOWN TWICE
+### STEP 18: ADD REPLICATE COLUMN IF TRANSECT WAS FLOWN TWICE
 # ------------------------------------------------------------------------- #
 # Create replicate column for if a transect was flown more than one day in a survey
 track.final$replicate = 1
 track.final$comment= as.character(track.final$comment)
-ind = unique(paste(track.final$transect,track.final$day,sep="_"))
-if (any(duplicated(substr(ind,1,6)))) {
-  track.final$replicate[track.final$transect==substr(ind[duplicated(substr(ind,1,6))],1,6)&
-                          track.final$day==substr(ind[duplicated(substr(ind,1,6))],8,9)]=2
-  track.final$comment[track.final$transect==substr(ind[duplicated(substr(ind,1,6))],1,6)&
-                        track.final$day==substr(ind[duplicated(substr(ind,1,6))],8,9)] = paste(track.final$comment[track.final$transect==substr(ind[duplicated(substr(ind,1,6))],1,6)&
-                                                                                                                     track.final$day==substr(ind[duplicated(substr(ind,1,6))],8,9)],"; Transect flown more than one day ", sep="")
+ind = unique(paste(track.final$transect, track.final$seat, track.final$day,sep="_"))
+if (any(duplicated(substr(ind,1,9)))) {
+  track.final$replicate[track.final$transect %in% substr(ind[duplicated(substr(ind,1,9))],1,6) &
+                          track.final$seat %in% substr(ind[duplicated(substr(ind,1,9))],8,9) & 
+                          track.final$day %in% substr(ind[duplicated(substr(ind,1,9))],11,12)] = 2
+  track.final$comment[track.final$transect %in% substr(ind[duplicated(substr(ind,1,9))],1,6) &
+                        track.final$seat %in% substr(ind[duplicated(substr(ind,1,9))],8,9) &
+                        track.final$day %in% substr(ind[duplicated(substr(ind,1,9))],11,12)] = 
+    paste(track.final$comment[track.final$transect %in% substr(ind[duplicated(substr(ind,1,9))],1,6) &
+                                track.final$seat %in% substr(ind[duplicated(substr(ind,1,9))],8,9) &
+                                track.final$day %in% substr(ind[duplicated(substr(ind,1,9))],11,12)],
+          "; Transect flown more than one day ", sep="")
 }
 rm(ind)
 #
@@ -147,20 +200,12 @@ rm(ind)
 
 
 # ------------------------------------------------------------------------- #
-### STEP 18: SAVE DELETED POINTS CSVs and DEFINE POINTS TO KEEP
+### STEP 19: SAVE DELETED POINTS CSVs and DEFINE POINTS TO KEEP
 # ------------------------------------------------------------------------- #
-
 # Define points to keep #
 track.final$keep = 1
 track.final$keep[track.final$offline == 1 | track.final$band == 3] = 0
 table(track.final$band, track.final$keep)
-deletedPoints$keep = 0
-
-# ADD OFFLINE OBSERVATIONS TO track.final #
-# might want to check these before adding to make sure they make sense, have a BEGCNT and ENDCNT
-deletedPoints[deletedPoints$offline==1,] # should be offline observations
-deletedPoints$replicate = 1
-track.final = rbind(track.final, deletedPoints[deletedPoints$offline==1,])
 
 # save deleted points as a .csv
 deletedPoints = deletedPoints[deletedPoints$offline == 0,]
@@ -170,16 +215,10 @@ rm(deletedPoints)
 
 
 # ------------------------------------------------------------------------- #
-### STEP 19: SAVE MARINE MAMMALS/ FISH DATA TO SEND TO NOAA AMAPPS
+### STEP 20: SAVE MARINE MAMMALS/ FISH DATA TO SEND TO NOAA AMAPPS
 # ID: 2 (mammals), 3 (reptiles), 4 (fish) in NWASC_codes table
 # ------------------------------------------------------------------------- #
-
-# GET SPECIES_INFORMATION TABLE FROM ATLANTIC COAST SURVEYS DATABASE
-code <- odbcConnectExcel2007(xls.file = paste(speciesPath, "NWASC_codes.xlsx", sep=""))
-spplist <- sqlFetch(code, "codes")$spp_cd
-sppcode <- sqlFetch(code, "codes")$species_type_cd
-odbcCloseAll()
-
+# GET SPECIES_INFORMATION TABLE 
 # PULL MARINE DATA
 tmp = track.final$type %in% c(as.character(spplist[sppcode=="2" | sppcode=="3" | sppcode=="4"]),
                               "HOCR","ALGA","BAIT","CAJE","KRILL","MACR","PMOW","RCKW","SARG","UNJE","ZOOP")
@@ -207,7 +246,6 @@ track.final$SurveyNbr = surveyNbr
 # ----------------------------------------------------------------------- #
 # TRACK TABLE
 # ----------------------------------------------------------------------- #
-
 trackTbl = track.final[track.final$Species %in% c("WAYPNT","BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH"),]
 trackTbl$Species[trackTbl$Species=="BEGSEG"] = "BEGTRAN" 
 trackTbl$Species[trackTbl$Species=="ENDSEG"] = "ENDTRAN" 
@@ -228,7 +266,6 @@ write.csv(trackTbl, file =paste(dir.out,"/", yearLabel, "_Tracks.csv", sep=""), 
 # ------------------------------------------------------------------------- #
 # ADD COVARIATES TO OBSERVATIONS (DEPTH, SLOPE, DISTANCE TO COAST)
 # ------------------------------------------------------------------------- #
-
 track.final = track.final[!track.final$Species %in% c("WAYPNT","COCH"),]
 
 
@@ -257,7 +294,7 @@ track.final$Depth = ""
 track.final$Slope = ""   
 
 # ------------------------------------------------------------------------- #
-### STEP 20: ADD BOATS, BALLOONS, AND MISC. OBS TO EXCEL FILES
+### STEP 21: ADD BOATS, BALLOONS, AND MISC. OBS TO EXCEL FILES
 # ------------------------------------------------------------------------- #
 
 # ADD BOAT OBSERVATIONS TO Atlantic_Coast_Surveys_BoatObservations.csv DATA FILE
@@ -305,7 +342,7 @@ rm(obs.misc,obs.misc_to_add)
 
 
 # ------------------------------------------------------------------------- #
-### STEP 21: AMAPPS database vs. NWASC database seperation
+### STEP 22: AMAPPS database vs. NWASC database seperation
 # ------------------------------------------------------------------------- #
 
 # ----------------------------------------------------------------------- #
@@ -328,7 +365,14 @@ df = track.final %>% group_by(SurveyNbr,Transect,Replicate,Crew,Seat,Obs)  %>%
 df$StartDt = paste(df$minMonth,"/", df$minDay, "/", df$minYear,sep="")
 df$EndDt = paste(df$maxMonth,"/", df$maxDay, "/", df$maxYear,sep="")
 df = subset(df, select=-c(minYear, minMonth, minDay, maxYear, maxMonth, maxDay))
-df[1:10,] #check to make sure it looks ok...
+
+# Check that the output looks ok...
+head(df)
+
+# Check that there isn't an Av. condition of zero
+if(df$AvgCondition==0) {
+  print("Average condition of zero. The following transects need to be investigated: ")
+  df[df$AvgCondition==0,]}
 
 # Columns in the ACS db that we should probably do something about but need to talk about it...
 df$ACWSD=""
@@ -376,7 +420,7 @@ write.csv(track.final.ACS, file = paste(dir.out,"/", yearLabel,"_Observations.cs
 
 
 # ------------------------------------------------------------------------- #
-### STEP 22: OUTPUT FINAL EDITED TRACK FILE 
+### STEP 23: OUTPUT FINAL EDITED TRACK FILE 
 # ------------------------------------------------------------------------- #
 # This includes all observations (even marine)
 obsTrackFinalOutput(track.final, yearLabel, dir.out)
