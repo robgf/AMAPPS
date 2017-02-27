@@ -9,7 +9,7 @@
 # ------------------------------------------------------------------------- #
 
 addBegEnd_GISeditObsTrack = function(data) {
-
+  require(dplyr)
   data = data %>% as.data.frame() %>% 
     mutate(key = paste(crew, seat, year, month, day, substr(transLat,1,4), transLong, sep = "-"),
            type = gsub(" ", "", type))
@@ -185,42 +185,12 @@ addBegEnd_GISeditObsTrack = function(data) {
   data = data[order(data$ID), ]
   
   # CHANGE BEGSEG/ENDSEG TO BEGCNT/ENDCNT WHEN NECESSARY (AND VICE VERSA)
-  allkeys = unique(data$key)
-  for (i in seq(along = allkeys)) {
-    tmp.i = data$key %in% allkeys[i]
-    data.i = data[tmp.i, ]
-    
-    # CHANGE ENDPOINT "CNT"s TO "SEG"s
-    if (data.i$type[1] == "BEGCNT") {
-      old = data.i$type[1]
-      data.i$type[1] = "BEGSEG"
-      data.i$dataChange[1] = paste(data.i$dataChange[1], "; changed TYPE from ", old, 
-                                    sep = "")
-    }
-    if (data.i$type[nrow(data.i)] == "ENDCNT") {
-      old = data.i$type[nrow(data.i)]
-      data.i$type[nrow(data.i)] = "ENDSEG"
-      data.i$dataChange[nrow(data.i)] = paste(data.i$dataChange[nrow(data.i)], 
-                                               "; changed TYPE from ", old, sep = "")
-    }
-    
-    # CHANGE INTERMEDIATE BEG/END "SEG"s TO "CNT"s
-    tmp.data = grepl("SEG", data.i$type)
-    tmp.data[c(1, length(tmp.data))] = FALSE
-    if (sum(tmp.data) > 0) {
-      old = data.i$type[tmp.data]
-      data.i$type[tmp.data] = gsub("SEG", "CNT", data.i$type[tmp.data])
-      data.i$dataChange[tmp.data] = paste(data.i$dataChange[tmp.data], 
-                                           "; changed TYPE from ", old, sep = "")
-    }
-    data[tmp.i, ] = data.i
-    
-    if (sum(data$type[tmp.i] %in% "BEGSEG") < 1 | sum(data$type[tmp.i] %in% "ENDSEG") < 1 | 
-          !sum(data$type[tmp.i] %in% "BEGSEG") %in% sum(data$type[tmp.i] %in% "ENDSEG")) 
-      cat("Error in BEGSEG/ENDSEG: ", allkeys[i], "\n")
-    if (!sum(data$type[tmp.i] %in% "BEGCNT") %in% sum(data$type[tmp.i] %in% "ENDCNT")) 
-      cat("Error in BEGSEG/ENDSEG: ", allkeys[i], "\n")
-  }
+  data = data %>% group_by(key) %>% 
+    dplyr::mutate(type = replace(type, row_number()==1 & type=="BEGCNT","BEGSEG"),
+                  type = replace(type, row_number()==n() & type=="ENDCNT","ENDSEG"),
+                  type = replace(type, row_number()!=1 & type=="BEGSEG","BEGCNT"),
+                  type = replace(type, row_number()!=n() & type=="ENDSEG","ENDCNT")) %>%
+    arrange(ID)
   
   # ADD GPS & SEC VALUES FOR ADDED ROWS WHERE MISSING #
   tmp = is.na(data$lat) & grepl("; added row based on GIS track file edits", data$dataChange)
