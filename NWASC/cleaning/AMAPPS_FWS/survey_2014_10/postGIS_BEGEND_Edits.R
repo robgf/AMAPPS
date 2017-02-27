@@ -63,7 +63,8 @@ to.remove = c(4698.99,4704.01,
   154727.99, 154728:154729, 154729.01,
   3211.99, 5158:5176, 5176.01, 32854.99, 
   99025.99, 99026:99031, 99031.01, 
-  106468.01, 106089.99, 106468.99, 106089.01, 104453.01
+  106468.01, 106089.99, 106468.99, 106089.01, 104453.01,
+  30160:30162, 30386:30388
 )
 
 track.final = track.final[!track.final$ID %in% to.remove,]  
@@ -110,10 +111,13 @@ track.final$transect[track.final$ID %in% c(105741.99, 105742:105906, 105906.01)]
 # change BEG/ENDCNT to BEG/ENDSEG
 #----------#
 # CHANGE BEGSEG/ENDSEG TO BEGCNT/ENDCNT WHEN NECESSARY (AND VICE VERSA)
-track.final = track.final %>% dplyr::mutate(key = paste(crew, seat, month, day, transect, sep="_")) 
+track.final = track.final %>% as.data.frame %>%
+  dplyr::mutate(key = paste(crew, seat, month, day, transect, sep="_")) 
 track.final = track.final %>% group_by(key) %>% 
   dplyr::mutate(type = replace(type, row_number()==1 & type=="BEGCNT","BEGSEG"),
-                type = replace(type, row_number()==n() & type=="ENDCNT","ENDSEG")) %>% 
+                type = replace(type, row_number()==n() & type=="ENDCNT","ENDSEG"),
+                type = replace(type, row_number()!=1 & type=="BEGSEG","BEGCNT"),
+                type = replace(type, row_number()!=n() & type=="ENDSEG","ENDCNT")) %>% 
   arrange(ID)
 #----------#
 
@@ -122,6 +126,11 @@ track.final = track.final %>% group_by(key) %>%
 # check that after edits, all transect have equal BEG/END segs & cnts
 #----------#
 track.final %>% group_by(key) %>% filter(type %in% c("BEGCNT","ENDCNT","BEGSEG","ENDSEG")) %>% 
+  summarize(ns = n()) %>% filter(ns %% 2 != 0)
+
+track.final %>% group_by(key) %>% filter(type %in% c("BEGCNT","ENDCNT")) %>% 
+  summarize(ns = n()) %>% filter(ns %% 2 != 0)
+track.final %>% group_by(key) %>% filter(type %in% c("BEGSEG","ENDSEG")) %>% 
   summarize(ns = n()) %>% filter(ns %% 2 != 0)
 #----------#
 
@@ -141,3 +150,19 @@ track.final %>% group_by(key) %>% filter(type %in% c("BEGCNT","ENDCNT","BEGSEG",
 
 #ind = c(30514.01)
 #points(x$long[x$ID %in% ind], x$lat[x$ID %in% ind],col="purple",pch=0)
+
+#----------#
+# observer errors, waypoints and some BEG/END segments that were added dont have observer codes
+#----------#
+track.final$obs[track.final$seat=="lf" & track.final$crew=="Crew3521"] = "jsw"
+track.final$obs[track.final$seat=="rf" & track.final$crew=="Crew3521" & 
+                  track.final$day %in% c(8,9,10,11,13,15,16)] = "fr"
+track.final$obs[track.final$seat=="rf" & track.final$crew=="Crew3521" & 
+                  track.final$day %in% c(21,22)] = "mtj"
+
+track.final$obs[track.final$seat=="lf" & track.final$crew=="Crew4446"] = "mdk"
+track.final$obs[track.final$seat=="rf" & track.final$crew=="Crew4446"] = "sfy"
+
+track.final$obs[track.final$seat=="lf" & track.final$crew=="Crew4126"] = "sde"
+track.final$obs[track.final$seat=="rf" & track.final$crew=="Crew4126"] = "mtj"
+#----------#
