@@ -3,7 +3,7 @@
 # ---------------- #
 
 # wrong transect but distance error was not thrown 
-shapefileDataframe$transect[shapefileDataframe$index %in% c(2183:2185)] = 442602
+shapefileDataframe$transect[shapefileDataframe$ID %in% c(98655:98657)] = 403100
 
 #right on the edge of land/ could be either since no start/stops
 shapefileDataframe$offline[shapefileDataframe$index == 126298] = 0 
