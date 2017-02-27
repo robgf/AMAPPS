@@ -16,7 +16,7 @@ to.remove = c(4698.99,4704.01,
   31380.99, 31383.01, 31381:31383,
   33344.99, 33348.01, 33345:33348,32341.01, 32338.99, 32339:32341,
   32619.01, 32615.99, 32616:32619,
-  32857.01, 32857.01, 32855:32857, 33064.99, 33065:33066, 33066.01,
+  32857.01, 32855:32857, 33064.99, 33065:33066, 33066.01,
   37314.01, 37312:37314, 37311.99,
   39037.01, 39033.99, 39034:39037,
   39252.99, 39256.01, 39253:39256, 39538.99, 39541.01, 39539:39541,
@@ -47,7 +47,7 @@ to.remove = c(4698.99,4704.01,
   120380.99, 120381:120382, 120382.01,
   120982.99, 120983:120984, 120984.01,
   122226.99, 122227:122228, 122228.01,
-  127812.99, 127813:127815.01, 127815, 127817.99, 127818:127821, 127821.01,
+  127812.99, 127813:127815, 127815.01, 127817.99, 127818:127821, 127821.01,
   133429.99,133430:133499,133499.01,
   6206,6207,6208,12320,12321,12322,17229,17230,17231,19992,19993,19994,23427,23428,23429,
   28212,28213,28214,62033,62034,62035,67020,67021,67022,71879,71881,71882,74671,74672,
@@ -60,10 +60,16 @@ to.remove = c(4698.99,4704.01,
   36069,36070,36071,42209,42210,42211,47127,47129,47130,49901,49902,49903,53369,53370,53371,
   58162,58163,58164,93574,93575,93576,
   154016.99, 154017:154019, 154019.01,
-  154727.99, 154728:154729, 154729.01
+  154727.99, 154728:154729, 154729.01,
+  3211.99, 5158:5176, 5176.01, 32854.99, 
+  99025.99, 99026:99031, 99031.01, 
+  106468.01, 106089.99, 106468.99, 106089.01, 104453.01
 )
 
 track.final = track.final[!track.final$ID %in% to.remove,]  
+
+track.final$type[track.final$ID %in%  c(3212, 32858, 98658)] = "BEGSEG"
+track.final$type[track.final$ID %in%  c(33020.01, 98657, 104453)] = "ENDSEG"
 #----------#
 
 
@@ -104,31 +110,19 @@ track.final$transect[track.final$ID %in% c(105741.99, 105742:105906, 105906.01)]
 # change BEG/ENDCNT to BEG/ENDSEG
 #----------#
 # CHANGE BEGSEG/ENDSEG TO BEGCNT/ENDCNT WHEN NECESSARY (AND VICE VERSA)
-change.cnt.to.seg <- function(data) {
-  data = dplyr::mutate(data, key = paste(crew, seat, month, day, transect, sep="_"))
-  allkeys=unique(data$key)
-  
-  for (i in seq(along = allkeys)) {
-    tmp.i = data$key %in% allkeys[i]
-    data.i = data[tmp.i, ]
-    
-    # CHANGE ENDPOINT "CNT"s TO "SEG"s
-    if (data.i$type[1] %in% "BEGCNT") {
-      old = data.i$type[1]
-      data.i$type[1] = "BEGSEG"
-      data.i$dataChange[1] = paste(data.i$dataChange[1], "; changed TYPE from ", old, 
-                                   sep = "")
-    }
-    
-    if (data.i$type[nrow(data.i)] %in% "ENDCNT") {
-      old = data.i$type[nrow(data.i)]
-      data.i$type[nrow(data.i)] = "ENDSEG"
-      data.i$dataChange[nrow(data.i)] = paste(data.i$dataChange[nrow(data.i)], 
-                                              "; changed TYPE from ", old, sep = "")
-    }
-  }
-}
-track.final = change.cnt.to.seg(track.final)  
+track.final = track.final %>% dplyr::mutate(key = paste(crew, seat, month, day, transect, sep="_")) 
+track.final = track.final %>% group_by(key) %>% 
+  dplyr::mutate(type = replace(type, row_number()==1 & type=="BEGCNT","BEGSEG"),
+                type = replace(type, row_number()==n() & type=="ENDCNT","ENDSEG")) %>% 
+  arrange(ID)
+#----------#
+
+
+#----------#
+# check that after edits, all transect have equal BEG/END segs & cnts
+#----------#
+track.final %>% group_by(key) %>% filter(type %in% c("BEGCNT","ENDCNT","BEGSEG","ENDSEG")) %>% 
+  summarize(ns = n()) %>% filter(ns %% 2 != 0)
 #----------#
 
 
