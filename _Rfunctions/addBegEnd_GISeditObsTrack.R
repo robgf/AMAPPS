@@ -111,7 +111,7 @@ addBegEnd_GISeditObsTrack = function(data) {
       }
     }
     data = data[order(data$ID), ]
-    tmp = data$key == allkeys[i]
+    tmp = data$key %in% allkeys[i]
     data.i = data[tmp, ]
     #---#
     
@@ -168,13 +168,13 @@ addBegEnd_GISeditObsTrack = function(data) {
           data.i = NULL
           next
         }
-        if (data.i$type[tmp.del][1] == "BEGCNT" & data.i$type[tmp.del][sum(tmp.del)] == "ENDCNT") {
+        if (data.i$type[tmp.del][1] %in% "BEGCNT" & data.i$type[tmp.del][sum(tmp.del)] %in% "ENDCNT") {
           data.i = subset(data.i, is.na(delete))
-        } else if (data.i$type[tmp.del][1] == "BEGCNT" & data.i$type[tmp.del][sum(tmp.del)] == "BEGCNT") {
+        } else if (data.i$type[tmp.del][1] %in% "BEGCNT" & data.i$type[tmp.del][sum(tmp.del)] %in% "BEGCNT") {
           data.i = data.i[-which(tmp.del)[-1], ]
-        } else if (data.i$type[tmp.del][1] == "ENDCNT" & data.i$type[tmp.del][sum(tmp.del)] == "BEGCNT") {
+        } else if (data.i$type[tmp.del][1] %in% "ENDCNT" & data.i$type[tmp.del][sum(tmp.del)] %in% "BEGCNT") {
           data.i = data.i[-which(tmp.del), ]
-        } else if (data.i$type[tmp.del][1] == "ENDCNT" & data.i$type[tmp.del][sum(tmp.del)] == "ENDCNT") {
+        } else if (data.i$type[tmp.del][1] %in% "ENDCNT" & data.i$type[tmp.del][sum(tmp.del)] %in% "ENDCNT") {
           data.i = data.i[-which(tmp.del)[-sum(tmp.del)], ]
         }
         data.i$delete = NULL
