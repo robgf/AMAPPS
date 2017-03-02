@@ -59,6 +59,7 @@ load(paste(dir.out,"obstrack_part1.Rdata",sep="/")) # use obstrack_part1.csv if 
 # -------------------- #
 # redo because dir out changed when we load part1
 # -------------------- #
+dir <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder"
 dir.out <- paste(dir,"DataProcessing/Surveys", surveyFolder, yearLabel, sep = "/") 
 dir.in = paste(dir.out, "edited_shapefiles",sep="/")
 # -------------------- #
@@ -105,6 +106,7 @@ shapefileDataframe = shapefileDataframe[!duplicated(shapefileDataframe), ]
 
 # compare old workspace with edited shapefiles to see what was deleted   
 deletedPoints = rbind(shapefileDataframe, obstrack)
+rm(obstrack, obs.i)
 rownames(deletedPoints) = NULL #remove row.names
 ind = paste(deletedPoints$key,deletedPoints$sec, deletedPoints$type, sep="_")
 deletedPoints = deletedPoints[!(duplicated(ind) | duplicated(ind, fromLast=TRUE)),]
@@ -113,8 +115,8 @@ deletedPoints = deletedPoints[!is.na(deletedPoints$day),]
 # not using all rows for duplicates since some have NA or empty which come up as different rather than duplicate
 
 # visually inspect that no files were deleted, and that edits look about right...
-plot(shapefileDataframe$long,shapefileDataframe$lat)
-points(deletedPoints$long,deletedPoints$lat,col="red")
+#plot(shapefileDataframe$long,shapefileDataframe$lat)
+#points(deletedPoints$long,deletedPoints$lat,col="red")
 ifelse(any(!deletedPoints$type %in% c("WAYPNT","BEGCNT","ENDCNT") & deletedPoints$offline == 0),
        stop("You deleted an online observation point, please investigate this before continuing"),
        "No online observations were deleted in your edits")
@@ -129,6 +131,7 @@ odbcClose(db)
 
 if(any(deletedPoints$type %in% spplist)) {
   x = deletedPoints[deletedPoints$type %in% spplist,]
+  deletedPoints = deletedPoints[!deletedPoints$type %in% spplist,]
   x$offline = 1
   shapefileDataframe = bind_rows(shapefileDataframe,x) 
   rm(x)
@@ -157,8 +160,7 @@ if(any(shapefileDataframe$flag1==1)) {
   
   m = gDistance(data, trans, byid=TRUE)
   data$transect = trans@data$latidext[as.numeric(apply(m, 2, function(X) rownames(m)[order(X)][1]))+1] # +1 since row starts at 0 instead of 1
-  
-  shapefileDataframe$transect[shapefileDataframe$ID %in% data$ID] = data$transect
+  shapefileDataframe$transect[shapefileDataframe$ID %in% data$ID] = as.numeric(as.character(data$transect))
   rm(data, trans, m)
 }
 # -------------------- #
@@ -168,6 +170,7 @@ if(any(shapefileDataframe$flag1==1)) {
 ### STEP 16: ADD NECESSARY BEG/END ROWS TO GIS EDITED TRACK FILES
 # this takes a while...
 # -------------------- #
+shapefileDataframe = as.data.frame(shapefileDataframe)
 track.final = addBegEnd_GISeditObsTrack(shapefileDataframe)
 
 # after inspection, corrections if BEG/END counts are added when not needed 
@@ -177,12 +180,11 @@ if (file.exists(paste(dir.out,"postGIS_BEGEND_Edits.R",sep="/"))) {
 
 
 # -------------------- #
-### STEP 17: VERIFY CONDITION CODE ERRORS ARE STILL FIXED AFTER GIS EDITS
+### STEP 17: check condition code errors
 # -------------------- #
-conditionCodeErrorChecks(track.final, yearLabel)
+track.final = conditionCodeErrorChecks(track.final)
 # -------------------- #
 
-#summary(track.final)
 
 # -------------------- #
 ### STEP 18: ADD REPLICATE COLUMN IF TRANSECT WAS FLOWN TWICE
@@ -205,7 +207,8 @@ if (any(duplicated(substr(ind,1,9)))) {
 }
 rm(ind)
 #
-###### this code snippet needs work since a replicate could occur on the same day #########
+###### this code snippet needs work since a replicate could occur on the same day 
+###### and since a transect can be flown on two different days without overlap (against protocal but happens)
 # -------------------- #
 
 
@@ -228,45 +231,43 @@ tmp = track.final$type %in% c(as.character(spplist[sppcode=="2" | sppcode=="3" |
                               "HOCR","ALGA","BAIT","CAJE","KRILL","MACR","PMOW","RCKW","SARG","UNJE","ZOOP")
 sort(unique(track.final$type[tmp]))
 forNOAA = track.final[tmp,]
-forNOAA = forNOAA[,!names(forNOAA) %in% c("dataError","transLat", "transLong", "flag1", "bearing", "sbearing", "flag2", 
-                                          "flag3", "onLand", "begend", "replicate", "keep")]
-write.csv(forNOAA, file =paste(dir.out, "/", yearLabel, "_Send2NOAA.csv", sep=""), row.names=FALSE)
-rm(forNOAA)
+forNOAA = forNOAA[,!names(forNOAA) %in% c("dataError","transLat", "transLong", "bearing", "sbearing", "replicate")]
+forNOAA.with.effort = track.final[track.final$key %in% forNOAA$key,]
+
+write.csv(forNOAA.with.effort, file = paste(dir.out, "/", yearLabel, "_forNOAA.csv", sep=""), row.names=FALSE)
+rm(forNOAA, forNOAA.with.effort)
 # -------------------- #
 
 
 
+# -------------------- #
 # RENAME TO MATCH HEADERS IN DOCUMENTS
-if (is.null(track.final$flightStatus)) track.final$flightStatus = NA
-track.final = rename(track.final, Transect = transect, Replicate = replicate, Crew = crew, 
-                     Seat = seat, Obs = obs, Year = year, Month = month, Day = day,
-                     Sec = sec, Lat = lat, Long = long, GpsError = GPSerror, 
-                     Species = type, FlockSize = count, Condition = condition, 
-                     Band = band, Comment = comment, FlightStatus = flightStatus)
+if(is.null(track.final$flightStatus) & is.null(track.final$FlightStatus)) {track.final$FlightStatus = NA}
 track.final$SurveyNbr = surveyNbr
 track.final = dplyr::select(track.final, -flag1, -flag2, -flag3, -onLand, -begend,
-                            -transect2, -coords.x1, -coords.x2, -transLat, -transLong)
+                            -coords.x1, -coords.x2, -transLat, -transLong)
 # -------------------- #
 
 
 # -------------------- #
 # TRACK TABLE
 # -------------------- #
-track.final$Species[track.final$Species %in% c(""," ",NA)] = "WAYPNT" 
+track.final$type[track.final$type %in% c(""," ",NA)] = "WAYPNT" 
 trackTbl = track.final%>%
-  filter(Species %in% c("WAYPNT","BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH")) %>%
-  mutate(Species = replace(Species, Species=="BEGSEG","BEGTRAN" ),
-                               Species = replace(Species, Species=="ENDSEG","ENDTRAN")) %>%
-  arrange(SurveyNbr, Transect, Replicate, Crew, Seat, Obs, Year, Month, Day, Sec, ID) %>% 
-  select(-FlockSize,-index,-behavior)
+  filter(type %in% c("WAYPNT","BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH")) %>%
+  mutate(type = replace(type, type=="BEGSEG","BEGTRAN" ),
+                           type = replace(type, type=="ENDSEG","ENDTRAN")) %>%
+  arrange(SurveyNbr, transect, replicate, crew, seat, obs, year, month, day, sec, ID) %>% 
+  select(-count,-index,-behavior)
 write.csv(trackTbl, file =paste(dir.out,"/", yearLabel, "_Tracks.csv", sep=""), row.names=FALSE)
 # -------------------- #
 
 
 # -------------------- #
-# ADD COVARIATES TO OBSERVATIONS (DEPTH, SLOPE, DISTANCE TO COAST)
+# ADD COVARIATES TO OBSERVATIONS (DISTANCE TO COAST)
 # -------------------- #
-track.final = track.final[!track.final$Species %in% c("WAYPNT","COCH"),]
+track.final = track.final[!track.final$type %in% c("WAYPNT","COCH"),]
+track.final = rename(track.final, Lat=lat, Long=long)
 
 nnSearch <- function(inCoords, refCoords, covariate, toPull) {
   x = inCoords[,c("Lat","Long")]  
@@ -281,132 +282,109 @@ coastline <- read.csv(paste(dir,"/DataProcessing/coastline.csv",sep=""))
 nnCoords = nnSearch(track.final, coastline, coastline, c("Long","Lat"))
 track.final$nnLong = nnCoords$Long
 track.final$nnLat = nnCoords$Lat
-track.final$Dist2Coast_m = distVincentySphere(cbind(track.final$Long, track.final$Lat), cbind(track.final$nnLong,track.final$Lat))
+track.final$Dist2Coast_m = distVincentySphere(cbind(track.final$Long, track.final$Lat), 
+                                              cbind(track.final$nnLong,track.final$Lat))
 track.final$Dist2Coast_nm = track.final$Dist2Coast_m * 0.000539957
 track.final = track.final[,!colnames(track.final) %in% c("nnLong","nnLat")]
 rm(coastline, nnCoords)
-
-# Ignoring depth and slope for now
-# these are calculated using Jeff's old "add2database.R" script which at the moment I am not running
-# they can be found in "CalbObsCovariates.py" ... 
-track.final$Depth = ""           
-track.final$Slope = ""   
 # -------------------- #
 
 
 # -------------------- #
-### STEP 21: ADD BOATS, BALLOONS, AND MISC. OBS TO EXCEL FILES
-# -------------------- #
-# pull out boat observations for separate table
-boats = track.final[track.final$Species %in% c("BOTD","BOAC","BOAT","BOBA","BOCA","BOCF","BOCG","BOCR",
-                                                   "BOCS","BOFE","BOFI","BOLO","BOME","BONA","BOPL","BOPS",
-                                                   "BORF","BORV","BOSA","BOSU","BOTA","BOTU","BOWW","BOYA"),]
-boats$FlockSize[boats$FlockSize == 0] = 1 # CHANGE FLOCK SIZE FOR BOATS WHERE FLOCK SIZE == 0 TO 1
-if(any(boats$Species=="TRAW")) {boats$Species[boats$Species=="TRAW"]="BOTD"} # since Jeff used TRAW but NWASC code for trawler is BOTD
-write.csv(boats, file.path(dir.out, "BoatObservations.csv"),  row.names = FALSE, na = "")
-rm(boats)
-
-
-# pull out balloon observations for separate table
-balloons = track.final[track.final$Species %in% c("BALN","MYBA"),]
-write.csv(balloons, file.path(dir.out, "BalloonsObservations.csv"), row.names = FALSE, na = "")
-rm(balloons)
-
-
-# pull out offline observations, save for NWASC database
-# Define points to keep #
-track.final$keep = 1
-track.final$keep[track.final$offline == 1 | track.final$Band == 3] = 0
-table(track.final$Band, track.final$keep)
-
-OfflineObs = filter(track.final, keep == 0)
-write.csv(OfflineObs, file.path(dir.out, paste(yearLabel, "OfflineObs_Final.csv", sep = "_")), row.names = FALSE, na = "")
-# -------------------- #
-
-
-# -------------------- #
-### STEP 22: AMAPPS database vs. NWASC database seperation
-# -------------------- #
-
-
-# -------------------- #
-# TRANSECT INFORMATION TABLE FOR ATLANTIC COAST SURVEYS DATABASE
+# TRANSECT TABLE 
 # -------------------- #
 # average condition is weighted by distance flown at each observation condition
 # distance flown per transect is in nautical miles, distance between points in meters 
-df = track.final %>% group_by(SurveyNbr,Transect,Replicate,Crew,Seat,Obs)  %>% 
+break.at.each.stop = filter(track.final, type %in% c("BEGSEG","BEGTRAN","BEGCNT")) %>%
+  group_by(key) %>% mutate(start.stop.index = seq(1:n())) %>% ungroup() %>% 
+  select(key, ID, start.stop.index)
+new.key = left_join(track.final, break.at.each.stop, by=c("ID","key")) %>% 
+  mutate(start.stop.index = na.locf(start.stop.index), 
+         newkey = paste(key, start.stop.index, sep="_")) %>% select(-start.stop.index)
+  
+# grouped by new key to avoid counting time and distance traveled between breaks
+df = new.key %>% group_by(newkey)  %>% 
   mutate(lon = lead(Long, default = last(Long), order_by = ID),
          lat = lead(Lat, default = last(Lat), order_by = ID)) %>%
   rowwise() %>% mutate(distance = distVincentySphere(c(Long, Lat), c(lon, lat))) %>%
-  select(-lon, -lat) %>% group_by(SurveyNbr,Transect,Replicate,Crew,Seat,Obs) %>%  
-  summarise(AvgCondition = as.numeric(weighted.mean(Condition, distance)), 
-            DistFlown = sum(distance)*0.000539957,
-            minDay = min(Day), maxDay = max(Day),
-            minMonth = min(Month), maxMonth = max(Month),
-            minYear = min(Year), maxYear = max(Year))  %>%
-  ungroup()
-df$StartDt = paste(df$minMonth,"/", df$minDay, "/", df$minYear,sep="")
-df$EndDt = paste(df$maxMonth,"/", df$maxDay, "/", df$maxYear,sep="")
-df = subset(df, select=-c(minYear, minMonth, minDay, maxYear, maxMonth, maxDay))
+  select(-lon, -lat) %>% #mutate(distance = replace(distance, type=="BEGCNT", NA)) %>%
+  mutate(condition = replace(condition, condition==0, NA)) %>%
+  group_by(newkey) %>%  
+  summarise(transect = first(transect),
+            seat = first(seat),
+            obs = first(obs),
+            key = first(key),
+            AvgCondition = as.numeric(weighted.mean(condition, distance, na.rm=TRUE)), 
+            DistFlown_nm = sum(distance, na.rm=TRUE)*0.000539957,
+            transect_distance_nb = sum(distance, na.rm=TRUE),
+            start_dt = as.POSIXct(paste(first(year),first(month),first(day), sep="/")),
+            end_dt = as.POSIXct(paste(last(year),last(month),last(day), sep="/")),
+            start_sec = sec[row_number()==1], 
+            end_sec  = sec[row_number()==n()],
+            transect_time_min_nb = (end_sec-start_sec)/60)  %>%
+  ungroup() %>% as.data.frame %>% arrange(start_dt, transect, seat)
+
+# group by old key
+transectTbl = df %>% group_by(key) %>%
+  summarise(transect = first(transect),
+            seat = first(seat),
+            obs = first(obs),
+            AvgCondition = as.numeric(weighted.mean(AvgCondition, DistFlown_nm, na.rm=TRUE)), 
+            DistFlown_nm = sum(DistFlown_nm),
+            transect_distance_nb = sum(transect_distance_nb),
+            start_dt = first(start_dt),
+            end_dt = last(end_dt),
+            start_sec = first(start_sec),
+            end_sec = last(end_sec),
+            transect_time_min_nb = sum(transect_time_min_nb)) %>%
+  ungroup() %>% as.data.frame %>% arrange(start_dt, transect, seat)
+
+rm(break.at.each.stop, df, new.key)    
 
 # Check that the output looks ok...
-head(df)
+View(transectTbl)
 
 # Check that there isn't an Av. condition of zero
-if(any(df$AvgCondition==0)) {
+if(any(transectTbl$AvgCondition %in% c(0,NA))) {
+  write.csv(transectTbl [transectTbl $AvgCondition %in% c(0,NA),], file.path(dir.out, "AvgCondition.0.csv"),  row.names = FALSE, na = "")
   print("Average condition of zero. The following transects need to be investigated: ")
-  df[df$AvgCondition==0,]}
+  transectTbl [transectTbl$AvgCondition %in% c(0,NA),]
+}
+# 
+transectTbl = transectTbl %>% 
+  mutate(weather_tx = round(AvgCondition),
+         weather_tx = replace(weather_tx, weather_tx==1, "1 - worst observation conditions"),
+         weather_tx = replace(weather_tx, weather_tx==2, "2 - bad observation conditions"), 
+         weather_tx = replace(weather_tx, weather_tx==3, "3 - average observation conditions"),
+         weather_tx = replace(weather_tx, weather_tx==4, "4 - good observation conditions"),
+         weather_tx = replace(weather_tx, weather_tx==5, "5 - excellent observation conditions"))
+write.csv(transectTbl, file = paste(dir.out, "/", yearLabel, "_transectTbl.csv", sep=""), row.names=FALSE)
+# -------------------- #
 
-# Columns in the ACS db that we should probably do something about but need to talk about it...
-df$ACWSD=""
-df$ACWSDreport=""
-df$WindArea=""
-df$MissingTrackFile=""
-df$ImputedDistFlown=""
-
-df = df[order(df$SurveyNbr, df$Transect, df$Replicate, df$Crew, df$Seat, df$Obs), ]
-
-write.csv(df, file = paste(dir.out, "/", yearLabel, "_Transect_Information.csv", sep=""), row.names=FALSE)
-rm(df)
-
-  
-# include all birds & boats but not marine life
-# if catagory 'species_type-cd' 2, 3, or 4 in NWASC_codes list exclude from AMAPPS access database
-
-# NON-SURVEY SPECIES (all marine mammals, reptiles, and fish) CHANGE KEEP TO 0
-# out of species code 5 only boats (listed) and balloons go into ACS database
-# species code 1 is all birds
-tmp = !(track.final$type %in% c(as.character(spplist[sppcode=="1"],  
-                                                     "BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH", "BALN",
-                                                     "BOTD","BOAC","BOAT","BOBA","BOCA","BOCF","BOCG","BOCR",
-                                                     "BOCS","BOFE","BOFI","BOLO","BOME","BONA","BOPL","BOPS",
-                                                     "BORF","BORV","BOSA","BOSU","BOTA","BOTU","BOWW","BOYA")))
-sort(unique(track.final$Species[tmp]))
-track.final$keep[tmp] = 0
-
-# REMOVE OFFLINE OBSERVATIONS FROM track.final for Atlantic Coast Survey Access Database#
-track.final.ACS = track.final[!track.final$Species %in% c("WAYPNT","BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH"),]
-track.final.ACS = subset(track.final.ACS, keep == 1)
-track.final.ACS$keep = NULL
-track.final.ACS$survey = NULL
-summary(track.final.ACS)
-
-track.final.ACS = track.final.ACS[order(track.final.ACS$SurveyNbr, track.final.ACS$Transect, 
-                                        track.final.ACS$Replicate, track.final.ACS$Crew, 
-                                        track.final.ACS$Seat, track.final.ACS$Obs, 
-                                        track.final.ACS$Year, track.final.ACS$Month, 
-                                        track.final.ACS$Day, track.final.ACS$Sec), ]
-
-# OBS TABLE
-write.csv(track.final.ACS, file = paste(dir.out,"/", yearLabel,"_Observations.csv", sep=""), row.names=FALSE)
+# -------------------- #
+# OBSERVATION TABLE
+# -------------------- #
+obsTbl = track.final %>% filter(!type %in% c("WAYPNT","BEGSEG", "BEGCNT", "ENDSEG", "ENDCNT", "COCH")) %>% 
+  mutate(comment = paste(comment, dataChange, sep = "; "),
+         weather_tx = round(condition),
+         weather_tx = replace(weather_tx, weather_tx==1, "1 - worst observation conditions"),
+         weather_tx = replace(weather_tx, weather_tx==2, "2 - bad observation conditions"), 
+         weather_tx = replace(weather_tx, weather_tx==3, "3 - average observation conditions"),
+         weather_tx = replace(weather_tx, weather_tx==4, "4 - good observation conditions"),
+         weather_tx = replace(weather_tx, weather_tx==5, "5 - excellent observation conditions")) %>% 
+  select(-dataChange) %>% 
+  rename(longitude_dd = Long, latitude_dd = Lat, Time_secs = sec, surveyband = band, 
+         Count = count, ConditionCode = condition, SpeciesId = type) %>% 
+  arrange(ID)
+write.csv(obsTbl, file = paste(dir.out,"/", yearLabel,"_Observations.csv", sep=""), row.names=FALSE)
 # -------------------- #
 
 
 # -------------------- #
-### STEP 23: OUTPUT FINAL EDITED TRACK FILE 
+### STEP 23: OUTPUT FINAL EDITED TRACK FILE (observations with track BEG and END records but not WAYPNT records)
 # -------------------- #
 # This includes all observations (even marine)
-obsTrackFinalOutput(track.final, yearLabel, dir.out)
+#obsTrackFinalOutput(track.final, yearLabel, dir.out)
 write.csv(track.final, file =paste(dir.out,"/", yearLabel, "_Obstrack_Final.csv", sep=""), row.names=FALSE)
 save.image(paste(dir.out,"obstrack_final.Rdata",sep="/"))
 # -------------------- #
