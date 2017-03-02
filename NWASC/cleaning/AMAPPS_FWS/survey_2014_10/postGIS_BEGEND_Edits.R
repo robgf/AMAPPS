@@ -269,6 +269,7 @@ track.final$transect[track.final$ID %in% c(105587:105592, 105652:105690)] = 3851
 
 # add to track.final
 track.final = bind_rows(track.final, to.add)
+rm(to.add)
 
 # remove
 to.remove = c(104393.99, 104447:104453, 104394,
@@ -295,6 +296,7 @@ to.remove = c(104393.99, 104447:104453, 104394,
 
 deletedPoints = bind_rows(deletedPoints, track.final[track.final$ID %in% to.remove,]) %>% arrange(ID)
 track.final = track.final[!track.final$ID %in% to.remove,]
+rm(to.remove)
 #----------#
 
 
@@ -309,7 +311,9 @@ track.final = track.final %>% mutate(key = paste(crew, seat, year, month, day, t
 # other random errors
 #----------#
 # fix boat counts
+track.final$count = as.numeric(track.final$count)
 track.final$distance.from.observer = NA
+
 track.final$comment[track.final$type %in% "BOTD" & track.final$count > 7 & !is.na(track.final$count)] = 
   paste("; distance: ",
         track.final$count[track.final$type %in% "BOTD" & track.final$count > 7 & !is.na(track.final$count)],
@@ -322,6 +326,28 @@ track.final$comment[track.final$type %in% "BOTD" & is.na(track.final$count)] =
   paste(track.final$comment[track.final$type %in% "BOTD" & is.na(track.final$count)],
         "; count not listed", sep = "")
 track.final$count[track.final$type %in% "BOTD" & is.na(track.final$count)] = 1
+#
+track.final$distance.from.observer[track.final$comment %in% c("; distance: 1.5; count not listed")] = 1.5
+track.final$distance.from.observer[track.final$comment %in% c("; distance: .5; count not listed", 
+                                                              "; distance: 0.5; count not listed")] = 0.5
+track.final$distance.from.observer[track.final$comment %in% c("; distance: .75; count not listed")] = 0.75
+track.final$distance.from.observer[track.final$comment %in% c("1")] = 1                                 
+track.final$distance.from.observer[track.final$comment %in% c("100")] = 100                                
+track.final$distance.from.observer[track.final$comment %in% c("1000")] = 1000                               
+track.final$distance.from.observer[track.final$comment %in% c("150")] = 150                               
+track.final$distance.from.observer[track.final$comment %in% c("1600")] = 1600                               
+track.final$distance.from.observer[track.final$comment %in% c("2")] = 2                                  
+track.final$distance.from.observer[track.final$comment %in% c("20")] = 20                                
+track.final$distance.from.observer[track.final$comment %in% c("200")] = 200                                
+track.final$distance.from.observer[track.final$comment %in% c("3")] = 3                                  
+track.final$distance.from.observer[track.final$comment %in% c("300")] = 300                               
+track.final$distance.from.observer[track.final$comment %in% c("4")] = 4                                  
+track.final$distance.from.observer[track.final$comment %in% c("400")] = 400                                
+track.final$distance.from.observer[track.final$comment %in% c("50")] =  50                               
+track.final$distance.from.observer[track.final$comment %in% c("500")] = 500                                
+track.final$distance.from.observer[track.final$comment %in% c("600")] = 600                                
+track.final$distance.from.observer[track.final$comment %in% c("700")] = 700                             
+track.final$distance.from.observer[track.final$comment %in% c("800")] = 800   
 
 # fix behaviors that were in momments
 track.final$behavior[track.final$comment %in% c("F","f","flying","fly", "F; Transect flown more than one day", "F; Transect flown more than one day ") & is.na(track.final$behavior)] = 
