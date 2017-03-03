@@ -352,7 +352,7 @@ track.final$distance.from.observer[track.final$comment %in% c("800")] = 800
 # fix behaviors that were in momments
 track.final$behavior[track.final$comment %in% c("F","f","flying","fly", "F; Transect flown more than one day", "F; Transect flown more than one day ") & is.na(track.final$behavior)] = 
   "flying"
-track.final$behavior[track.final$comment %in% c("S","s","swimming","swim", "S; Transect flown more than one day", "S; Transect flown more than one day ") & is.na(track.final$behavior)] = 
+track.final$behavior[track.final$comment %in% c("S","s","sit", "S; Transect flown more than one day", "S; Transect flown more than one day ") & is.na(track.final$behavior)] = 
   "sitting"
 track.final$behavior[track.final$behavior %in% c("F","f")] = "flying"
 track.final$behavior[track.final$behavior %in% c("S","s")] = "sitting"
