@@ -8,6 +8,7 @@
 #---------------------------#
 require(dplyr)
 require(zoo)
+require(geosphere)
 #---------------------------#
 
 
@@ -20,31 +21,49 @@ dir = "//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/BOEM_HiDef
 
 #---------------------------#
 # load data
-#---------------------------#data = read.csv(paste(dir,"BOEMHiDef_NC2011_aerial.csv",sep="/"))
+#---------------------------#
+data = read.csv(paste(dir,"BOEMHiDef_NC2011_aerial.csv",sep="/"))
 data_track = read.csv(paste(dir,"BOEMHiDef_NC2011_aerial_track.csv",sep="/"))
-data_transect = read.csv(paste(dir,"BOEMHiDef_NC2011_aerial_transects.csv",sep="/"))
+#data_transect = read.csv(paste(dir,"BOEMHiDef_NC2011_aerial_transects.csv",sep="/"))
 id = 144
 #---------------------------#
+
 
 
 #---------------------------#
 # format track 
 #---------------------------#
-data_track = data_track %>% rename(lon = long) %>%
-  bind_rows(., filter(data, type %in% c("BEGCNT","ENDCNT","COMMENT"))) %>% 
+data_track = data_track %>% rename(lon = long) %>% 
   mutate(date = sapply(strsplit(as.character(date_time), " "),head,1),
-         time = sapply(strsplit(as.character(date_time), " "),tail,1),
-         type = as.character(type),
-         type = replace(type, is.na(type),"WAYPNT")) %>%
+         time = sapply(strsplit(as.character(date_time), " "),tail,1)) %>%
   filter(!X.trk.name %in% "/trk/name",
          !date %in% "2011-05-10") %>%
-  arrange(date_time, source_transect_id) 
-
-data_track$source_transect_id = na.locf(data_track$source_transect_id)
-data_track = data_track %>% mutate(source_transect_id = replace(source_transect_id, !is.na(observers),
-                                                                paste(source_transect_id[!is.na(observers)], 
-                                                                      observers[!is.na(observers)], sep="_")))
+  arrange(date_time) 
 #---------------------------#
+
+
+#---------------------------#
+# redefine observation lat/lons since they're off slightly
+# due to NA time errors
+#---------------------------#
+data = mutate(data,
+              date = sapply(strsplit(as.character(date_time), " "),head,1),
+              time = sapply(strsplit(as.character(date_time), " "),tail,1))
+
+for(a in 1:dim(data)[1]) {
+  y = data_track[data_track$date %in% data$date[a],]
+  if(min(abs(difftime(data$date_time[a], y$date_time[!is.na(y$date_time)], units = "mins")))<3) {
+    ind = which.min(abs(difftime(data$date_time[a], y$date_time[!is.na(y$date_time)])))
+    data$lat[a] = y$lat[!is.na(y$date_time)][ind]
+    data$lon[a] = y$lon[!is.na(y$date_time)][ind]
+  }
+}
+
+data_track = data_track %>% bind_rows(., filter(data, type %in% c("BEGCNT","ENDCNT","COMMENT"))) %>%
+  mutate(type = as.character(type),
+         type = replace(type, is.na(type),"WAYPNT"))
+#---------------------------#
+
 
 #---------------------------#
 # fix transects
@@ -331,6 +350,8 @@ track_RiH = track_RiH[!duplicated(track_RiH),]
 # remove old data track file, replace it with a aggregation for each observer
 rm(data_track)
 data_track = rbind(track_DH, track_EH, track_MB, track_MH, track_RaH, track_RiH)
+rm(track_DH, track_EH, track_MB, track_MH, track_RaH, track_RiH)
+#
 #---------------------------#
 
 
@@ -360,29 +381,14 @@ new.key = left_join(data_track, break.at.each.stop, by=c("ID","source_transect_i
 
 # grouped by new key to avoid counting time and distance traveled between breaks
 df = new.key %>% group_by(newkey)  %>% 
-  mutate(lagged.lon = lead(long, default = last(long), order_by = ID),
+  mutate(lagged.lon = lead(lon, default = last(lon), order_by = ID),
          lagged.lat = lead(lat, default = last(lat), order_by = ID)) %>%
-  rowwise() %>% mutate(distance = distVincentySphere(c(long, lat), c(lagged.lon, lagged.lat))) %>%
+  rowwise() %>% mutate(distance = distVincentySphere(c(lon, lat), c(lagged.lon, lagged.lat))) %>%
   select(-lagged.lon, -lagged.lat) %>% 
   group_by(newkey) %>%  
-  summarise(observer = first(observer),
+  summarise(observer = first(observers),
             source_transect_id = first(source_transect_id),
             transect_distance_nb = sum(distance, na.rm=TRUE),
-            temp_start_lon = first(long),
-            temp_stop_lon = last(long),
-            temp_start_lat = first(lat),
-            temp_stop_lat = last(lat),
-            start_dt = as.character(first(date)),
-            end_dt = as.character(last(date)),
-            start_sec = first(time), 
-            end_sec  = last(time),
-            transect_time_min_nb = difftime(first(date_time), last(date_time), units="mins"))  %>%
-  ungroup() %>% as.data.frame %>% arrange(start_dt, source_transect_id)
-#
-transectTbl = df %>% 
-  group_by(source_transect_id)  %>% 
-  arrange(date_time) %>% 
-  summarise(observer = first(observers),
             temp_start_lon = first(lon),
             temp_stop_lon = last(lon),
             temp_start_lat = first(lat),
@@ -391,7 +397,25 @@ transectTbl = df %>%
             end_dt = as.character(last(date)),
             start_tm = first(time), 
             end_tm  = last(time),
+            transect_time_min_nb = difftime(first(date_time), last(date_time), units="mins"))  %>%
+  ungroup() %>% as.data.frame %>% arrange(start_dt, source_transect_id)
+#
+transectTbl = df %>% 
+  group_by(source_transect_id)  %>% 
+  arrange(start_tm) %>% 
+  summarise(observer = first(observer),
+            temp_start_lon = first(temp_start_lon),
+            temp_stop_lon = last(temp_stop_lon),
+            temp_start_lat = first(temp_start_lat),
+            temp_stop_lat = last(temp_stop_lat),
+            start_dt = as.character(first(start_dt)),
+            end_dt = as.character(last(end_dt)),
+            start_tm = first(start_tm), 
+            end_tm  = last(end_tm),
             transect_time_min_nb = sum(transect_time_min_nb),
             transect_distance_nb = sum(transect_distance_nb))  %>%
-  ungroup() %>% as.data.frame %>% arrange(start_dt, source_transect_id)
+  ungroup() %>% as.data.frame %>% arrange(start_dt, source_transect_id) %>%
+  mutate(transect_distance_nb = replace(transect_distance_nb,transect_distance_nb==0,NA)) %>%
+  filter(!source_transect_id %in% c("NA_RiH", "NA_DH", "NA_EH", "NA_MB", "NA_MH", "NA_RaH"))
+rm(df, new.key, break.at.each.stop)
 #---------------------------#
