@@ -222,7 +222,7 @@ track_WB = track_WB %>% filter(!type %in% c("BEGCNT","ENDCNT","COMMENT")) %>%
 #
 # remove old data track file, replace it with a aggregation for each observer
 rm(data_track)
-data_track = rbind(track_DH, track_EH, track_MB, track_MH, track_RaH, track_RiH)
+data_track = rbind(track_DH, track_EH, track_WB, track_CH, track_AM, track_JW, track_JWCG)
 rm(track_DH, track_EH, track_WB, track_CH, track_AM, track_JW, track_JWCG)
 #---------------------------#
 
