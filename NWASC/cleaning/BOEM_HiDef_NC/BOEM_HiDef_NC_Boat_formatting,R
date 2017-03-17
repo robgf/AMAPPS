@@ -56,6 +56,7 @@ for(a in 1:dim(data)[1]) {
     data$lon[a] = y$lon[!is.na(y$date_time)][ind]
   }
 }
+rm(a,y)
 
 data_track = data_track %>% bind_rows(., filter(data, type %in% c("BEGCNT","ENDCNT","COMMENT"))) %>%
   mutate(type = as.character(type),
@@ -72,40 +73,37 @@ hold = data_track %>% filter(type %in% c("BEGCNT","ENDCNT")) %>%
   select(source_transect_id, type, date_time, lat, lon, ID, comments) %>% 
   arrange(source_transect_id, date_time)
 
-data_track$source_transect_id[data_track$ID==2519.0 & data_track$source_transect_id==10] = 9 #CH
-data_track$source_transect_id[data_track$ID==2525.0 & data_track$source_transect_id==10] = 9 #AM
-data_track$source_transect_id[data_track$ID==2579.0 & data_track$source_transect_id==39] = 38 #AM
-data_track$source_transect_id[data_track$ID==2658 & data_track$source_transect_id==49] = 48 #CH
+data_track$source_transect_id[data_track$ID %in% c(2519.0,2525.0)] = 9 #CH & AM
+data_track$source_transect_id[data_track$ID %in% c(2584)] = 38 #CH 
+data_track$source_transect_id[data_track$ID %in% 2580] = 39 #AM
+data_track$source_transect_id[data_track$ID %in% 2657] = 49 #CH
 #
-data_track$observers[data_track$ID==3016] = "JW"
-data_track$observers[data_track$ID==3050] = "JW/CG"
+data_track$source_transect_id[data_track$ID %in% c(2655, 2647, 2640, 2643, 2633, 2636,
+                                                   2467, 2483, 2588, 2587, 2579,
+                                                   2577, 2576, 2499, 2511, 2569, 2571,
+                                                   2561, 2562.5, 2159, 2178, 2132,
+                                                   2136, 2585, 2635, 2634, 
+                                                   2641, 2642, 2656, 2574)] = NA #chum
 #
-to.add = data_track[data_track$ID==2587,]
-to.add$source_transect_id = 38
-to.add$type = "ENDCNT"
-to.add$ID = 2586.99
-to.add$segment=55
-to.add$event_number = NA
-to.add$comments = "Added ENDCNT; chum"
-data_track = bind_rows(data_track, to.add) %>% arrange(date_time)
-#
-to.add = data_track[data_track$ID==2658,]
-to.add$observers = "AM"
-to.add$comments = "Added ENDCNT; chum"
-to.add$ID = 2658.99
-data_track = bind_rows(data_track, to.add) %>% arrange(date_time)
+data_track$observers[data_track$ID %in% c(3016, 3031, 3050)] = "JW/CG"
+data$observers[data$ID %in% c(3017:3029)] = "JW/CG" # was CG, JW, or JW/CG for this segment
 #
 to.add = data_track[data_track$ID==2671,]
 to.add$observers = "CH"
 to.add$comments = "Added ENDCNT"
-to.add$ID = 2515.99
+to.add$ID = 2681.99
 data_track = bind_rows(data_track, to.add) %>% arrange(date_time)
+rm(to.add)
 #---------------------------#
 
 
 #---------------------------#
 # create tracks for each observer for on transect counts
 #---------------------------#
+hold = data_track %>% filter(type %in% c("BEGCNT","ENDCNT")) %>% 
+  select(ID, lat, lon, date_time, visibility, source_transect_id, type, observers, date, time, comments) %>%
+  mutate(source_transect_id = paste(source_transect_id, observers, sep="_"))
+#
 track_AM = data_track[(data_track$date_time > data_track$date_time[data_track$ID==2526] & data_track$date_time < data_track$date_time[data_track$ID==2527]) | #10
                         (data_track$date_time > data_track$date_time[data_track$ID==2529] & data_track$date_time < data_track$date_time[data_track$ID==2530]) | #20
                         (data_track$date_time > data_track$date_time[data_track$ID==2531] & data_track$date_time < data_track$date_time[data_track$ID==2532]) | #21
@@ -120,7 +118,7 @@ track_AM = data_track[(data_track$date_time > data_track$date_time[data_track$ID
                         (data_track$date_time > data_track$date_time[data_track$ID==2524] & data_track$date_time < data_track$date_time[data_track$ID==2525]),] #9
 track_AM = track_AM %>% filter(!type %in% c("BEGCNT","ENDCNT","COMMENT")) %>%
   bind_rows(., filter(data_track, type %in% c("BEGCNT","ENDCNT","COMMENT") & observers=="AM")) %>% 
-  select(ID, lat, lon, date_time, visibility, source_transect_id, type, observers, date, time) %>% 
+  select(ID, lat, lon, date_time, visibility, source_transect_id, type, observers, date, time, comments) %>% 
   arrange(date_time) %>%    
   mutate(observers = "AM", 
          source_transect_id = na.locf(source_transect_id),
@@ -136,24 +134,25 @@ track_CH = data_track[(data_track$date_time > data_track$date_time[data_track$ID
                         (data_track$date_time > data_track$date_time[data_track$ID==2582] & data_track$date_time < data_track$date_time[data_track$ID==2584]) | #38
                         (data_track$date_time > data_track$date_time[data_track$ID==2637] & data_track$date_time < data_track$date_time[data_track$ID==2639]) | #44
                         (data_track$date_time > data_track$date_time[data_track$ID==2652] & data_track$date_time < data_track$date_time[data_track$ID==2654]) | #48
+                        (data_track$date_time > data_track$date_time[data_track$ID==2657] & data_track$date_time < data_track$date_time[data_track$ID==2658]) | #49
                         (data_track$date_time > data_track$date_time[data_track$ID==2672] & data_track$date_time < data_track$date_time[data_track$ID==2676]) | #52
-                        (data_track$date_time > data_track$date_time[data_track$ID==2681] & data_track$date_time < data_track$date_time[data_track$ID==2515.99]) | #53
+                        (data_track$date_time > data_track$date_time[data_track$ID==2681] & data_track$date_time < data_track$date_time[data_track$ID==2681.99]) | #53
                         (data_track$date_time > data_track$date_time[data_track$ID==2516] & data_track$date_time < data_track$date_time[data_track$ID==2517]) | #9
                         (data_track$date_time > data_track$date_time[data_track$ID==2518] & data_track$date_time < data_track$date_time[data_track$ID==2519]),] #9
 track_CH = track_CH %>% filter(!type %in% c("BEGCNT","ENDCNT","COMMENT")) %>%
   bind_rows(., filter(data_track, type %in% c("BEGCNT","ENDCNT","COMMENT") & observers=="CH")) %>% 
-  select(ID, lat, lon, date_time, visibility, source_transect_id, type, observers, date, time) %>% 
+  select(ID, lat, lon, date_time, visibility, source_transect_id, type, observers, date, time, comments) %>% 
   arrange(date_time) %>%    
   mutate(observers = "CH", 
          source_transect_id = na.locf(source_transect_id),
          source_transect_id = paste(source_transect_id, observers, sep="_")) 
-# chum transects: 33 part1, 38 both parts, 39, 44 part2, 45, 48 part2, 
+# chum transects: 33 part1, 38 part, 39, 44 part2, 45, 48 part2, 
 #
 track_DH = data_track[(data_track$date_time > data_track$date_time[data_track$ID==2137] & data_track$date_time < data_track$date_time[data_track$ID==2138]) | #10
                         (data_track$date_time > data_track$date_time[data_track$ID==2124] & data_track$date_time < data_track$date_time[data_track$ID==2131]),] #9
 track_DH = track_DH %>% filter(!type %in% c("BEGCNT","ENDCNT","COMMENT")) %>%
   bind_rows(., filter(data_track, type %in% c("BEGCNT","ENDCNT","COMMENT") & observers=="DH")) %>% 
-  select(ID, lat, lon, date_time, visibility, source_transect_id, type, observers, date, time) %>% 
+  select(ID, lat, lon, date_time, visibility, source_transect_id, type, observers, date, time, comments) %>% 
   arrange(date_time) %>%    
   mutate(observers = "DH", 
          source_transect_id = na.locf(source_transect_id),
@@ -167,7 +166,7 @@ track_EH = data_track[(data_track$date_time > data_track$date_time[data_track$ID
                         
 track_EH = track_EH %>% filter(!type %in% c("BEGCNT","ENDCNT","COMMENT")) %>%
   bind_rows(., filter(data_track, type %in% c("BEGCNT","ENDCNT","COMMENT") & observers=="EH")) %>% 
-  select(ID, lat, lon, date_time, visibility, source_transect_id, type, observers, date, time) %>% 
+  select(ID, lat, lon, date_time, visibility, source_transect_id, type, observers, date, time, comments) %>% 
   arrange(date_time) %>%    
   mutate(observers = "EH", 
          source_transect_id = na.locf(source_transect_id),
@@ -175,11 +174,10 @@ track_EH = track_EH %>% filter(!type %in% c("BEGCNT","ENDCNT","COMMENT")) %>%
 # chum transects: 20,33 EH/WB
 #
 track_JW = data_track[(data_track$date_time > data_track$date_time[data_track$ID==2459] & data_track$date_time < data_track$date_time[data_track$ID==2466]) | #38
-                        (data_track$date_time > data_track$date_time[data_track$ID==2484] & data_track$date_time < data_track$date_time[data_track$ID==2486]) | #39
-                        (data_track$date_time > data_track$date_time[data_track$ID==3016] & data_track$date_time < data_track$date_time[data_track$ID==3031]),] #52
+                        (data_track$date_time > data_track$date_time[data_track$ID==2484] & data_track$date_time < data_track$date_time[data_track$ID==2486]),] #39
 track_JW = track_JW %>% filter(!type %in% c("BEGCNT","ENDCNT","COMMENT")) %>%
   bind_rows(., filter(data_track, type %in% c("BEGCNT","ENDCNT","COMMENT") & observers=="JW")) %>% 
-  select(ID, lat, lon, date_time, visibility, source_transect_id, type, observers, date, time) %>% 
+  select(ID, lat, lon, date_time, visibility, source_transect_id, type, observers, date, time, comments) %>% 
   arrange(date_time) %>%    
   mutate(observers = "JW", 
          source_transect_id = na.locf(source_transect_id),
@@ -189,10 +187,11 @@ track_JW = track_JW %>% filter(!type %in% c("BEGCNT","ENDCNT","COMMENT")) %>%
 track_JWCG = data_track[(data_track$date_time > data_track$date_time[data_track$ID==2899] & data_track$date_time < data_track$date_time[data_track$ID==2911]) | #48
                         (data_track$date_time > data_track$date_time[data_track$ID==2911.50] & data_track$date_time < data_track$date_time[data_track$ID==2914]) | #48
                         (data_track$date_time > data_track$date_time[data_track$ID==2915] & data_track$date_time < data_track$date_time[data_track$ID==2924]) | #49
+                          (data_track$date_time > data_track$date_time[data_track$ID==3016] & data_track$date_time < data_track$date_time[data_track$ID==3031]) | #52
                         (data_track$date_time > data_track$date_time[data_track$ID==3050] & data_track$date_time < data_track$date_time[data_track$ID==3057]),] #53
 track_JWCG = track_JWCG %>% filter(!type %in% c("BEGCNT","ENDCNT","COMMENT")) %>%
   bind_rows(., filter(data_track, type %in% c("BEGCNT","ENDCNT","COMMENT") & observers=="JW/CG")) %>% 
-  select(ID, lat, lon, date_time, visibility, source_transect_id, type, observers, date, time) %>% 
+  select(ID, lat, lon, date_time, visibility, source_transect_id, type, observers, date, time, comments) %>% 
   arrange(date_time) %>%    
   mutate(observers = "JW/CG", 
          source_transect_id = na.locf(source_transect_id),
@@ -214,7 +213,7 @@ track_WB = data_track[(data_track$date_time > data_track$date_time[data_track$ID
                         (data_track$date_time > data_track$date_time[data_track$ID==2118] & data_track$date_time < data_track$date_time[data_track$ID==2121]),] #9
 track_WB = track_WB %>% filter(!type %in% c("BEGCNT","ENDCNT","COMMENT")) %>%
   bind_rows(., filter(data_track, type %in% c("BEGCNT","ENDCNT","COMMENT") & observers=="WB")) %>% 
-  select(ID, lat, lon, date_time, visibility, source_transect_id, type, observers, date, time) %>% 
+  select(ID, lat, lon, date_time, visibility, source_transect_id, type, observers, date, time, comments) %>% 
   arrange(date_time) %>%    
   mutate(observers = "WB", 
          source_transect_id = na.locf(source_transect_id),
@@ -222,7 +221,9 @@ track_WB = track_WB %>% filter(!type %in% c("BEGCNT","ENDCNT","COMMENT")) %>%
 #
 # remove old data track file, replace it with a aggregation for each observer
 rm(data_track)
-data_track = rbind(track_DH, track_EH, track_WB, track_CH, track_AM, track_JW, track_JWCG)
+data_track = rbind(track_DH, track_EH, track_WB, track_CH, track_AM, track_JW, track_JWCG) %>%
+  filter(!type %in% c("BEGCNT","ENDCNT")) %>%
+  rbind(.,hold) %>% arrange(source_transect_id, date, time)
 rm(track_DH, track_EH, track_WB, track_CH, track_AM, track_JW, track_JWCG)
 #---------------------------#
 
@@ -237,6 +238,12 @@ data = filter(data, !type %in% c("BEGCNT","ENDCNT","COMMENT")) %>%
          source_transect_id = paste(source_transect_id, observers, sep="_"),
          source_transect_id = replace(source_transect_id, offline==1, NA)) %>%
   arrange(source_transect_id, date_time)
+
+# 
+data$offline[data$source_transect_id %in% "NA_AM"] = 1
+data$source_transect_id[data$source_transect_id %in% "NA_AM"] = NA
+data$offline[data$source_transect_id %in% "38_AM"] = 1 #"38_AM" endcount listed as chum, even though other 38's not chumming - error?
+data$source_transect_id[data$source_transect_id %in% "38_AM"] = NA
 #---------------------------#
 
 
@@ -253,7 +260,7 @@ new.key = left_join(data_track, break.at.each.stop, by=c("ID","source_transect_i
          newkey = paste(source_transect_id, start.stop.index, sep="_")) %>% select(-start.stop.index)
 
 # grouped by new key to avoid counting time and distance traveled between breaks
-df = new.key %>% group_by(newkey)  %>% 
+df = new.key %>% filter(!type %in% "COMMENT") %>% group_by(newkey)  %>% 
   mutate(lagged.lon = lead(lon, default = last(lon), order_by = ID),
          lagged.lat = lead(lat, default = last(lat), order_by = ID)) %>%
   rowwise() %>% mutate(distance = distVincentySphere(c(lon, lat), c(lagged.lon, lagged.lat))) %>%
@@ -271,9 +278,9 @@ df = new.key %>% group_by(newkey)  %>%
             start_tm = first(time), 
             end_tm  = last(time),
             transect_time_min_nb = difftime(first(date_time), last(date_time), units="mins"))  %>%
-  ungroup() %>% as.data.frame %>% arrange(start_dt, source_transect_id)
+  ungroup() %>% as.data.frame %>% arrange(start_dt, start_tm, source_transect_id)
 #
-transectTbl = df %>% 
+data_transect = df %>% 
   group_by(source_transect_id)  %>% 
   arrange(start_tm) %>% 
   summarise(observer = first(observer),
@@ -289,6 +296,7 @@ transectTbl = df %>%
             transect_distance_nb = sum(transect_distance_nb))  %>%
   ungroup() %>% as.data.frame %>% arrange(start_dt, source_transect_id) %>%
   mutate(transect_distance_nb = replace(transect_distance_nb,transect_distance_nb==0,NA)) %>%
-  filter(!source_transect_id %in% c("NA_AM","NA_CH","NA_DH","NA_WB","NA_JW","NA_JW/CG","NA_EH"))
+  filter(!source_transect_id %in% c("NA_AM", "NA_CH", "NA_DH", "NA_WB", "NA_JW", "NA_JW/CG", "NA_EH", 
+                                    "NA_EH/WB", "NA_JW/WB/CG", "39_CH"))
 rm(df, new.key, break.at.each.stop)
 #---------------------------#
