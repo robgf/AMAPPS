@@ -1,6 +1,5 @@
 # ------------------------ #
 # combine old and new seabird catalog data
-# create spatial files and csv's since some points do not have spatial information
 # ------------------------ #
 
 
@@ -60,6 +59,7 @@ old_obs$who_imported = as.numeric(as.character(old_obs$who_imported))
 old_obs$salinity_ppt_nb = as.numeric(as.character(old_obs$salinity_ppt_nb))
 old_obs$local_obs_id = as.numeric(as.character(old_obs$local_obs_id))
 old_obs$heading_tx = as.character(old_obs$heading_tx)
+old_obs = old_obs[!is.na(old_obs$dataset_id),]
 
 # read in old transect data
 old_transects = read.csv(file = paste(dir.archive, "vw_trans.csv", sep="/"), header=TRUE)
@@ -89,7 +89,7 @@ old_transect_lines = old_transect_lines %>%
   rename(transect_id = transect_i,
          track_lat = coords.x2,
          track_lon = coords.x1) %>% 
-  dplyr::select(transect_id, dataset_id, track_lon, track_lat)
+  dplyr::select(-Lines.NR, -Lines.ID, -Line.NR)
 old_transect_points = old_transect_points %>%
   rename(transect_id = transect_i,
          track_lat = coords.x2,
@@ -116,6 +116,10 @@ track_data = bind_rows(tracks.in.db, old_transect_lines, old_transect_points) %>
 min(transects.in.db$transect_id)
 max(old_transects$transect_id)
 transect_data = bind_rows(transects.in.db, old_transects) %>% arrange(transect_id)
+
+# fix codes that were deleted when database was updated
+obs_data$spp_cd[obs_data$spp_cd %in% "UNPI"]="UNSE" # unidentified pinniped to unidentified seal (no sea lions on east coast)
+obs_data$spp_cd[obs_data$spp_cd %in% "CRTE"]="UCRT" # two codes for unidentified common or roseate tern, cut one
 # ------------------------ #
 
 
@@ -130,10 +134,10 @@ write.csv(data.in.db, paste(dir.out, "datasets.csv", sep="/"), row.names=FALSE)
 rm(old_transects, transects.in.db, transect_data, old_transect_lines, old_transect_points, data.in.db)
 
 # remove NA's
-old_obs = old_obs[!is.na(old_obs$temp_lat),]
-old_obs = old_obs[!is.na(old_obs$temp_lon),]
-obs.in.db = obs.in.db[!is.na(obs.in.db$temp_lat),]
-tracks.in.db = tracks.in.db[!is.na(tracks.in.db$track_lat),]
+obs_data = obs_data[!is.na(obs_data$temp_lat),]
+obs_data = obs_data[!is.na(obs_data$temp_lon),]
+
+track_data = track_data[!is.na(track_data$track_lat),]
 # ------------------------ #
 
 
