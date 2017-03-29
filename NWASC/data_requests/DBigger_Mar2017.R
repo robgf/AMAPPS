@@ -159,7 +159,7 @@ old_obs$spp_cd[old_obs$spp_cd %in% c(" WILSON")] = "WISP"
 old_obs$spp_cd[old_obs$spp_cd %in% c("CRTE")] = "UCRT"                    
 old_obs$spp_cd[old_obs$spp_cd %in% c("TEAL")] = "UNTL"                    
 old_obs$spp_cd[old_obs$spp_cd %in% c("UNPI")] = "UNSE"   
-#old_obs$spp_cd[old_obs$spp_cd %in% c("GLSP")] = ""  
+old_obs$spp_cd[old_obs$spp_cd %in% c("GLSP")] = "PIWH"  
 
 old_obs$spp_cd[old_obs$spp_cd %in% c("") & old_obs$original_species_tx %in% c("LOON")] = "UNLO"  
 old_obs$spp_cd[old_obs$spp_cd %in% c("") & old_obs$original_species_tx %in% c("BIRD")] = "UNBI"  
