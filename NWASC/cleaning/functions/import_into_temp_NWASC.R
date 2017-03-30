@@ -13,9 +13,16 @@
 import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_camera) {
   
   # ------------------------ #
-  # load dataset descriptions
+  # load packages
   # ------------------------ #
   library(RODBC)
+  library(dplyr)
+  # ------------------------ #
+  
+  
+  # ------------------------ #
+  # load dataset descriptions
+  # ------------------------ #
   db <- odbcConnectAccess2007("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
   transects.in.db = sqlFetch(db, "transect")
   tracks.in.db = sqlFetch(db, "track")
@@ -23,6 +30,29 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   obs.in.db = sqlFetch(db, "observation")
   camera.in.db = sqlFetch(db, "camera_effort")
   # ------------------------ #
+  
+  
+  # ------------------------ #
+  # make sure there are no existing records in the database under that dataset id number
+  # this could happen if a typo is made or if a failed import half succeeded
+  # the existing records would have to be removed before continuing
+  # ------------------------ #
+  if(any(transects.in.db$dataset_id %in% id)){cat(" ERROR DO NOT CONTINUE!!!! ERROR IN THE TRANSECTS TABLE","\n",
+                                                  "RECORDS ALREADY EXIST UNDER THIS DATASET ID NUMBER")}
+  if(any(tracks.in.db$dataset_id %in% id)){cat(" ERROR DO NOT CONTINUE!!!! ERROR IN THE TRACK TABLE","\n",
+                                               "RECORDS ALREADY EXIST UNDER THIS DATASET ID NUMBER")}
+  if(any(obs.in.db$dataset_id %in% id)){cat(" ERROR DO NOT CONTINUE!!!! ERROR IN THE OBSERVATION TABLE","\n",
+                                            "RECORDS ALREADY EXIST UNDER THIS DATASET ID NUMBER")}
+  if(any(camera.in.db$dataset_id %in% id)){cat(" ERROR DO NOT CONTINUE!!!! ERROR IN THE CAMERA TABLE","\n",
+                                               "RECORDS ALREADY EXIST UNDER THIS DATASET ID NUMBER")}
+  if(any(transects.in.db$dataset_id %in% id) | 
+     any(tracks.in.db$dataset_id %in% id) | 
+     any(obs.in.db$dataset_id %in% id) | 
+     any(camera.in.db$dataset_id %in% id)) {stop('Dataset id already in database')}
+  
+  # on the contrary, also throw an error if dataset id is not already in dataset table
+  if(all(!data.in.db$dataset_id %in% id)) {stop('There is no information for this dataset id in the dataset table. Please fill it out manually or use the datalist function')}
+  # ------------------------ # 
   
   
   # ------------------------ #
@@ -45,7 +75,7 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   
   # reformat, create, and/or rename
   if(any(colnames(data) %in% c("spp","type"))) {dat$spp_cd = data[,which(colnames(data) %in% c("spp","type"))]}  
-  if(any(colnames(data) %in% c("index"))) {dat$source_obs_id = data$index}
+  if(any(colnames(data) %in% c("index","id"))) {dat$source_obs_id = data[,which(colnames(data) %in% c("index","id"))]}
   if(all(is.na(dat$source_obs_id))) {dat$source_obs_id = 1:dim(data)[1]}
   if(any(colnames(data) %in% c("transect"))) {dat$source_transect_id = data$transect}
   if(length(dat$source_transect_id)==0 & any(colnames(data) %in% c("offline")) & any(!colnames(data) %in% c("transect"))) {dat$source_transect_id[data$offline==0] = 1}
@@ -62,13 +92,16 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   if(any(colnames(data) %in% c("plumage"))) {dat$plumage_tx = data[,which(colnames(data) %in% c("plumage"))]}
   if(any(colnames(data) %in% c("distance"))) {dat$distance_to_animal_tx = data$distance}
   if(any(colnames(data) %in% c("heading"))) {dat$heading_tx = data[,which(colnames(data) %in% c("heading"))]}
+  if(any(colnames(data) %in% c("sec","secs","seconds"))) {dat$seconds_from_midnight_nb = data[,which(colnames(data) %in% c("sec","secs","seconds"))]}
+  if(any(colnames(data) %in% c("distance_to_animal"))) {dat$distance_to_animal_tx = data[,which(colnames(data) %in% c("distance_to_animal"))]}
+  if(any(colnames(data) %in% c("travel_direction"))) {dat$travel_direction_tx = data[,which(colnames(data) %in% c("travel_direction"))]}
+  if(any(colnames(data) %in% c("visibility"))) {dat$visibility_tx = data[,which(colnames(data) %in% c("visibility"))]}
   if(any(colnames(data) %in% c("flight_dir,flidir","fltdir"))) {dat$travel_direction_tx = data[,which(colnames(data) %in% c("flight_dir,flidir","fltdir"))]}
   if(any(colnames(data) %in% c("lon", "long", "longitude"))) {dat$temp_lon = data[,which(colnames(data) %in% c("lon", "long", "longitude"))]} 
   if(any(colnames(data) %in% c("lat", "latitude"))) {dat$temp_lat = data[,which(colnames(data) %in% c("lat", "latitude"))]}
-  if(any(colnames(data) %in% c("comments","comment"))) { #, "dataChange", "datachange"))) {
-    dat$comments_tx = data[,which(colnames(data) %in% c("comments","comment"))]
-    #dat$comments_tx = data[,which(colnames(data) %in% c("comments", "dataChange", "datachange"))]
-  }
+  if(any(colnames(data) %in% c("observer_confidence", "confidence"))) {dat$observer_confidence_tx = data[,which(colnames(data) %in% c("observer_confidence", "confidence"))]}
+  if(any(colnames(data) %in% c("observer", "observers"))) {dat$observer_tx = data[,which(colnames(data) %in% c("observer", "observers"))]}
+  if(any(colnames(data) %in% c("comments","comment"))) {dat$comments_tx = data[,which(colnames(data) %in% c("comments","comment"))]}
   if(any(colnames(data) %in% c("count","obs_count_general_nb"))) {
     dat$obs_count_general_nb = data[,which(colnames(data) %in% c("count","obs_count_general_nb"))]
     dat$obs_count_intrans_nb = data[,which(colnames(data) %in% c("count","obs_count_general_nb"))]
@@ -129,7 +162,9 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
                        visit = as.character(visit),
                        reel = as.character(reel),
                        datafile = as.character(datafile),
-                       seconds_from_midnight_nb = as.numeric(seconds_from_midnight_nb))
+                       seconds_from_midnight_nb = as.numeric(seconds_from_midnight_nb),
+                       observer_confidence_tx = as.character(observer_confidence_tx),
+                       observer_tx = as.character(observer_tx))
     # ------------------------ #
     
   
@@ -161,27 +196,28 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
     if(any(colnames(data_track) %in% c("time"))) {dat_track$track_tm = data_track[,which(colnames(data_track) %in% c("time"))]}
     if(any(colnames(data_track) %in% c("transect","transect_id"))) {dat_track$source_transect_id = data_track[,which(colnames(data_track) %in% c("transect","transect_id"))]}
     if(any(colnames(data_track) %in% c("index"))) {dat_track$source_track_id = data_track[,which(colnames(data_track) %in% c("index"))]} 
+    if(any(colnames(data_track) %in% c("sec","secs","seconds"))) {dat_track$seconds_from_midnight_nb = data_track[,which(colnames(data_track) %in% c("sec","secs","seconds"))]}
     if(all(is.na(dat_track$source_track_id))) {dat_track$source_track_id = 1:dim(data_track)[1]}
     
-    dat_track = dat_track %>% mutate(track_id = as.numeric(track_id),           
+    dat_track = dat_track %>% mutate(track_id = as.integer(track_id),           
                                      track_dt = as.character(track_dt),           
                                      track_tm = as.character(track_tm),           
-                                     track_lat = as.numeric(track_lat),                
-                                     track_lon = as.numeric(track_lon),               
+                                     track_lat = as.double(track_lat),                
+                                     track_lon = as.double(track_lon),               
                                      point_type = as.character(point_type),          
                                      source_survey_id = as.character(source_survey_id),    
                                      source_transect_id = as.character(source_transect_id),  
                                      observer_position = as.character(observer_position),   
                                      observer = as.character(observer),           
-                                     offline = as.numeric(offline),                  
+                                     offline = as.integer(offline),                  
                                      seastate = as.character(seastate),           
                                      comment = as.character(comment),            
-                                     transect_id = as.numeric(transect_id),             
-                                     dataset_id = as.numeric(dataset_id),              
+                                     transect_id = as.integer(transect_id),             
+                                     dataset_id = as.integer(dataset_id),              
                                      track_gs = as.character(track_gs),            
-                                     piece = as.numeric(piece),                 
-                                     source_track_id = as.numeric(source_track_id),
-                                     seconds_from_midnight_nb = as.numeric(seconds_from_midnight_nb),
+                                     piece = as.integer(piece),                 
+                                     source_track_id = as.double(source_track_id),
+                                     seconds_from_midnight_nb = as.integer(seconds_from_midnight_nb),
                                      datafile = as.character(datafile))
   }
   # ------------------------ #
@@ -208,30 +244,25 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
     
     if(any(colnames(data_transect) %in% c("transect","transect_id"))) {
       dat_transect$source_transect_id = data_transect[,which(colnames(data_transect) %in% c("transect","transect_id"))]}
-    
     if(any(colnames(data_transect) %in% c("startlongdd","start_lon", "begin_lon","start_longitude", "begin_longitude","start_long", "begin_long"))) {
       if(is.list(data_transect[,which(colnames(data_transect) %in% c("startlongdd","start_lon", "begin_lon","start_longitude", "begin_longitude", "start_long", "begin_long"))])) {
         dat_transect$temp_start_lon = as.vector(unlist(data_transect[,which(colnames(data_transect) %in% c("startlongdd","start_lon", "begin_lon","start_longitude", "begin_longitude","start_long", "begin_long"))]))
       } else {dat_transect$temp_start_lon = data_transect[,which(colnames(data_transect) %in% c("startlongdd","start_lon", "begin_lon","start_longitude", "begin_longitude","start_long", "begin_long"))]}
     }
-    
     if(any(colnames(data_transect) %in% c("startlatdd","start_lat", "begin_lat","start_latitude",  "begin_latitude"))) {
       if(is.list(data_transect[,which(colnames(data_transect) %in% c("startlatdd","start_lat","begin_lat",  "start_latitude", "begin_latitude"))])) {
         dat_transect$temp_start_lat = as.vector(unlist(data_transect[,which(colnames(data_transect) %in% c("startlatdd","start_lat","begin_lat","start_latitude", "begin_latitude"))]))
       } else dat_transect$temp_start_lat = data_transect[,which(colnames(data_transect) %in% c("startlatdd","start_lat","begin_lat","start_latitude", "begin_latitude"))]}
-    
     if(any(colnames(data_transect) %in% c("endlongdd","end_lon", "stop_lon","end_longitude", "stop_longitude", "end_long", "stop_long"))) {
       if(is.list(data_transect[,which(colnames(data_transect) %in% c("endlongdd","end_lon", "stop_lon","end_longitude", "stop_longitude","end_long", "stop_long"))])) { 
         dat_transect$temp_stop_lon = as.vector(unlist(data_transect[,which(colnames(data_transect) %in% c("endlongdd","end_lon", "stop_lon","end_longitude", "stop_longitude","end_long", "stop_long"))])) 
       } else dat_transect$temp_stop_lon = data_transect[,which(colnames(data_transect) %in% c("endlongdd","end_lon", "stop_lon","end_longitude", "stop_longitude","end_long", "stop_long"))]
     }
-    
     if(any(colnames(data_transect) %in% c("endlatdd","end_lat", "stop_lat","end_latitude", "stop_latitude"))) {
       if(is.list(data_transect[,which(colnames(data_transect) %in% c("endlatdd","end_lat", "stop_lat","end_latitude", "stop_latitude"))])) {
         dat_transect$temp_stop_lat = as.vector(unlist(data_transect[,which(colnames(data_transect) %in% c("endlatdd","end_lat", "stop_lat","end_latitude", "stop_latitude"))]))
         } else dat_transect$temp_stop_lat = data_transect[,which(colnames(data_transect) %in% c("endlatdd","end_lat", "stop_lat","end_latitude", "stop_latitude"))]
     }
-    
     if(any(colnames(data_transect) %in% c("date","start_dt","start_date"))) {
       if(is.list(data_transect[,which(colnames(data_transect) %in% c("date","start_dt","start_date"))])) {
         if(is.Date(unlist(data_transect[,which(colnames(data_transect) %in% c("date","start_dt","start_date"))]))) {
@@ -242,7 +273,6 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
         }
       } else dat_transect$start_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","start_dt","start_date"))]),'%m/%d/%Y')
     }
-  
     if(any(colnames(data_transect) %in% c("date","end_dt","end_date"))) {
       if(is.list(data_transect[,which(colnames(data_transect) %in% c("date","end_dt","end_date"))])) {
         if(is.Date(unlist(data_transect[,which(colnames(data_transect) %in% c("date","end_dt","end_date"))]))) {
@@ -253,41 +283,50 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
         }
       } else dat_transect$end_dt = format(as.Date(data_transect[,which(colnames(data_transect) %in% c("date","end_dt","end_date"))]),'%m/%d/%Y')
     }
-  
     if(any(colnames(data_transect) %in% c("time","start_time","start_tm"))) {
       if(is.list(data_transect[,which(colnames(data_transect) %in% c("time","start_time","start_tm"))])) {
         dat_transect$start_tm = as.vector(unlist(data_transect[,which(colnames(data_transect) %in% c("time","start_time","start_tm"))]))
       } else dat_transect$start_tm = data_transect[,which(colnames(data_transect) %in% c("time","start_time","start_tm"))]
     }
-    
     if(any(colnames(data_transect) %in% c("time","end_time","end_tm"))) {
       if(is.list(data_transect[,which(colnames(data_transect) %in% c("time","end_time","end_tm"))])) {
         dat_transect$end_tm = as.vector(unlist(data_transect[,which(colnames(data_transect) %in% c("time","end_time","end_tm"))]))
       } else dat_transect$end_tm = data_transect[,which(colnames(data_transect) %in% c("time","end_time","end_tm"))]
     }
-    
     if(any(colnames(data_transect) %in% c("observer","observers","observer_tx"))) {
       if(is.list(data_transect[,which(colnames(data_transect) %in% c("observer","observers","observer_tx"))])){ 
         dat_transect$observers_tx = as.vector(unlist(data_transect[,which(colnames(data_transect) %in% c("observer","observers","observer_tx"))]))
       } else dat_transect$observers_tx = data_transect[,which(colnames(data_transect) %in% c("observer","observers","observer_tx"))]
     }
-    
     if(any(colnames(data_transect) %in% c("observer_position"))) {
       if(is.list(data_transect[,which(colnames(data_transect) %in% c("observer_position"))])){ 
         dat_transect$obs_position = as.vector(unlist(data_transect[,which(colnames(data_transect) %in% c("observer_position"))]))
       } else dat_transect$obs_position = data_transect[,which(colnames(data_transect) %in% c("observer_position"))]
     }
-    
     if(any(colnames(data_transect) %in% c("Tranesct_Length", "transect_length", "Tranesct_distance", "distance"))){
       if(is.list(data_transect[,which(colnames(data_transect) %in% c("Tranesct_Length", "transect_length", "Tranesct_distance", "distance"))])){ 
         dat_transect$transect_distance_nb = as.vector(unlist(data_transect[,which(colnames(data_transect) %in% c("Tranesct_Length", "transect_length", "Tranesct_distance", "distance"))]))
       } else dat_transect$transect_distance_nb = data_transect[,which(colnames(data_transect) %in% c("Tranesct_Length", "transect_length", "Tranesct_distance", "distance"))]
     }
-    
     if(any(colnames(data_transect) %in% c("speed","mean_speed","mean_speed_knots"))){
       if(is.list(data_transect[,which(colnames(data_transect) %in% c("speed","mean_speed","mean_speed_knots"))])){ 
         dat_transect$traversal_speed_nb = as.vector(unlist(data_transect[,which(colnames(data_transect) %in% c("speed","mean_speed","mean_speed_knots"))]))
       } else dat_transect$traversal_speed_nb = data_transect[,which(colnames(data_transect) %in% c("speed","mean_speed","mean_speed_knots"))]
+    }
+    if(any(colnames(data_transect) %in% c("speed","mean_speed","mean_speed_knots"))){
+      if(is.list(data_transect[,which(colnames(data_transect) %in% c("speed","mean_speed","mean_speed_knots"))])){ 
+        dat_transect$traversal_speed_nb = as.vector(unlist(data_transect[,which(colnames(data_transect) %in% c("speed","mean_speed","mean_speed_knots"))]))
+      } else dat_transect$traversal_speed_nb = data_transect[,which(colnames(data_transect) %in% c("speed","mean_speed","mean_speed_knots"))]
+    }
+    if(any(colnames(data_transect) %in% c("heading","heading_deg","mean_heading_deg"))){
+      if(is.list(data_transect[,which(colnames(data_transect) %in% c("heading","heading_deg","mean_heading_deg"))])){ 
+        dat_transect$heading_tx = as.vector(unlist(data_transect[,which(colnames(data_transect) %in% c("heading","heading_deg","mean_heading_deg"))]))
+      } else dat_transect$heading_tx = data_transect[,which(colnames(data_transect) %in% c("heading","heading_deg","mean_heading_deg"))]
+    }
+    if(any(colnames(data_transect) %in% c("altitude","mean_alt_m"))){
+      if(is.list(data_transect[,which(colnames(data_transect) %in% c("altitude","mean_alt_m"))])){ 
+        dat_transect$altitude_nb_m = as.vector(unlist(data_transect[,which(colnames(data_transect) %in% c("altitude","mean_alt_m"))]))
+      } else dat_transect$altitude_nb_m = data_transect[,which(colnames(data_transect) %in% c("altitude","mean_alt_m"))]
     }
     
     # calculations
@@ -396,7 +435,10 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
                                        area_sqkm = as.character(area_sqkm),
                                        start_tm = as.character(start_tm),
                                        end_tm = as.character(end_tm),
-                                       source_dataset_id = as.character(source_dataset_id))  
+                                       source_dataset_id = as.character(source_dataset_id),
+                                       shape_length = as.numeric(shape_length),
+                                       shape_area = as.numeric(shape_area),
+                                       reel = as.character(reel))  
   }
   
   # ------------------------ #
@@ -447,7 +489,8 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
                                          local_survey_id = as.character(local_survey_id),
                                          local_transect_id2 = as.character(local_transect_id2),
                                          survey_type = as.character(survey_type),
-                                         datafile = as.character(datafile))
+                                         datafile = as.character(datafile),
+                                         altitude_nb_m = as.numeric(altitude_nb_m))
     
     # ------------------------ #
     # join transect numbers to both track and observations tables based on date
@@ -477,7 +520,7 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   sqlSave(db, dat, tablename = "observation", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)
   if(exists("dat_track")){sqlSave(db, dat_track, tablename = "track", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)}
   if(exists("dat_transect")){sqlSave(db, dat_transect, tablename = "transect", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)}
-  if(exists("dat_camera")){sqlSave(db, dat_camera, tablename = "transect", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)}
+  if(exists("dat_camera")){sqlSave(db, dat_camera, tablename = "camera_effort", append=TRUE, rownames=FALSE, colnames=FALSE, verbose=FALSE)}
   odbcClose(db) 
   # ------------------------ #
   
