@@ -336,7 +336,7 @@ SAVS|Savannah Sparrow|Passerculus sandwichensis|179314
 SBDO|Short-billed Dowitcher|Limnodromus griseus|176675
 SBGU|Slaty-backed Gull|Larus schistisagus|176816
 SCAU|Unidentified Scaup|Aythya marila or A. affinis|--
-SCRE|Unidentified screech-owl|--|--
+SCRE|Eastern Screech Owl|Megascops asio|686658
 SCTA|Scarlet Tanager|Piranga olivacea|179883
 SEOW|Short-eared Owl|Asio flammeus|177935
 SEPL|Semipalmated Plover|Charadrius semipalmatus|176506
@@ -388,7 +388,7 @@ UBBG|Unidentified Great or Lesser Black-backed Gull|Larus marinus/fuscus|--
 UBST|Bridled or Sooty Tern|Sterna anaethetus/fuscata|--
 UCAT|Common or Arctic Tern|Sterna hirundo/paradisaea|--
 UCRT|Unidentified Common or Roseate Tern|Sterna hirundo/dougallii|--
-UDAB|Unidentified dabbling duck|--|--
+UDAB|Unidentified dabbling duck|Anas spp.|--
 UDGS|Unidentified Duck, Goose, or Swan|Anseriformes spp.|174982
 UGOO|Unidentified Goose|--|--
 UGUI|Unidentified Guillemot|Cepphus spp.|176984
@@ -403,7 +403,7 @@ UNCA|Unidentified Calidris (Sandpiper, Sanderling, Dunlin, Red Knot)|Calidris sp
 UNCO|Unidentified Cormorant|Phalacrocorax spp|174714
 UNCR|Unidentified Crow|Corvus spp.|179724
 UNDD|Unidentified Diving/Sea Duck|Aythya spp.|175124
-UNDU|Unidentified Duck|--|--
+UNDU|Unidentified Duck|Anatidae|--
 UNEG|Unidentified Egret|--|--
 UNEI|Unidentified Eider|Somateria spp.|175154
 UNFI|Unidentified Finch|Carduelis spp.|179225
