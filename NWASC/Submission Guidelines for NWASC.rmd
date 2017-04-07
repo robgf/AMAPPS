@@ -94,7 +94,7 @@ Whitecaps_tx (text)| describing the state of the sea and degree of windiness
 Reel (text)| This is for camera observations only  
 Observer_confidence_tx (text)| This is intendent for camera observations  
 
-**Track table:** (definitions are same as above)
+**Track table:**   
 
 field name | desciption    
 ----------|---------- 
@@ -109,18 +109,18 @@ Comments (text)| definition same as in observation table
 Source_transect_id (text)| definition same as in observation table       
 Point_type (text)| Record type; such as, start of transect or begin count (denoted by the code BEGCNT), end of transect or end count (denoted by code ENDCNT), pause on transect (which would need a ENDCNT followed by a BEGCNT when the pause is over and effort starts again), waypoint (denoted by code WAYPNT)   
 
-**Transect table:** (definitions are same as above)
+**Transect table:**   
 
 field name | desciption    
 ----------|---------- 
-Start_date (date/time)| definition same as in observation table    
-Start_time (date/time)| definition same as in observation table    
-Start_latitude(number)| definition same as in observation table      
-Start_longitude (number)| definition same as in observation table      
-End_date (date/time)| definition same as in observation table      
-End_time (date/time)| definition same as in observation table      
-End_latitude (number)| definition same as in observation table      
-End_longitude (number)| definition same as in observation table      
+Start_date (date/time)| start date of transect (same format as in observation table)      
+Start_time (date/time)| start time of transect (same format as in observation table)       
+Start_latitude(number)| start latitude of transect (same format as in observation table)       
+Start_longitude (number)| start longitude of transect (same format as in observation table)   
+End_date (date/time)| End date of transect (same format as in observation table)        
+End_time (date/time)| End time of transect (same format as in observation table)        
+End_latitude (number)| End latitude of transect (same format as in observation table)         
+End_longitude (number)| End longitude of transect (same format as in observation table)        
 Observer (text)| definition same as in observation table       
 Observer_position (text)| definition same as in observation table       
 Speed_nb (number)| Speed the craft was traveling at in knots per hour  
