@@ -105,15 +105,10 @@ tmp <- !obs$spp %in% spplist
 message("Found ", sum(tmp), " entries with non-matching AOU codes")
 sort(unique(obs$spp[tmp]))
 
-obs$spp[obs$spp %in% "'CXFC"] = "" 
-obs$spp[obs$spp %in% "BLUFI"] = ""  
-obs$spp[obs$spp %in% "FRONT"] = ""  
-obs$spp[obs$spp %in% "FT"] = ""    
-obs$spp[obs$spp %in% "MIACO"] = ""  
-obs$spp[obs$spp %in% "RBTU"] = ""   
-obs$spp[obs$spp %in% "SILTF"] = ""  
-obs$spp[obs$spp %in% "STTE"] = ""   
-obs$spp[obs$spp %in% "UNTU"] = "" 
+obs$spp[obs$spp %in% c("CXFC","FRONT","FT","MIACO","RBTU","SILTF")] = "UNKN" 
+obs$spp[obs$spp %in% "BLUFI"] = "TUNA"  
+obs$spp[obs$spp %in% c("STTE","Sterna spp.")] = "UNTE"   
+obs$spp[obs$spp %in% "UNTU"] = "TURT" 
 obs$spp[obs$spp %in% "START"] = "BEGCNT"
 obs$spp[obs$spp %in% "END"] = "ENDCNT"
 obs$spp[obs$spp %in% "BOATS"] = "BOAT"  
