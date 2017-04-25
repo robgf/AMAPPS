@@ -2,7 +2,7 @@
 This script creates the Northwest Atlantic Seabird Catalog Schema
 and populates a few look up tables
 
-create April 2017
+created April 2017
 by K. Coleman
 */
 
