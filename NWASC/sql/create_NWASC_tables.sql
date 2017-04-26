@@ -27,9 +27,10 @@ CREATE TABLE lu_dataset_type (
 GO
 
 INSERT INTO lu_dataset_type (dataset_type_cd,dataset_type_ds)
-	VALUES	('de','derived effort'),
-			('og','original general observation'),
-			('ot','original transect');
+	VALUES
+	('de','derived effort'),
+	('og','original general observation'),
+	('ot','original transect');
 
 
 --create and populate people table
@@ -37,12 +38,78 @@ CREATE TABLE lu_people (
 	[user_id] smallint not null,
 	name nvarchar(50) null,
 	affiliation nvarchar(50) null,
-	active_status bit null,
+	active_status nchar(10) null,
 	Primary Key ([user_id])
 );
 
---INSERT INTO lu_people([user_id], name, affiliation, active_status)
---	VALUES not listed on github since they are names
+INSERT INTO lu_people([user_id], name, affiliation, active_status)
+	VALUES
+	(1,'Mark Wimer','USGS','active'),
+	(2,'Allison Sussman','USGS','not active'),
+	(3,'Andrew Gilbert','BRI','active'),
+	(4,'Tim Pascoe', NULL, NULL),
+	(5,'Thomas de Lange Wenneck', NULL, NULL),
+	(6,'Henrik Skov', NULL, NULL),
+	(7,'David Divins','NOAA', NULL),
+	(8,'Geoffrey LeBaron','Audubon', NULL),
+	(9,'David Wiley','NOAA', NULL),
+	(10,'Becky Harris','MA Audubon', NULL),	
+	(11,'Richard Veit', NULL, 'active'),
+	(12,'Larry Poppe','USGS', NULL),	
+	(13,'Terry Orr', NULL, NULL),
+	(14,'Mark Koneff','USFWS', 'active'),
+	(15,'Doug Forsell','USFWS', 'not active'),
+	(16,'Carina	Gjerdrum', NULL, 'active'),
+	(17,'Todd O''Brien','NOAA', NULL),	
+	(18,'Bruce Peterjohn','USGS',NULL),
+	(19,'David Potter','NOAA',NULL),	
+	(20,'J. Christopher	Haney','Defenders', NULL),	
+	(21,'David Mizrahi','NJ Audubon', NULL),	
+	(22,'David Lee', NULL, NULL),			
+	(23,'Erin LaBrecque','Duke', NULL),	
+	(24,'R. A. Rowlett', NULL, NULL),			
+	(25,'Malcolm Gordon','UCLA', NULL),	
+	(26,'R. Haven Wiley','UNC', NULL),	
+	(27,'David Hyrenbach','U Washington', NULL),
+	(28,'Hal Whitehead','DAL', NULL),	
+	(29,'Kevin Powers', NULL, NULL),			
+	(30,'Lance Garrison','NOAA', NULL),	
+	(31,'Stephanie Schmidt','Manomet', NULL),
+	(32,'Brian Patteson', NULL, NULL),			
+	(33,'Linda Welch','USFWS','active'),
+	(34,'Sarah Wong','DAL', NULL),
+	(35,'Bob Raftovich','USFWS', 'active'),
+	(36,'Kim Urian','EC RR', NULL),	
+	(37,'Odd Aksel Bergstad','IMR',NULL),
+	(38,'Peter Stevick',NULL, NULL),		
+	(39,'Nicholas Wolff','U Maine', NULL),	
+	(40,'Douglas Pfeister', NULL, NULL),	
+	(41,'Kristopher	Winiarski', NULL, NULL),	
+	(42,'Todd Hass','ECY WA', NULL),	
+	(43,'Julie Ellis','Tufts', NULL),
+	(44,'Allan O''Connell','USGS', 'active'),
+	(45,'Brian Kinlan','NOAA', 'not active'),
+	(46,'Beth Gardner', NULL, 'active'),
+	(47,'Elise Zipkin', NULL, 'active'),
+	(48,'Nick Flanders','NCSU', NULL),	
+	--no 49, need to check and see if I can reassign 
+	(50,'M. Tim	Jones','USFWS', 'active'),
+	(51,'Melanie Steinkamp','USFWS', 'active'),
+	(52,'Elizabeth Josephson','NOAA', 'active'),
+	(53,'Debra Palka','NOAA', NULL),	
+	(54,'Holly Goyert','UMASS', 'active'),
+	(55,'Mike Simpkins','NOAA', NULL),	
+	(56,'Gary Buchanan', NULL, NULL),	
+	(57,'Shannon Beliew','USGS', 'active'),
+	(58,'Emily Silverman','USFWS', 'active'),
+	(59,'Jeff Leirness','NOAA', 'active'),
+	(60,'Pam Loring','USFWS', 'active'),
+	(61,'Julia Willmot','Normandeu', 'active'),
+	(62,'Tim White','BOEM', 'active'),
+	(63,'Aaron Svedlow','Tetratech', 'not active'),
+	(64,'Kaycee Coleman','USFWS', 'active'),
+	(65,'David Bigger','BOEM', 'active'),
+	(66,'Matt Nixon','Maine.gov', 'active');
 --
 
 --create and populate share level table
@@ -54,32 +121,34 @@ CREATE TABLE lu_share_level (
 GO 
 
 INSERT INTO lu_share_level(share_level_id, share_level_ds)
-	VALUES	(0,'we do not have the data, need to request or request in progress'),
-			(1,'not shared: Due to sensitivity concerns. dataset is restricted temporarily; remove in near future or share at some level. Do not share, do not send data to external repositories. NOTE: we cannot legally deny valid data requests.'),
-			(2,'limited use: Allow use in summaries and visualizations (maps, graphs) without specific information. Allow same general use by AKN. (AKN Level 2)'),
-			(3,'limited use (AKN+): Same as level 2, except allow others to request the dataset through AKN.  (AKN Level 3)'),
-			(4,'limited use (AKN++): Same as level 3, except the AKN will display more info (all "Darwin Core" elements) and share with several bioinformatic efforts.  (AKN Level 4)'),
-			(5,'full data available: Allow use of all data except observer names and contact information. AKN will also receive all data elements (see list).  (AKN Level 5)'),
-			(9,'acquired but not in the database and quality control not started'),
-			(99,'in progress'),
-			(999,'unobtainable or nonexistant');
+	VALUES
+	(0,'we do not have the data, need to request or request in progress'),
+	(1,'not shared: Due to sensitivity concerns. dataset is restricted temporarily; remove in near future or share at some level. Do not share, do not send data to external repositories. NOTE: we cannot legally deny valid data requests.'),
+	(2,'limited use: Allow use in summaries and visualizations (maps, graphs) without specific information. Allow same general use by AKN. (AKN Level 2)'),
+	(3,'limited use (AKN+): Same as level 2, except allow others to request the dataset through AKN.  (AKN Level 3)'),
+	(4,'limited use (AKN++): Same as level 3, except the AKN will display more info (all "Darwin Core" elements) and share with several bioinformatic efforts.  (AKN Level 4)'),
+	(5,'full data available: Allow use of all data except observer names and contact information. AKN will also receive all data elements (see list).  (AKN Level 5)'),
+	(6,'unobtainable or nonexistant'),
+	(9,'acquired but not in the database and quality control not started'),
+	(99,'in progress');
 --
 
 -- create and populate species type table
 CREATE TABLE lu_species_type(
 	species_type_id tinyint not null, 
-	species_type_ds nvharchar(15) not null,
+	species_type_ds nvarchar(15) not null,
 	PRIMARY KEY(species_type_id)
 );
 GO 
 --
 
 INSERT INTO lu_species_type(species_type_id, species_type_ds)
-	VALUES  (1,'birds'),
-			(2,'cetaceans'),
-			(3,'sea turtles'),
-			(4,'fish'),
-			(5,'other');
+	VALUES
+	(1,'birds'),
+	(2,'cetaceans'),
+	(3,'sea turtles'),
+	(4,'fish'),
+	(5,'other');
 --
 
 -- create species table
@@ -103,11 +172,12 @@ CREATE TABLE lu_survey_type(
 GO 
 
 INSERT INTO lu_survey_type(survey_type_cd,survey_type_ds)
-	VALUES  ('a','airplane'),
-			('b','boat'),
-			('c','camera'),
-			('f','fixed ground survey'),
-			('g','area-wide ground survey');
+	VALUES
+	('a','airplane'),
+	('b','boat'),
+	('c','camera'),
+	('f','fixed ground survey'),
+	('g','area-wide ground survey');
 --
 
 -- create and populate survey method table
@@ -119,13 +189,14 @@ CREATE TABLE lu_survey_method(
 GO 
 
 INSERT INTO lu_survey_method(survey_method_cd,survey_method_ds)
-	VALUES  ('byc','bycatch'),
-			('cbc','Christmas Bird count'),
-			('cts','continuous time strip'),
-			('dth','discrete time horizon'),
-			('dts','discrete time strip'),
-			('go','general observation'),
-			('tss','targeted species survey');
+	VALUES
+	('byc','bycatch'),
+	('cbc','Christmas Bird count'),
+	('cts','continuous time strip'),
+	('dth','discrete time horizon'),
+	('dts','discrete time strip'),
+	('go','general observation'),
+	('tss','targeted species survey');
 --
 
 --create and populate beaufort table
@@ -138,20 +209,21 @@ CREATE TABLE lu_beaufort(
 );
 GO 
 
-INSERT INTO lu_beaufort(beaufort_id,beaufort_ds)
-VALUES  (0,'Less than 1','Calm','Sea surface smooth and mirror-like'),
-		(1,'1-3','Light Air','Scaly ripples, no foam crests'),
-		(2,'4-6','Light Breeze','Small wavelets, crests glassy, no breaking'),
-		(3,'7-10','Gentle Breeze','Large wavelets, crests begin to break, scattered whitecaps'),
-		(4,'11-16','Moderate Breeze','Small waves 1-4 ft. becoming longer, numerous whitecaps'),
-		(5,'17-21','Fresh Breeze','Moderate waves 4-8 ft taking longer form, many whitecaps, some spray'),
-		(6,'22-27','Strong Breeze','Larger waves 8-13 ft, whitecaps common, more spray'),
-		(7,'28-33','Near Gale','Sea heaps up, waves 13-19 ft, white foam streaks off breakers'),
-		(8,'34-40','Gale','Moderately high (18-25 ft) waves of greater length, edges of crests begin to break into spindrift, foam blown in streaks'),
-		(9,'41-47','Strong Gale','High waves (23-32 ft), sea begins to roll, dense streaks of foam, spray may reduce visibility'),
-		(10,'48-55','Storm','Very high waves (29-41 ft) with overhanging crests, sea white with densely blown foam, heavy rolling, lowered visibility'),
-		(11,'56-63','Violent Storm','Exceptionally high (37-52 ft) waves, foam patches cover sea, visibility more reduced'),
-		(12,'64+','Hurricane','Air filled with foam, waves over 45 ft, sea completely white with driving spray, visibility greatly reduced');
+INSERT INTO lu_beaufort(beaufort_id,wind_speed_knots,WMO_classification,water_ds)
+	VALUES
+	(0,'<1','Calm','Sea surface smooth and mirror-like'),
+	(1,'1-3','Light Air','Scaly ripples, no foam crests'),
+	(2,'4-6','Light Breeze','Small wavelets, crests glassy, no breaking'),
+	(3,'7-10','Gentle Breeze','Large wavelets, crests begin to break, scattered whitecaps'),
+	(4,'11-16','Moderate Breeze','Small waves 1-4 ft. becoming longer, numerous whitecaps'),
+	(5,'17-21','Fresh Breeze','Moderate waves 4-8 ft taking longer form, many whitecaps, some spray'),
+	(6,'22-27','Strong Breeze','Larger waves 8-13 ft, whitecaps common, more spray'),
+	(7,'28-33','Near Gale','Sea heaps up, waves 13-19 ft, white foam streaks off breakers'),
+	(8,'34-40','Gale','Moderately high (18-25 ft) waves of greater length, edges of crests begin to break into spindrift, foam blown in streaks'),
+	(9,'41-47','Strong Gale','High waves (23-32 ft), sea begins to roll, dense streaks of foam, spray may reduce visibility'),
+	(10,'48-55','Storm','Very high waves (29-41 ft) with overhanging crests, sea white with densely blown foam, heavy rolling, lowered visibility'),
+	(11,'56-63','Violent Storm','Exceptionally high (37-52 ft) waves, foam patches cover sea, visibility more reduced'),
+	(12,'64+','Hurricane','Air filled with foam, waves over 45 ft, sea completely white with driving spray, visibility greatly reduced');
 --
 
 --create revisions table
@@ -161,24 +233,6 @@ CREATE TABLE lu_revision_details (
 	revision_date date not null,
 	revision_details nvarchar(1000) not null,
 	Primary Key (dataset_id, revision_nb)
-);
---
-
---NEEDS WORK--
---create boem lease block table
-CREATE TABLE lu_boem_lease_blocks (
-	boem_lease_block_id smallint not null,
---	block_nb nvarchar(20) not null,
---	block_label nvarchar(20) not null,
---	sub_block nvarchar(20) not null,
---	lease_number nvarchar(20) not null,
---	lease_type nvarchar(20) not null,
---	company nvarchar(20) not null,
---	prot_name nvarchar(20) not null,
---	lease_term nvarchar(20) not null,
---	proj_ease date not null,
---	lease_date date not null,
-	Primary Key (boem_lease_block_id)
 );
 --
 
@@ -216,61 +270,6 @@ CREATE TABLE lu_boem_lease_blocks (
 --);
 --
 
-
-------------------------------
--- create extra info tables --
-------------------------------
-
---create citations table
-CREATE TABLE citations (
-	dataset_id smallint not null,
-	citation nvarchar(1000) not null,
-	Primary Key (dataset_id)
-);
---
-
---create reports table
-CREATE TABLE reports (
-	dataset_id smallint not null,
-	report nvarchar(1000) not null,
-	Primary Key (dataset_id)
-);
---
-
---create urls table
-CREATE TABLE urls (
-	dataset_id smallint not null,
-	url nvarchar(1000) not null,
-	Primary Key (dataset_id)
-);
---
-
---create vehicle_details table
-CREATE TABLE vehicle_details (
-	dataset_id smallint not null,
-	vehicle_name nvarchar(50) not null,
-	secondary_vehicle nvarchar(50) null,
-	date_of_switch date null,
-	additional_info nvarchar(1000) null,
-	Primary Key (dataset_id)
-);
---
-
---create progress_table table
-CREATE TABLE progress_table (
-	dataset_id smallint not null,
-	priority_ranking tinyint null, --1:3 used for NOAA ranking but could rank another way
-	action_required_or_taken nvarchar(20) not null,
-	date_of_action date null,
-	who_will_act nvarchar(50) not null,
-	data_acquired bit not null,
-	metadata_acquired bit not null,
-	report_acquired bit not null,
-	additional_info nvarchar(500) null,
-	Primary Key (dataset_id)
-);
---
-
 ------------------------
 -- create main tables --
 ------------------------
@@ -278,7 +277,7 @@ CREATE TABLE progress_table (
 -- create dataset table
 CREATE TABLE dataset (
 	dataset_id smallint not null,
-	dataset_name nvharchar(50) not null,
+	dataset_name nvarchar(50) not null,
 	survey_type_cd nchar(1) not null,
 	survey_method_cd nchar(3) not null,
 	dataset_type_cd nchar(2) not null, 
@@ -287,7 +286,7 @@ CREATE TABLE dataset (
 	share_level_id tinyint not null, 
 	sponsors nvarchar(50) null,
 	planned_speed_knots numeric null,
-	metadata nvarvhar(MAX) null,
+	metadata nvarchar(MAX) null,
 	version_nb tinyint not null, 
 	pooled_observations nchar(3) not null,
 	responsible_party smallint null, 
@@ -298,6 +297,7 @@ CREATE TABLE dataset (
 	FOREIGN KEY(survey_method_cd) REFERENCES lu_survey_method(survey_method_cd),
 	FOREIGN KEY(dataset_type_cd) REFERENCES lu_dataset_type(dataset_type_cd),
 	FOREIGN KEY(survey_type_cd) REFERENCES lu_survey_type(survey_type_cd),
+	FOREIGN KEY(share_level_id) REFERENCES lu_share_level(share_level_id),
 	FOREIGN KEY(dataset_id, version_nb) REFERENCES lu_revision_details(dataset_id, revision_nb),
 	FOREIGN KEY(responsible_party) REFERENCES lu_people([user_id])
 );
@@ -310,12 +310,12 @@ CREATE TABLE transect (
 	source_transect_id nvarchar(50) null,
 	start_dt date null,
 	start_tm time null,
-	start_lat numeric null,
-	start_lon numeric null, 
+	--start_lat numeric null,
+	--start_lon numeric null, 
 	end_dt date null,
 	end_tm time null,
-	end_lat numeric null,
-	end_lon numeric null,
+	--end_lat numeric null,
+	--end_lon numeric null,
 	start_seconds_from_midnight numeric null,
 	end_seconds_from_midnight numeric null,
 	observer_tx nvarchar(20) null,
@@ -327,6 +327,8 @@ CREATE TABLE transect (
 	seasurface_tempc_nb numeric null,
 	heading_tx nvarchar(20) null,
 	altitude_m smallint null,
+	vehicle_name nvarchar(50) null, 
+	geom_line nvarchar(MAX) null,
 	comments nvarchar(1000) null,
 	PRIMARY KEY(transect_id),
 	FOREIGN KEY(dataset_id) REFERENCES dataset(dataset_id),
@@ -341,8 +343,8 @@ CREATE TABLE observation (
 	transect_id int null, 
 	obs_dt date null,
 	obs_tm time null,
-	obs_lat numeric null,
-	obs_lon numeric null,
+	--obs_lat numeric null,
+	--obs_lon numeric null,
 	original_species_tx nvarchar(50) null,
 	spp_cd nchar(5) not null,
 	obs_count_intrans_nb smallint null,
@@ -370,42 +372,91 @@ CREATE TABLE observation (
 	wave_height_tx nvarchar(50) null,
 	camera_reel nvarchar(50) null,
 	observer_confidence nvarchar(50) null,
-	boem_lease_block_id smallint null,
+	--boem_lease_block_id smallint null,
 	observer_comments nvarchar(250) null,
+	geom_line nvarchar(MAX) null,
 	admin_notes nvarchar(250) null,
-	PRIMARY KEY(observation_id)
+	PRIMARY KEY(observation_id),
 	FOREIGN KEY(dataset_id) REFERENCES dataset(dataset_id),
 	FOREIGN KEY(seastate_beaufort_nb) REFERENCES lu_beaufort(beaufort_id),
-	FOREIGN KEY(boem_lease_block_id) REFERENCES lu_boem_lease_block(boem_lease_block_id)
+	FOREIGN KEY(spp_cd) REFERENCES lu_species(spp_cd),
+	FOREIGN KEY(transect_id) REFERENCES transect(transect_id)
+	--FOREIGN KEY(boem_lease_block_id) REFERENCES lu_boem_lease_blocks(boem_lease_block_id)
 );
 --
 
 -- create track table
 CREATE TABLE track (
-	track_id
+	track_id int not null,
 	dataset_id smallint not null,
 	transect_id int null, 
 	track_dt date null,
 	track_tm time null,
-	track_lat numeric null,
-	track_lon numeric null,
+	--track_lat numeric null,
+	--track_lon numeric null,
 	point_type nchar(10) null,
 	source_track_id nvarchar(50) null,
 	seconds_from_midnight_nb numeric null,
+	geom_line nvarchar(MAX) null,
 	comments nvarchar(50) null,
 	PRIMARY KEY(track_id),
+	FOREIGN KEY(transect_id) REFERENCES transect(transect_id),
 	FOREIGN KEY(dataset_id) REFERENCES dataset(dataset_id)
 );
 --
 
+------------------------------
+-- create extra info tables --
+------------------------------
 
-
---NEEDS WORK--
--- create geospatial table
---CREATE TABLE geospatial(
---	geospatial_id int not null,
---	PRIMARY KEY(geospatial_id)
---);
+--create citations table
+CREATE TABLE citations (
+	dataset_id smallint not null,
+	citation nvarchar(1000) not null,
+	PRIMARY KEY (dataset_id),
+	FOREIGN KEY (dataset_id) REFERENCES dataset(dataset_id)
+);
 --
 
+--create reports table
+CREATE TABLE reports (
+	dataset_id smallint not null,
+	report nvarchar(1000) not null,
+	PRIMARY KEY (dataset_id),
+	FOREIGN KEY (dataset_id) REFERENCES dataset(dataset_id)
+);
+--
 
+--create urls table
+CREATE TABLE urls (
+	dataset_id smallint not null,
+	url nvarchar(1000) not null,
+	PRIMARY KEY (dataset_id),
+	FOREIGN KEY (dataset_id) REFERENCES dataset(dataset_id)
+);
+--
+
+--create progress_table table
+CREATE TABLE progress_table (
+	dataset_id smallint not null,
+	priority_ranking tinyint null, --1:3 used for NOAA ranking but could rank another way
+	action_required_or_taken nvarchar(20) not null,
+	date_of_action date null,
+	who_will_act nvarchar(50) not null,
+	data_acquired bit not null,
+	metadata_acquired bit not null,
+	report_acquired bit not null,
+	additional_info nvarchar(500) null,
+	PRIMARY KEY (dataset_id),
+	FOREIGN KEY (dataset_id) REFERENCES dataset(dataset_id)
+);
+--
+
+--create boem lease block table
+CREATE TABLE boem_lease_blocks (
+	prot_nb nvarchar(20) not null,
+ 	block_nb nvarchar(20) not null,
+	geom_line nvarchar(MAX) not null,
+	Primary Key (prot_nb,block_nb)
+);
+--
