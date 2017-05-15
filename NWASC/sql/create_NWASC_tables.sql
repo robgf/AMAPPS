@@ -177,16 +177,93 @@ CREATE TABLE lu_behaviors(
 );
 GO
 
-INSERT INTO lu_behaviors()
+INSERT INTO lu_behaviors(behavior_id,behavior_ds)
 	VALUES
-	(1,'swimming'),
-	(2,'feeding'),
-	(3,'diving'),
-	(4,'breaching'),
-	(5,'porposing'),
-	(6,'blow'),
-	(7,'flying'),
-	(8,'sitting on water');
+	(1,'attacking/fighting'),-- 'harassing'
+	(2,'basking/sunning'),
+	(3,'blow'),
+	(4,'bow riding'),
+	(5,'breaching'),
+	(6,'dead'),
+	(7,'diving'), -- %in% c('dive','diving','dove')
+	(8,'diving - plunge diving')
+	(9,'feeding'), -- %in% c('feed','feeding')
+	(10,'fishing/working'),
+	(11,'floating'),
+	(12,'flocking'),
+	(13,'fluking') -- %in% c('fluke','fluking')
+	(14,'flying'),
+	(15,'flying - directional'),
+	(16,'flying - non-directional'),
+	(17,'flying - soaring')
+	(18,'following/chasing'),
+	(19,'following - ship'),
+	(20,'foraging'),
+	(21,'hauled out'), -- %in% c('beached','on beach','on shore') 
+	(22,'jumping'), -- 'leaping'
+	(23,'landing'),
+	(24,'lobtailing')
+	(25,'milling'),
+	(26,'mating'),
+	(27,'other'),	
+	(28,'piracy'),
+	(29,'porposing'),
+	(30,'preening'),
+	(31,'rafting'),
+	(32,'resting'),
+	(33,'resting - logging'),
+	(34,'rolling'),
+	(35,'scavenging'),
+	(36,'slapping'), -- %in% c('slap','slapping','tailslap','flipperslap')
+	(37,'sleeping'),
+	(38,'splashing'),
+	(39,'spyhopping'),
+	(40,'sitting'),
+	(41,'sitting - on object'),
+	(42,'sitting - on water'),
+	(43,'standing'),
+	(44,'steaming'), 
+	(45,'surfacing'),
+	(46,'swimming'),
+	(47,'taking off'),
+	(48,'taking off - pattering'),
+	(49,'traveling'),
+	(50,'unknown');
+	
+
+--NEEDS WORK--
+-- create coverage area table for easily querying areas
+--CREATE TABLE lu_coverage(
+--	dataset_id smallint not null,
+--	Maine bit not null,
+--	Massachusetts bit not null,
+--	Rhode_Island bit not null,
+--	Connecticut bit not null,
+--	New_York bit not null,
+--	New_Jersey bit not null,
+--	Delaware bit not null,
+--	Maryland bit not null,
+--	Virginia bit not null,
+--	North_Carolina bit not null,
+--	South_Carolina bit not null,
+--	Georgia bit not null,
+--	Florida bit not null,
+
+--	Nantucket_sound bit not null,
+--  Long_Island_sound bit not null, 
+--  Delaware_Bay bit not null,
+--	Chesapeake_Bay bit not null,
+--	Hudson_Bay bit not null,
+
+--	Gulf_of_Mexico bit not null,
+--	Gulf_of_Maine bit not null,
+--	Mid_Atlantic_Bight bit not null,
+--	South_Atlantic_Bight bit not null,
+--	Northeast_US_within_EEZ bit not null,
+--	Northeast_US_outside_EEZ bit not null,
+--	Canada bit not null,
+--);
+--
 
 CREATE TABLE lu_parent_project(
 	project_id tinyint not null,
@@ -220,7 +297,8 @@ INSERT INTO lu_parent_project(project_id, project_name, project_ds, project_url)
 	(13,'Massachusetts CEC',NULL,NULL),
 	(14,'PIROP',NULL,NULL),
 	(15,'ECSAS',NULL,NULL),
-	(16,'BOEM NanoTag Massachusetts 2013',NULL,NULL);
+	(16,'BOEM NanoTag Massachusetts 2013',NULL,NULL),
+	(17,'BOEM Terns 2013',NULL,'https://www.boem.gov/2014-665/');
 --
  
 ------------------------
@@ -327,7 +405,7 @@ responsible_party)--,
 	(144,5,'BOEMHighDef_NC2011Aerial','a','cts','ot',500,250,5,'yes','no',61), 
 	(143,5,'BOEMHighDef_NC2011Boat','b','cts','ot',1000,1000,5,'yes','no',61), 
 	(169,5,'BOEMHighDef_NC2011Camera','c','cts','ot',NULL,NULL,99,'no','yes',61), 		
-	(145,NULL,'BOEMNanoTag_Mass_July2013','a','tss',NULL,NULL,NULL,99,'no',NULL,60), 			
+	(145,NULL,'BOEMNanoTag_Mass_Aug2013','a','tss',NULL,NULL,NULL,99,'no',NULL,60), 			
 	(172,NULL,'BRIMaine2016','b','cts','ot',NULL,NULL,9,'no',NULL,66), 		
 	(7,NULL,'CapeHatteras0405','b','cts','ot',NULL,NULL,5,'yes',NULL,23),         		
 	(8,NULL,'CapeWindAerial','a','cts','ot',NULL,NULL,2,'yes','yes',13),       		
@@ -440,8 +518,8 @@ responsible_party)--,
 	(184,10,'EcoMonNov2013','b','cts','ot',300,300,0,'no',NULL,16),
 	(185,10,'EcoMonFeb2011','b','cts','ot',300,300,0,'no',NULL,NULL),
 	(186,10,'EcoMonJun2011','b','cts','ot',300,300,0,'no',NULL,NULL),
-	(187,16,'BOEMNanoTag_Mass_Aug2013','a','tss',NULL,NULL,NULL,99,'no',NULL,60),
-	(188,16,'BOEMNanoTag_Mass_Sept2013','a','tss',NULL,NULL,NULL,99,'no',NULL,60);
+	(187,16,'BOEMNanoTag_Mass_Sept2013','a','tss',NULL,NULL,NULL,99,'no',NULL,60),
+	(188,17,'BOEM_terns_July2013','a','tss',NULL,NULL,NULL,0,'no',NULL,NULL);
 --
 
 -- create transect table
@@ -495,6 +573,7 @@ CREATE TABLE observation (
 	seconds_from_midnight numeric null,
 	animial_age_tx nvarchar(50) null,
 	plumage_tx nvarchar(50) null,
+	behavior_id tinyint null,
 	behavior_tx nvarchar(50) null,
 	animal_sex_tx nvarchar(50) null,
 	travel_direction_tx nvarchar(50) null,
@@ -521,7 +600,8 @@ CREATE TABLE observation (
 	FOREIGN KEY(dataset_id) REFERENCES dataset(dataset_id),
 	FOREIGN KEY(seastate_beaufort_nb) REFERENCES lu_beaufort(beaufort_id),
 	FOREIGN KEY(spp_cd) REFERENCES lu_species(spp_cd),
-	FOREIGN KEY(transect_id) REFERENCES transect(transect_id)
+	FOREIGN KEY(transect_id) REFERENCES transect(transect_id),
+	FOREIGN KEY(behavior_id) REFERENCES lu_behaviors(behavior_id)
 	--FOREIGN KEY(boem_lease_block_id) REFERENCES lu_boem_lease_blocks(boem_lease_block_id)
 );
 --
@@ -637,7 +717,7 @@ INSERT INTO progress_table(dataset_id,dataset_name,action_required_or_taken,date
 	(101,0,'DUMLOnslowBay2007','need to investigate',NULL,'AW',0,0,0,NULL),
 	(106,0,'WaterfowlUSFWS2001','need to investigate',NULL,'MTJ/KC',0,0,0,NULL),
 	(119,0,'ECSAS','Arliss has, on hold for now',NULL,'KC',0,0,0,'waiting until data is published'),
-	(145,99,'BOEMNanoTag_Mass2013','needs QA/QC',NULL,'KC',1,0,0,'In contact with Pam about this'),
+	(145,99,'BOEMNanoTag_Mass_July2013','needs QA/QC',NULL,'KC',1,0,0,'In contact with Pam about this'),
 	(163,0,'RoyalSociety','need to investigate',NULL,'TW',0,0,0,NULL),
 	(166,0,'BarHarborWW09','requested multiple times',CAST('2017-04-27' AS DATE),'KC',0,0,0,NULL),
 	(167,0,'BarHarborWW010','requested multiple times',CAST('2017-04-27' AS DATE),'KC',0,0,0,NULL),
