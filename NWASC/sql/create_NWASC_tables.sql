@@ -169,6 +169,38 @@ CREATE TABLE lu_revision_details (
 GO
 --
 
+-- look up age
+CREATE TABLE lu_age(
+	age_id tinyint not null,
+	age_ds nvarchar(20) not null
+	PRIMARY KEY(age_id) 
+);
+GO
+
+INSERT INTO lu_age(age_id,age_ds)
+	VALUES
+	(1,'adult'),
+	(2,'juvenile'),
+	(3,'other'),
+	(4,'unknown');
+--
+
+-- look up sex
+CREATE TABLE lu_sex(
+	sex_id tinyint not null,
+	sex_ds nvarchar(20) not null
+	PRIMARY KEY(sex_id) 
+);
+GO
+
+INSERT INTO lu_sex(sex_id,sex_ds)
+	VALUES
+	(1,'female'),
+	(2,'male'),
+	(3,'other'),
+	(4,'unknown');
+--
+	
 -- look up behaviors
 CREATE TABLE lu_behaviors(
 	behavior_id tinyint not null,
@@ -519,7 +551,9 @@ responsible_party)--,
 	(185,10,'EcoMonFeb2011','b','cts','ot',300,300,0,'no',NULL,NULL),
 	(186,10,'EcoMonJun2011','b','cts','ot',300,300,0,'no',NULL,NULL),
 	(187,16,'BOEMNanoTag_Mass_Sept2013','a','tss',NULL,NULL,NULL,99,'no',NULL,60),
-	(188,17,'BOEM_terns_July2013','a','tss',NULL,NULL,NULL,0,'no',NULL,NULL);
+	(188,17,'BOEM_terns_July2013','a','tss',NULL,NULL,NULL,0,'no',NULL,NULL),
+	(189,17,'BOEM_terns_Aug2013','a','tss',NULL,NULL,NULL,0,'no',NULL,NULL),
+	(190,17,'BOEM_terns_Sep2013','a','tss',NULL,NULL,NULL,0,'no',NULL,NULL);
 --
 
 -- create transect table
@@ -571,11 +605,10 @@ CREATE TABLE observation (
 	observer_tx nvarchar(20) null,
 	observer_position nvarchar(20) null,
 	seconds_from_midnight numeric null,
-	animial_age_tx nvarchar(50) null,
+	age_id tinyint null,
 	plumage_tx nvarchar(50) null,
 	behavior_id tinyint null,
-	behavior_tx nvarchar(50) null,
-	animal_sex_tx nvarchar(50) null,
+	sex_id tinyint null,
 	travel_direction_tx nvarchar(50) null,
 	heading_tx nvarchar(50) null,
 	flight_height_tx nvarchar(50) null,
@@ -601,7 +634,9 @@ CREATE TABLE observation (
 	FOREIGN KEY(seastate_beaufort_nb) REFERENCES lu_beaufort(beaufort_id),
 	FOREIGN KEY(spp_cd) REFERENCES lu_species(spp_cd),
 	FOREIGN KEY(transect_id) REFERENCES transect(transect_id),
-	FOREIGN KEY(behavior_id) REFERENCES lu_behaviors(behavior_id)
+	FOREIGN KEY(behavior_id) REFERENCES lu_behaviors(behavior_id),
+	FOREIGN KEY(age_id) REFERENCES lu_age(age_id),
+	FOREIGN KEY(sex_id) REFERENCES lu_sex(sex_id),
 	--FOREIGN KEY(boem_lease_block_id) REFERENCES lu_boem_lease_blocks(boem_lease_block_id)
 );
 --
@@ -717,7 +752,6 @@ INSERT INTO progress_table(dataset_id,dataset_name,action_required_or_taken,date
 	(101,0,'DUMLOnslowBay2007','need to investigate',NULL,'AW',0,0,0,NULL),
 	(106,0,'WaterfowlUSFWS2001','need to investigate',NULL,'MTJ/KC',0,0,0,NULL),
 	(119,0,'ECSAS','Arliss has, on hold for now',NULL,'KC',0,0,0,'waiting until data is published'),
-	(145,99,'BOEMNanoTag_Mass_July2013','needs QA/QC',NULL,'KC',1,0,0,'In contact with Pam about this'),
 	(163,0,'RoyalSociety','need to investigate',NULL,'TW',0,0,0,NULL),
 	(166,0,'BarHarborWW09','requested multiple times',CAST('2017-04-27' AS DATE),'KC',0,0,0,NULL),
 	(167,0,'BarHarborWW010','requested multiple times',CAST('2017-04-27' AS DATE),'KC',0,0,0,NULL),
@@ -737,8 +771,11 @@ INSERT INTO progress_table(dataset_id,dataset_name,action_required_or_taken,date
 	(184,0,'EcoMonNov2013','need to request',NULL,'TW/KC',0,0,1,'In contact with TW and AW about this'),
 	(185,0,'EcoMonFeb2011','need to request',NULL,'TW/KC',0,0,1,'In contact with TW and AW about this'),
 	(186,0,'EcoMonJun2011','need to request',NULL,'TW/KC',0,0,1,'In contact with TW and AW about this'),
-	(187,99,'BOEMNanoTag_Mass_Aug2013','needs QA/QC',NULL,'KC',1,0,1,'In contact with Pam about this'),
-	(188,99,'BOEMNanoTag_Mass_Sept2013','needs QA/QC',NULL,'KC',1,0,1,'In contact with Pam about this');
+	(145,99,'BOEMNanoTag_Mass_Aug2013','QA/QC in progress',NULL,'KC',1,0,1,NULL),
+	(187,99,'BOEMNanoTag_Mass_Sept2013','QA/QC in progress',NULL,'KC',1,0,1,'replicate run in Sept.'),
+	(188,99,'BOEM_terns_Jul2013','QA/QC in progress',NULL,'KC',1,0,1,NULL),
+	(189,99,'BOEM_terns_Aug2013','QA/QC in progress',NULL,'KC',1,0,1,NULL),
+	(190,99,'BOEM_terns_Sep2013','QA/QC in progress',NULL,'KC',1,0,1,'replicate run in Sept.');
 	
 --
 
