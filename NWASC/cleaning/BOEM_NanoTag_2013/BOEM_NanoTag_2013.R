@@ -1,5 +1,6 @@
 # --------------------- #
 # Quality control BOEM NanoTag 2013 data
+# from FWS MB
 # prepare it forimport into the NWASC
 # --------------------- #
 
@@ -8,10 +9,9 @@
 # load packages
 # -------------------------------- #
 require(RODBC) # odbcConnect
-require(tidyverse) # read and bind csvs
-require(rgdal) # read shapefiles
-require(foreign) # read dbf
+#require(rgdal) # read shapefiles
 require(dplyr)
+#library(maptools)
 # -------------------------------- #
 
 
@@ -26,34 +26,48 @@ setwd(dir)
 dir.in <- paste(dir, surveyFolder, sep = "/") 
 dir.out <- paste(gsub("datasets_received", "data_import/in_progress", dir), surveyFolder,  sep = "/") 
 track.dir <- paste(dir.in, "NanoTag_aerial_gps_tracks_2013", sep="/")
-
-# SOURCE R FUNCTIONS
-source(file.path("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/_Rfunctions/sourceDir.R"))
-sourceDir(file.path("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/_Rfunctions"))
 # -------------------------------- #
 
 
 #---------------------#
 # load data 
 #---------------------#
-#--------#
-# load observations with waypoints
-#--------#
-# the data are formated differently, need to be uploaded separately 
-data.list = c( "TernSurvey1_CorrectedObservations.csv","TernSurvey2_CorrectedObservations.csv",
-               "TernSurvey3_CorrectedObservations.csv","TernSurvey4_CorrectedObservations.csv")
-data.list = paste(dir.in, data.list, sep="/")
-
-data = data.list %>% map_df(~read_csv(.x, col_types = cols(.default = "c")))
 data2 = read.csv(file.path(dir.in,"Tern_aerial_survey_NS_2013.csv")) 
 
-colnames(data) = tolower(names(data))
 colnames(data2) = tolower(names(data2))
 
 # change data2 coordinates from zone 19N
+library(rgdal)
+coordinates(data2) = ~x_19n + y_19n
+sputm <- SpatialPoints(data2, proj4string=CRS("+proj=utm +zone=19 +datum=WGS84"))  
+spgeo <- spTransform(sputm, CRS("+proj=longlat +datum=WGS84"))
+spgeo = as.data.frame(spgeo)     
+colnames(spgeo)=c("longitude","latitude")
+# combine data2 & lat lon
+data2 = as.data.frame(data2)
+data2 = cbind(data2,spgeo)
+rm(spgeo,sputm)
 
-# combine data & data2
+# format
+data2 = dplyr::select(data2, -x_19n, -y_19n, -objectid,-globalid) %>% rename(behavior = behav) %>%
+  mutate(date = sapply(strsplit(as.character(data2$date_time_est)," "),head,1),
+         time = sapply(strsplit(as.character(data2$date_time_est)," "),tail,1)) 
+
+#change species
+data2$original_species_tx = data2$spp
+data2$spp="UNTE"
+
+#change behavior
+data2$behavior_id = ifelse(data2$behavior=="fly",14,17) #14=fly, 17=forage
+data2 = rename(data2, comments=behavior)
+
+#break data
+data18=data2[1:61,]
+data04=data2[62:78,]
+data06=data2[79:84,]
+rm(data2)
 #--------#
+
 
 #--------#
 # load tracks
@@ -62,63 +76,30 @@ colnames(data2) = tolower(names(data2))
 track04 = read.dbf(file.path(track.dir, "Track04Sep13.dbf"), as.is=FALSE)
 track06 = read.dbf(file.path(track.dir, "Track06Sep13.dbf"), as.is=FALSE)
 track18 = read.dbf(file.path(track.dir, "Track18Aug13.dbf"), as.is=FALSE)
-track04$filename = "Track04Sep13"
-track06$filename = "Track06Sep13"
-track18$filename = "Track18Aug13"
-# pull the data we need and combine files
-track2 = bind_rows(select(track04, Latitude, Longitude, altitude, time_, filename, ltime), 
-                   select(track06, Latitude, Longitude, altitude, time_, filename, ltime), 
-                   select(track18, Latitude, Longitude, altitude, time_, filename, ltime))
-rm(track04, track06, track18)
-track2 = rename(track2, track_dt = ltime, gps_time = time_)
-colnames(track2)=tolower(names(track2))
-track2$gps_time = substr(sapply(strsplit(track2$gps_time, " "), tail, 1),1,8)
-track$longitude = as.numeric(track$longitude) * -1
+
+#type
+track04$type = ifelse(track04$new_seg=="True","BEGCNT","WAYPNT")
+track04$type[which(track04$type=="BEGCNT")-1]="ENDCNT"
+track04$type[846]="ENDCNT"
+
+track06$type="WAYPNT"
+track06$type[1]="BEGCNT"
+track06$type[1020]="ENDCNT"
+
+track18$type = ifelse(track18$new_seg==-1,"BEGCNT","WAYPNT")
+track18$type[1]="BEGCNT"
+track18$type[which(track18$type=="BEGCNT")-1]="ENDCNT"
+track18$type[281]="ENDCNT"
 #--------#
+
 
 #--------#
 #load transect design
 #--------#
-transect0406 = readOGR(dsn = track.dir, layer = "Aerial_Tran_04_06Sep13")
-transect18 = readOGR(dsn = track.dir, layer = "Aerial_Tran_18Aug13")
+#transect0406 = readOGR(dsn = track.dir, layer = "Aerial_Tran_04_06Sep13")
+#transect18 = readOGR(dsn = track.dir, layer = "Aerial_Tran_18Aug13")
+
+#aug_sldf <- spTransform(transect18, "+proj=longlat +datum=WGS84")
+#sep_sldf <- spTransform(transect0406, "+proj=longlat +datum=WGS84")
 #---------------------#
 
-
-#---------------------#
-# break apart obs and track
-#---------------------#  
-track = data[data$type %in% c("GPS"),]#,"START"
-obs = data[data$type=="USER",]
-#---------------------#  
-
-
-#---------------------#
-# fix species
-#---------------------#
-db <- odbcConnectAccess2007("//IFW9mbm-fs1/SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
-spplist <- sqlFetch(db, "lu_species")$spp_cd
-odbcClose(db)
-
-obs$original_species_tx = obs$spp
-
-tmp <- !obs$spp %in% spplist
-message("Found ", sum(tmp), " entries with non-matching AOU codes")
-sort(unique(obs$spp[tmp]))
-
-obs$spp[obs$spp %in% c("CXFC","FRONT","FT","MIACO","RBTU","SILTF")] = "UNKN" 
-obs$spp[obs$spp %in% "BLUFI"] = "TUNA"  
-obs$spp[obs$spp %in% c("STTE","Sterna spp.")] = "UNTE"   
-obs$spp[obs$spp %in% "UNTU"] = "TURT" 
-obs$spp[obs$spp %in% "START"] = "BEGCNT"
-obs$spp[obs$spp %in% "END"] = "ENDCNT"
-obs$spp[obs$spp %in% "BOATS"] = "BOAT"  
-#---------------------#
-
-
-#---------------------#
-# fix track
-#---------------------#
-# change names to lowercase
-track = rename(track, point_type = type)
-track$type[track$point_type %in% "GPS"] = "WAYPNT"
-#---------------------#
