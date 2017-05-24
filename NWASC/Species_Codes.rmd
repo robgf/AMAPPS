@@ -670,15 +670,11 @@ WAGL|Wandering Glider|Pantala flavescens|101801
 
 ---
 
-Other   
+Boats
 ===
-Including bats, plants, and man made objects  
 
 **Species Code**|**Common Name**|**Scientific Name**|**ITIS Code**
 :-----:|:-----:|:-----:|:-----:
-ALGA|Algal bloom|--|--
-ANTE|Antennae|--|--
-BALN|balloon|--|--
 BOAC|Boat--aircraft carrier|--|--
 BOAT|Boat--unidentified|--|--
 BOBA|Boat--barge/barge and tug|--|--
@@ -703,6 +699,18 @@ BOTD|Boat--trawler/dragger|--|--
 BOTU|Boat--tug|--|--
 BOWW|Boat--whale watch|--|--
 BOYA|Boat--yacht|--|--
+
+---
+
+Other   
+===
+Including bats, plants, and man made objects  
+
+**Species Code**|**Common Name**|**Scientific Name**|**ITIS Code**
+:-----:|:-----:|:-----:|:-----:
+ALGA|Algal bloom|--|--
+ANTE|Antennae|--|--
+BALN|balloon|--|--
 BUOY|buoy|--|--
 CHAN|Change in personnel, station, transect, etc.|--|--
 CLSU|Cloudless Sulphur|Phoebis sennae|777750
@@ -714,12 +722,10 @@ FIGE|fishing gear|--|--
 FLJE|flotsam and jetsam|--|--
 FUEL|oil/fuel|--|--
 ICE|ice|--|--
-KRILL|Unidentified krill|--|--
 LABA|Latex balloon|--|--
 LINE|rope/line|--|--
 MACR|macroalgae|--|--
 MYBA|Mylar balloon|--|--
-NONE|none|--|--
 OCFR|ocean front|--|--
 ORSU|Orange Sulphur|Colias eurytheme|188528
 PLAS|plastic|--|--
@@ -730,14 +736,11 @@ REBA|Red Bat|Lasiurus borealis|180016
 SARG|Sargassum|--|11389
 SPEN|Salmon Pens|--|--
 TOWR|Tower|--|--
-TRAN|transect point|--|--
 UBAT|Unidentified Bat|--|--
 UFOB|Unidentified flying object (animal-origin)|--|--
-UNCT|??|--|--
 UNKN|unknown|--|--
 ZOOP|zooplankton|--|--
   
 --- 
-
 
 made with http://jakebathman.github.io/Markdown-Table-Generator/
