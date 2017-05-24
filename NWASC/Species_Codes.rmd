@@ -654,7 +654,6 @@ Bugs
 **Species Code**|**Common Name**|**Scientific Name**|**ITIS Code**
 :-----:|:-----:|:-----:|:-----:
 BDDR|Blue Dasher Dragonfly|Pachydiplax longipennis|101799
-BLST|Black Swallowtail|Papilio polyxenes |188545
 BSTB|Black Swallowtail Butterfly|Papilio polyxenes|188543
 BUMB|Unidentified Bee|--|--
 GISW|Giant Swallowtail Butterfly|Papilio cresphontes|--
