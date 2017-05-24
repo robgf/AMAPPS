@@ -504,7 +504,7 @@ YLGU|Yellow-legged Gull|Larus cachinnans|554270
 YNAL|Yellow-nosed Albatross|Thalassarche chlororhynchos|554452
 YRWA|Yellow-rumped Warbler|Dendroica coronata|178891
 YWAR|Yellow Warbler|Dendroica petechia|178878
-ASDO|Atlantic Spotted Dolphin|Stenella frontalis|552460
+
  
 ---
   
@@ -512,6 +512,7 @@ Cetaceans
 ===
 **Species Code**|**Common Name**|**Scientific Name**|**ITIS Code**
 :-----:|:-----:|:-----:|:-----:
+ASDO|Atlantic Spotted Dolphin|Stenella frontalis|552460
 BBWH|Blainville's Beaked Whale|Mesoplodon densirstris|--
 BESE|Bearded Seal|Erignathus barbatus|180655
 BLWH|Blue Whale|Balaenoptera musculus|180528
@@ -575,7 +576,7 @@ WALR|Walrus|Odobenus rosmarus|180639
 WBDO|White-beaked Dolphin|Lagenorhynchus albirostris|180442
 WIMA|West Indian Manatee|Trichechus manatus|180684
 WSDO|Atlantic White-sided Dolphin|Lagenorhynchus acutus|180443
-ALTU|Albacore Tuna|Thunnus alalunga|172419
+
   
 ---
 
@@ -583,6 +584,8 @@ Fish
 ===
 **Species Code**|**Common Name**|**Scientific Name**|**ITIS Code**
 :-----:|:-----:|:-----:|:-----:
+ALTU|Albacore Tuna|Thunnus alalunga|172419
+BAIT|bait ball|--|--
 BASH|Basking Shark|Cetorhinus maximus|159907
 BFTU|Atlantic Bluefin Tuna|Thunnus thynnus|172421
 BIFI|Billfishes|Istiophoridae spp.|172486
@@ -591,18 +594,22 @@ BLMA|Blue Marlin|Makaira nigricans|172491
 BLSH|Blue Shark|Prionace glauca|160424
 BLUE|Bluefish|Pomatomus saltatrix|168559
 BONI|Bonito|Scombridae spp.|172398
+CAJE|Cannonball Jelly|Stomolophus meleagris|51926
 CNRA|Cownose Ray|Rhinoptera bonasus|160985
 FAAL|False Albacore|Euthynnus alletteratus|172402
 FISH|Unidentified fish|Osteichthyes|161030
 GOMR|Giant Oceanic Manta Ray|Manta birostris|160992
 GWSH|Great White Shark|Carcharodon carcharias|159903
 HASH|Hammerhead shark|Sphyrnidae spp.|160497
+HOCR|Atlantic Horseshoe Crab|Limulus polyphemus|82703
 KIMA|King Mackerel|Scomberomorus cavalla|172435
 MAKO|Unidentified Long-finned/Short-finned Mako Shark|Isurus spp.|159923
 MAMA|Dolphin fish (Mahi-Mahi)|Coryphaena hippurus|168791
 MARA|Unidentified Manta Ray|Mobulidae|160990
 MOLA|Ocean Sunfish (Mola)|Mola mola|173414
+MOON|Moon Jellyfish|Aurelia aurita|51701
 OWTS|Oceanic Whitetip Shark (aka. Brown shark, brown Milbert's sand bar shark, nigano shark, silvertip shark)|Carcharhinus longimanus|160330
+PMOW|Portuguese Man o' War|Physalia physalis|719181
 SAFI|Sargassumfish|Histrio histrio|164520
 SAIL|Sailfish|Istiophorus platypterus|172488
 SCHA|Scalloped Hammerhead Shark|Sphyrna lewini|160508
@@ -614,6 +621,7 @@ THHE|Thread Herrings|Opisthonema spp.|161747
 TUNA|Unidentified tuna|Scombridae|172398
 UFFI|Unidentified flying fish|Exocoetidae spp.|165431
 UNEL|Unidentified elasmobranch (Shark, Ray, Skate)|Elasmobranch|--
+UNJE|Unidentified jellyfish|Scyphozoa spp.|51483 
 UNLF|Unidentified large fish|Osteichthyes spp.|161030
 UNRA|Unidentified ray|Rajiformes spp.|160806
 UNSF|Unidentified small fish|Osteichthyes spp.|161030
@@ -622,7 +630,7 @@ UNTS|Unidentified thresher shark|--|--
 WAHO|Wahoo|Acanthocybium solandri|172451
 WHMA|White Marlin|Kajikia albida|768126
 YETU|Yellowfin Tuna|Thunnus albacares|172423
-  
+
 ---
 
 Sea Turtles  
@@ -640,18 +648,37 @@ UNCH|Unidentified Cheloniidae species (Green Sea Turtle, Hawksbill Sea Turtle, a
   
 ---
   
+Bugs   
+===
+
+**Species Code**|**Common Name**|**Scientific Name**|**ITIS Code**
+:-----:|:-----:|:-----:|:-----:
+BDDR|Blue Dasher Dragonfly|Pachydiplax longipennis|101799
+BLST|Black Swallowtail|Papilio polyxenes |188545
+BSTB|Black Swallowtail Butterfly|Papilio polyxenes|188543
+BUMB|Unidentified Bee|--|--
+GISW|Giant Swallowtail Butterfly|Papilio cresphontes|--
+GRDA|Green Darner|Anax junius|101598
+DRAG|dragonfly spp.|--|--
+MONA|Monarch Butterfly|Danaus plexippus|117273
+PLBU|Painted Lady Butterfly|Vanessa cardui|188601
+SUBU|Sulfur Butterfly spp.|Coliadinae spp.|694016
+SWDA|Swamp Darner|Epiaeschna heros|101638
+UBUT|Unidentified butterfly|--|--
+UNMO|Unidentified Moth|--|--
+WAGL|Wandering Glider|Pantala flavescens|101801
+
+---
+
 Other   
 ===
-Including bats, dragonflies, butterflies, jellies, plants, and man made objects  
+Including bats, plants, and man made objects  
 
 **Species Code**|**Common Name**|**Scientific Name**|**ITIS Code**
 :-----:|:-----:|:-----:|:-----:
 ALGA|Algal bloom|--|--
 ANTE|Antennae|--|--
-BAIT|bait ball|--|--
 BALN|balloon|--|--
-BDDR|Blue Dasher Dragonfly|Pachydiplax longipennis|101799
-BLST|Black Swallowtail|Papilio polyxenes |188545
 BOAC|Boat--aircraft carrier|--|--
 BOAT|Boat--unidentified|--|--
 BOBA|Boat--barge/barge and tug|--|--
@@ -676,13 +703,9 @@ BOTD|Boat--trawler/dragger|--|--
 BOTU|Boat--tug|--|--
 BOWW|Boat--whale watch|--|--
 BOYA|Boat--yacht|--|--
-BSTB|Black Swallowtail Butterfly|Papilio polyxenes|188543
-BUMB|Unidentified Bee|--|--
 BUOY|buoy|--|--
-CAJE|Cannonball Jelly|Stomolophus meleagris|51926
 CHAN|Change in personnel, station, transect, etc.|--|--
 CLSU|Cloudless Sulphur|Phoebis sennae|777750
-DRAG|dragonfly spp.|--|--
 ERRO|error|--|--
 FGGI|fixed gear--gill net|--|--
 FGLO|fixed gear--lobster|--|--
@@ -690,42 +713,31 @@ FGUN|fixed gear--unidentified|--|--
 FIGE|fishing gear|--|--
 FLJE|flotsam and jetsam|--|--
 FUEL|oil/fuel|--|--
-GISW|Giant Swallowtail Butterfly|Papilio cresphontes|--
-GRDA|Green Darner|Anax junius|101598
-HOCR|Atlantic Horseshoe Crab|Limulus polyphemus|82703
 ICE|ice|--|--
 KRILL|Unidentified krill|--|--
 LABA|Latex balloon|--|--
 LINE|rope/line|--|--
 MACR|macroalgae|--|--
-MONA|Monarch Butterfly|Danaus plexippus|117273
-MOON|Moon Jellyfish|Aurelia aurita|51701
 MYBA|Mylar balloon|--|--
 NONE|none|--|--
 OCFR|ocean front|--|--
 ORSU|Orange Sulphur|Colias eurytheme|188528
 PLAS|plastic|--|--
-PLBU|Painted Lady Butterfly|Vanessa cardui|188601
-PMOW|Portuguese Man o' War|Physalia physalis|719181
 POBE|Polar Bear|Ursus maritimus|180542
 PONY|Pony|--|--
 RCKW|rockweed|Pilea microphylla|19133
 REBA|Red Bat|Lasiurus borealis|180016
 SARG|Sargassum|--|11389
 SPEN|Salmon Pens|--|--
-SUBU|Sulfur Butterfly spp.|Coliadinae spp.|694016
-SWDA|Swamp Darner|Epiaeschna heros|101638
 TOWR|Tower|--|--
 TRAN|transect point|--|--
 UBAT|Unidentified Bat|--|--
-UBUT|Unidentified butterfly|--|--
 UFOB|Unidentified flying object (animal-origin)|--|--
 UNCT|??|--|--
-UNJE|Unidentified jellyfish|Scyphozoa spp.|51483
 UNKN|unknown|--|--
-UNMO|Unidentified Moth|--|--
-WAGL|Wandering Glider|Pantala flavescens|101801
 ZOOP|zooplankton|--|--
   
 --- 
+
+
 made with http://jakebathman.github.io/Markdown-Table-Generator/
