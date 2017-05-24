@@ -72,7 +72,8 @@ message("Found ", sum(tmp), " entries with non-matching AOU codes")
 sort(unique(data$Spp[tmp]))
 
 data$Spp[data$Spp %in% c("'CXFC","MIACO","RBTU","SILTF","FLCR")] = "UNKN" 
-data$Spp[data$Spp %in% c("FRONT","FT","CIRCL")] = "COMMENT"
+data$Spp[data$Spp %in% c("FRONT","FT")] = "OCFR"
+data$Spp[data$Spp %in% c("CIRCL")] = "COMMENT"
 data$Spp[data$Spp %in% "BLUFI"] = "TUNA"  
 data$Spp[data$Spp %in% c("STTE")] = "UNTE"   
 data$Spp[data$Spp %in% "UNTU"] = "TURT" 
