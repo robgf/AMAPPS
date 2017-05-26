@@ -33,7 +33,7 @@ dir.out <- paste(gsub("datasets_received", "data_import/in_progress", dir), surv
 # load data 
 #---------------------#
 data.list = c( "TernSurvey1_CorrectedObservations.csv","TernSurvey2_CorrectedObservations.csv",
-               "TernSurvey3_CorrectedObservations.csv","TernSurvey4_CorrectedObservations.csv")
+               "TernSurvey3_TPW_edit.csv","TernSurvey4_CorrectedObservations.csv")
 data.list = paste(dir.in, data.list, sep="/")
 data = data.list %>% map_df(~read_csv(.x, col_types = cols(.default = "c")))
 
@@ -71,9 +71,9 @@ tmp <- !data$Spp %in% Spplist
 message("Found ", sum(tmp), " entries with non-matching AOU codes")
 sort(unique(data$Spp[tmp]))
 
-data$Spp[data$Spp %in% c("'CXFC","MIACO","RBTU","SILTF","FLCR")] = "UNKN" 
+data$Spp[data$Spp %in% c("'CXFC","RBTU","SILTF","FLCR")] = "UNKN" 
 data$Spp[data$Spp %in% c("FRONT","FT")] = "OCFR"
-data$Spp[data$Spp %in% c("CIRCL")] = "COMMENT"
+data$Spp[data$Spp %in% c("CIRCL","MIACO")] = "COMMENT"
 data$Spp[data$Spp %in% "BLUFI"] = "TUNA"  
 data$Spp[data$Spp %in% c("STTE")] = "UNTE"   
 data$Spp[data$Spp %in% "UNTU"] = "TURT" 
@@ -89,7 +89,7 @@ data$Spp[is.na(data$Spp) & data$Comment.2 %in% "STOP"] = "ENDCNT"
 data$Spp[is.na(data$Spp) & data$Comment.1 %in% c("START","START 300")] = "BEGCNT"
 data$Spp[is.na(data$Spp) & data$Comment.1 %in% c("200 TERNS")] = "UNTE"
 data$Count[data$Spp %in% "UNTE" & data$Comment.1 %in% c("200 TERNS")] = 200
-data$Spp[is.na(data$Spp) & data$Comment.1 %in% c("TRAWLER")]="BOTD"
+data$Spp[is.na(data$Spp) & data$Comment.1 %in% c("TRAWLER","DRAGGER")]="BOTD"
 data$Spp[is.na(data$Spp) & data$Comment.1 %in% c("FRONT","WIND E 0-5","RAIN SHOWE","PART CLDY",
                                               "CLOUDY","RAIN GAME","CLEAR","LT WIND W",
                                               "WIND W 8","WIND LT","WIND SW 5",
@@ -107,12 +107,14 @@ rm(to.add)
 data = arrange(data,date_time)
 
 # fix lat lon
-data$Longitude = as.numeric(data$Longitude)*-1
+data$Longitude = as.numeric(data$Longitude)
+data$Longitude[data$Longitude>0] = data$Longitude[data$Longitude>0]*-1
 data$Latitude = as.numeric(data$Latitude)
 
 #track
 track$Type[track$Type %in% "GPS"] = "WAYPNT"
-track$Longitude = as.numeric(track$Longitude)*-1
+track$Longitude = as.numeric(track$Longitude)
+track$Longitude[track$Longitude>0] = track$Longitude[track$Longitude>0]*-1
 track$Latitude = as.numeric(track$Latitude)
 #---------------------#
 
@@ -252,7 +254,61 @@ data2RRV$offline[data2RRV$id %in% c(1:3,50:75)] = 1
 track2RRV$offline[track2RRV$id %in% c(1:361, 1189:1609)] = 1
 #--------#
 
-## survey3 missing long for both data and track
+
+#--------#
+# survey 3
+# SAP
+#--------#
+track3SAP = track[track$SurveyID=="ternsurvey3"& track$Obs=="SAP",]
+data3SAP = data[data$SurveyID=="ternsurvey3"& data$Obs=="SAP",]
+track3SAP = arrange(track3SAP,date_time)
+data3SAP = arrange(data3SAP,date_time)  
+track3SAP$id = 1:dim(track3SAP)[1]
+data3SAP$id = 1:dim(data3SAP)[1]
+
+# add beg end
+data3SAP$Spp[data3SAP$id==32]="ENDCNT"
+to.add = data3SAP[data3SAP$id==1,]
+to.add$Spp ="BEGCNT"
+to.add$id = 0.1
+to.add$Comment.1 ="added BEGCNT based on track"
+data3SAP = bind_rows(data3SAP,to.add) %>% arrange(date_time,id)
+rm(to.add)
+
+# offline
+track3SAP$offline[track3SAP$id %in% c(1:227,1019:1596)] = 1
+#--------#
+
+#--------#
+# survey 3
+# RRV
+#--------#
+track3RRV = track[track$SurveyID=="ternsurvey3"& track$Obs=="RRV",]
+data3RRV = data[data$SurveyID=="ternsurvey3"& data$Obs=="RRV",]
+track3RRV = arrange(track3RRV,date_time)
+data3RRV = arrange(data3RRV,date_time)  
+track3RRV$id = 1:dim(track3RRV)[1]
+data3RRV$id = 1:dim(data3RRV)[1]
+
+# add beg end
+to.add = data3RRV[data3RRV$id==2,]
+to.add$Spp ="BEGCNT"
+to.add$id = 1.1
+to.add$Comment.1 ="added BEGCNT based on track"
+data3RRV = bind_rows(data3RRV,to.add) %>% arrange(date_time,id)
+rm(to.add)
+to.add = data3RRV[data3RRV$id==42,]
+to.add$Spp ="ENDCNT"
+to.add$id = 42.1
+to.add$Comment.1 ="added ENDCNT based on track"
+data3RRV = bind_rows(data3RRV,to.add) %>% arrange(date_time,id)
+rm(to.add)
+
+# offline
+track3RRV$offline[track3RRV$id %in% c(1:92,896:1392)] = 1
+data3RRV$offline[data3RRV$id %in% c(1,43:55)] = 1
+#--------#
+
 
 #--------#
 # survey 4
