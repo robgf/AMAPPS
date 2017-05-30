@@ -1,4 +1,5 @@
-# **Northwest Atlantic Seabird Catalog - Read Me** 
+Database management for the Northwest Atlantic Seabird Catalog 
+===
 
 For FWS personnel: Details can be found at the FWS NWASC [website](https://sites.google.com/a/fws.gov/nwasc/). 
 Currently the working version of the database is in PostgreSQL and can only be accessed from non-FWS computers. The long term goal is to create an improved database in Microsoft SQL server, which can be run on FWS computers. In the mean time while we redesign the schema, an Access database with the same format of the PostgresSQL schema is where we are aggregating the data (with the addition of track and camera tables). Other updates on the progress of this endeavor can be read in the BOEM bimonthly progress reports for this project or the [updates tab](https://sites.google.com/a/fws.gov/nwasc/updates?pli=1) on the website.
