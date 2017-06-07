@@ -957,8 +957,9 @@ INSERT INTO lu_age(age_id,age_ds)
 	VALUES
 	(1,'adult'),
 	(2,'juvenile'),
-	(3,'other'),
-	(4,'unknown');
+	(3,'mixed'),
+	(4,'other'),
+	(5,'unknown');
 --
 
 -- look up sex
@@ -973,8 +974,9 @@ INSERT INTO lu_sex(sex_id,sex_ds)
 	VALUES
 	(1,'female'),
 	(2,'male'),
-	(3,'other'),
-	(4,'unknown');
+	(3,'mixed'),
+	(4,'other'),
+	(5,'unknown');
 --
 	
 -- look up behaviors
@@ -994,49 +996,43 @@ INSERT INTO lu_behaviors(behavior_id,behavior_ds)
 	(5,'breaching'),
 	(6,'dead'),
 	(7,'diving'), -- %in% c('dive','diving','dove')
-	(8,'diving - plunge diving')
+	(8,'diving - plunge diving'),
 	(9,'feeding'), -- %in% c('feed','feeding')
 	(10,'fishing/working'),
-	(11,'floating'),
-	(12,'flocking'),
-	(13,'fluking') -- %in% c('fluke','fluking')
-	(14,'flying'),
-	(15,'flying - directional'),
-	(16,'flying - non-directional'),
-	(17,'flying - soaring')
-	(18,'following/chasing'),
-	(19,'following - ship'),
-	(20,'foraging'),
-	(21,'hauled out'), -- %in% c('beached','on beach','on shore') 
-	(22,'jumping'), -- 'leaping'
-	(23,'landing'),
-	(24,'lobtailing')
-	(25,'milling'),
-	(26,'mating'),
-	(27,'other'),	
-	(28,'piracy'),
-	(29,'porposing'),
-	(30,'preening'),
-	(31,'rafting'),
-	(32,'resting'),
-	(33,'resting - logging'),
-	(34,'rolling'),
-	(35,'scavenging'),
-	(36,'slapping'), -- %in% c('slap','slapping','tailslap','flipperslap')
-	(37,'sleeping'),
-	(38,'splashing'),
-	(39,'spyhopping'),
-	(40,'sitting'),
-	(41,'sitting - on object'),
-	(42,'sitting - on water'),
-	(43,'standing'),
-	(44,'steaming'), 
-	(45,'surfacing'),
-	(46,'swimming'),
-	(47,'taking off'),
-	(48,'taking off - pattering'),
-	(49,'traveling'),
-	(50,'unknown');
+	(11,'flocking'),
+	(12,'fluking'), -- %in% c('fluke','fluking')
+	(13,'flying'), --directional, non-directional,soaring
+	(14,'following/chasing'),
+	(15,'following - ship'),
+	(16,'foraging'),
+	(17,'hauled out'), -- %in% c('beached','on beach','on shore') 
+	(18,'jumping'), -- 'leaping'
+	(19,'landing'),
+	(20,'lobtailing'),
+	(21,'milling'),
+	(22,'mating'),
+	(23,'other'),	
+	(24,'piracy'),
+	(25,'porposing'),
+	(26,'preening'),
+	(27,'rafting'),
+	(28,'resting/floating'),-- logging
+	(29,'rolling'),
+	(30,'scavenging'),
+	(31,'slapping'), -- %in% c('slap','slapping','tailslap','flipperslap')
+	(32,'sleeping'),
+	(33,'splashing'),
+	(34,'spyhopping'),
+	(35,'sitting'),
+	(36,'sitting - on object'),
+	(37,'sitting - on water'),
+	(38,'standing'),
+	(39,'steaming'), 
+	(40,'surfacing'),
+	(41,'swimming'),
+	(42,'taking off/pattering'),
+	(43,'traveling'),
+	(44,'unknown');
 --
 
 --
@@ -1768,4 +1764,3 @@ INSERT INTO data_requests(
 		CAST('2016-04-10' AS DATE),'not filled',NULL,NULL);
 --
 
-select*from dataset
