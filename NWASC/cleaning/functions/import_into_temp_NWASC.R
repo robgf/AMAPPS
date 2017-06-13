@@ -17,6 +17,7 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   # ------------------------ #
   library(RODBC)
   library(dplyr)
+  library(geosphere) # distance
   # ------------------------ #
   
   
@@ -86,8 +87,8 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
     #dat$obs_start_tm[!is.na(data$time)] = format(data$time[!is.na(data$time)], "%I:%M:%S %p") # hours (1-12): min: sec space am/pm
   }
   if(any(colnames(data) %in% c("association","assocdesc"))) {dat$association_tx = data[,which(colnames(data) %in% c("association","assocdesc"))]}
-  if(any(colnames(data) %in% c("behavior","corrected_behavior"))) {dat$behavior_tx = data[,which(colnames(data) %in% c("behavior","corrected_behavior"))]}
-  if(any(colnames(data) %in% c("age","approximate_age"))) {dat$animal_age_tx= data[,which(colnames(data) %in% c("age","approximate_age"))]}
+  #if(any(colnames(data) %in% c("behavior","corrected_behavior"))) {dat$behavior_tx = data[,which(colnames(data) %in% c("behavior","corrected_behavior"))]}
+  #if(any(colnames(data) %in% c("age","approximate_age"))) {dat$animal_age_tx= data[,which(colnames(data) %in% c("age","approximate_age"))]}
   if(any(colnames(data) %in% c("flight_hei","flight_height"))) {dat$flight_height_tx = data[,which(colnames(data) %in% c("flight_hei","flight_height"))]}
   if(any(colnames(data) %in% c("plumage"))) {dat$plumage_tx = data[,which(colnames(data) %in% c("plumage"))]}
   if(any(colnames(data) %in% c("distance"))) {dat$distance_to_animal_tx = data$distance}
@@ -164,7 +165,10 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
                        datafile = as.character(datafile),
                        seconds_from_midnight_nb = as.numeric(seconds_from_midnight_nb),
                        observer_confidence_tx = as.character(observer_confidence_tx),
-                       observer_tx = as.character(observer_tx))
+                       observer_tx = as.character(observer_tx),
+                       behavior_id = as.numeric(behavior_id),
+                       age_id = as.numeric(age_id),
+                       sex_id = as.numeric(sex_id))
     # ------------------------ #
     
   
@@ -341,51 +345,75 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   # if the transect information needs to be pulled from the track files
   # might need to copy this bit and alter it to fit the variables the data has
   if(missing(data_transect) & !missing(data_track)) {
-    library(geosphere)
-
-    # use cumulative distance between points since they are not all straight lines
-    distances=matrix(ncol=1, nrow=dim(data_track)[1], data=NA)
-    for(n in 2:length(distances)) {
-      distances[n] = distHaversine(c(data_track$track_lon[n-1],data_track$track_lat[n-1]), 
-                                   c(data_track$track_lon[n],data_track$track_lat[n])) 
-    }
-    data_track$distances = as.vector(distances); rm(distances)
-    data_track$distances[data_track$point_type %in% c("BEGTRAN","BEGCNT","BEGSEG")] = NA # not measuring between transects
-    tdists = data_track %>% select(source_transect_id, distances) %>% 
-      group_by(source_transect_id) %>% 
-      summarise(distance = sum(distances, na.rm=TRUE))
-    data_track = select(data_track, -distances)
     
-    # transect pieces
-    transects = dat_track %>% 
-      select(track_lat, track_lon, track_dt, source_transect_id, point_type, 
-             visibility_tx, seastate_beaufort_nb, datafile) %>% 
-      filter(point_type %in% c("BEGTRAN","BEGSEG","BEGCNT","ENDTRAN","ENDCNT","ENDSEG")) %>%
-      mutate(source_transect_id = factor(source_transect_id)) %>% 
-      group_by(source_transect_id, track_dt) %>% 
-      mutate(point_type = substring(point_type[1],1,1)) %>% 
-      arrange(point_type) %>%
-      summarize(start_lon = first(track_lon), start_lat = first(track_lat), 
-                end_lon = last(track_lon), end_lat = last(track_lat),
-                start_tm = first(track_tm),end_tm = last(track_tm),
-                end_dt = first(track_dt), 
-                visibility_tx = mean(as.numeric(visibility_tx), na.rm=TRUE),
-                seastate_beaufort_nb = mean(seastate, na.rm=TRUE), 
-                datafile = first(datafile)) %>% 
-      mutate(start_dt = end_dt) %>% 
-      mutate(transect_time_min_nb = difftime(as.POSIXct(paste(end_dt, end_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
-                                             as.POSIXct(paste(start_dt, start_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
-                                             units = "mins")) 
-    transects = left_join(transects, tdists, by="source_transect_id"); rm(tdists)
+    #---------------------------#
+    # fromat transects from track
+    #---------------------------#
+    # average condition is weighted by distance flown at each observation condition
+    # distance flown per transect is in nautical miles, distance between points in meters 
+    break.at.each.stop = filter(dat_track, point_type %in% c("BEGCNT")) %>%
+      group_by(source_transect_id) %>% mutate(start.stop.index = seq(1:n())) %>% ungroup() %>% 
+      select(source_transect_id, source_track_id, start.stop.index)
+    new.key = left_join(dat_track, break.at.each.stop, by="source_track_id") %>% 
+      select(-source_transect_id.y) %>% rename(source_transect_id=source_transect_id.x) %>% 
+      group_by(source_transect_id) %>% 
+      mutate(start.stop.index = na.locf(start.stop.index)) %>% ungroup %>%
+      mutate(newkey = paste(source_transect_id, start.stop.index, sep="_")) %>% select(-start.stop.index)
+    
+    # grouped by new key to avoid counting time and distance traveled between breaks
+    df = new.key %>% group_by(newkey)  %>% 
+      mutate(lagged.lon = lead(track_lon, default = last(track_lon), order_by = track_tm),
+             lagged.lat = lead(track_lat, default = last(track_lat), order_by = track_tm)) %>%
+      rowwise() %>% 
+      mutate(distance = distVincentySphere(c(track_lon, track_lat), c(lagged.lon, lagged.lat))) %>%
+      select(-lagged.lon, -lagged.lat) %>%  
+      group_by(newkey) %>%  
+      summarise(observer = first(observer),
+                source_transect_id = first(source_transect_id),
+                transect_distance_nb = sum(distance, na.rm=TRUE),
+                temp_start_lon = first(track_lon),
+                temp_stop_lon = last(track_lon),
+                temp_start_lat = first(track_lat),
+                temp_stop_lat = last(track_lat),
+                start_dt = as.character(first(track_dt)),
+                end_dt = as.character(last(track_dt)),
+                start_tm = first(track_tm), 
+                end_tm = last(track_tm)) %>%
+      as.data.frame() %>% rowwise() %>% 
+     # mutate(transect_time_min_nb = difftime(as.POSIXct(paste(end_dt, end_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
+     #                                        as.POSIXct(paste(start_dt, start_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
+      mutate(transect_time_min_nb = difftime(as.POSIXct(paste(end_dt, end_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
+                                             as.POSIXct(paste(start_dt, start_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
+                                             units = "mins"))   %>%
+      as.data.frame %>% arrange(start_dt, source_transect_id)
+    #
+    data_transect = df %>% 
+      group_by(source_transect_id)  %>% 
+      arrange(start_dt,start_tm) %>% 
+      summarise(observer = first(observer),
+                temp_start_lon = first(temp_start_lon),
+                temp_stop_lon = last(temp_stop_lon),
+                temp_start_lat = first(temp_start_lat),
+                temp_stop_lat = last(temp_stop_lat),
+                start_dt = as.character(first(start_dt)),
+                end_dt = as.character(last(end_dt)),
+                start_tm = first(start_tm), 
+                end_tm  = last(end_tm),
+                transect_time_min_nb = sum(transect_time_min_nb),
+                transect_distance_nb = sum(transect_distance_nb))  %>%
+      ungroup() %>% as.data.frame %>% arrange(start_dt, source_transect_id) %>%
+      mutate(transect_distance_nb = replace(transect_distance_nb,transect_distance_nb==0,NA)) 
+    rm(df, new.key, break.at.each.stop)
+    #---------------------------#
     
     # if speed isn't listed
-    transects = mutate(transects, traversal_speed_nb =  (distance/(as.numeric(transect_time_min_nb)*60))*1.94384449244)
+    #transects = mutate(transects, traversal_speed_nb =  (distance/(as.numeric(transect_time_min_nb)*60))*1.94384449244)
     
     # fill in the db transects table
-    dat_transect = as.data.frame(matrix(ncol=dim(transects.in.db)[2], nrow=dim(transects)[1], data=NA))
+    dat_transect = as.data.frame(matrix(ncol=dim(transects.in.db)[2], nrow=dim(data_transect)[1], data=NA))
     colnames(dat_transect) = colnames(transects.in.db)
-    same_nm = colnames(transects[colnames(transects) %in% colnames(dat_transect)])
-    dat_transect[,same_nm] = transects[,same_nm]
+    same_nm = colnames(data_transect[colnames(data_transect) %in% colnames(dat_transect)])
+    dat_transect[,same_nm] = data_transect[,same_nm]
     dat_transect$dataset_id = id
     dat_transect$transect_id = c((max(transects.in.db$transect_id)+1):(max(transects.in.db$transect_id)+dim(dat_transect)[1]))
     dat_transect$source_dataset_id = as.character(data.in.db$source_dataset_id[data.in.db$dataset_id==id])   
