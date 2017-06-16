@@ -18,6 +18,7 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   library(RODBC)
   library(dplyr)
   library(geosphere) # distance
+  library(zoo)
   # ------------------------ #
   
   
@@ -75,13 +76,20 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   dat$observation_id = c((max(obs.in.db$observation_id)+1):(max(obs.in.db$observation_id)+dim(data)[1]))
   
   # reformat, create, and/or rename
+  data=as.data.frame(data)
   if(any(colnames(data) %in% c("spp","type"))) {dat$spp_cd = data[,which(colnames(data) %in% c("spp","type"))]}  
   if(any(colnames(data) %in% c("index","id"))) {dat$source_obs_id = data[,which(colnames(data) %in% c("index","id"))]}
   if(all(is.na(dat$source_obs_id))) {dat$source_obs_id = 1:dim(data)[1]}
   if(any(colnames(data) %in% c("transect"))) {dat$source_transect_id = data$transect}
   if(length(dat$source_transect_id)==0 & any(colnames(data) %in% c("offline")) & any(!colnames(data) %in% c("transect"))) {dat$source_transect_id[data$offline==0] = 1}
-  if(any(colnames(data) %in% c("date","start_date","gps_date","obs_date","start_dt","gps_dt","obs_dt"))) {dat$obs_dt = format(as.Date(data[,which(colnames(data) %in% c("date","start_date","gps_date","obs_date","start_dt","gps_dt","obs_dt"))]),'%m/%d/%Y')} # month/ day/ year
-  if(any(!colnames(data) %in% c("date","start_date","gps_date","obs_date","start_dt","gps_dt","obs_dt")) & all(colnames(data) %in% c("year","month","day"))) {dat$obs_dt = paste(data$month,data$day,data$year,sep="/")}
+  if(any(colnames(data) %in% c("date","start_date","gps_date","obs_date","start_dt","gps_dt","obs_dt"))) {
+    dat$obs_dt = format(as.Date(data[,which(colnames(data) %in% c("date","start_date","gps_date","obs_date","start_dt","gps_dt","obs_dt"))]),'%m/%d/%Y')}
+  #if(any(colnames(data) %in% c("date","start_date","gps_date","obs_date","start_dt","gps_dt","obs_dt"))) {
+  #  dat$obs_dt = ifelse(class(data[[1,which(colnames(data) %in% c("date","start_date","gps_date","obs_date","start_dt","gps_dt","obs_dt"))]])!="Date",
+  #                      format(as.Date(data[,which(colnames(data) %in% c("date","start_date","gps_date","obs_date","start_dt","gps_dt","obs_dt"))]),'%m/%d/%Y'),
+  #                      data[,which(colnames(data) %in% c("date","start_date","gps_date","obs_date","start_dt","gps_dt","obs_dt"))])} # month/ day/ year
+  if(any(!colnames(data) %in% c("date","start_date","gps_date","obs_date","start_dt","gps_dt","obs_dt")) & all(colnames(data) %in% c("year","month","day"))) {
+    dat$obs_dt = paste(data$month,data$day,data$year,sep="/")}
   if(any(colnames(data) %in% c("time","obs_time","obs_tm", "gps_time"))) {
     dat$obs_start_tm = data[,which(colnames(data) %in% c("time","obs_time","obs_tm", "gps_time"))]
     #dat$obs_start_tm[!is.na(data$time)] = format(data$time[!is.na(data$time)], "%I:%M:%S %p") # hours (1-12): min: sec space am/pm
@@ -193,10 +201,11 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
     dat_track$track_id = c((max(tracks.in.db$track_id)+1):(max(tracks.in.db$track_id)+dim(data_track)[1]))
     
     # fill in unmatched variables
+    data_track=as.data.frame(data_track)
     if(any(colnames(data_track) %in% c("lon", "longitude", "long"))) {dat_track$track_lon = data_track[,which(colnames(data_track) %in% c("lon", "longitude", "long"))]}
     if(any(colnames(data_track) %in% c("lat", "latitude"))) {dat_track$track_lat = data_track[,which(colnames(data_track) %in% c("lat", "latitude"))]}
     if(any(colnames(data_track) %in% c("type"))) {dat_track$point_type = data_track[,which(colnames(data_track) %in% c("type"))]}
-    if(any(colnames(data_track) %in% c("date","start_dt","start_date","gps_date","track_dt"))) {dat_track$track_dt = format(as.Date(data_track[,which(colnames(data_track) %in% c("date","start_dt","start_date","gps_date","track_dt"))]),'%m/%d/%Y')}
+    if(any(colnames(data_track) %in% c("date","start_dt","start_date","gps_date","track_dt"))) {dat_track$track_dt = format(as.Date(data_track[,which(colnames(data_track) %in% c("date","start_dt","start_date","gps_date","track_dt"))]),format='%m/%d/%Y')}
     if(any(colnames(data_track) %in% c("time"))) {dat_track$track_tm = data_track[,which(colnames(data_track) %in% c("time"))]}
     if(any(colnames(data_track) %in% c("transect","transect_id"))) {dat_track$source_transect_id = data_track[,which(colnames(data_track) %in% c("transect","transect_id"))]}
     if(any(colnames(data_track) %in% c("index"))) {dat_track$source_track_id = data_track[,which(colnames(data_track) %in% c("index"))]} 
@@ -349,19 +358,24 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
     #---------------------------#
     # fromat transects from track
     #---------------------------#
-    # average condition is weighted by distance flown at each observation condition
     # distance flown per transect is in nautical miles, distance between points in meters 
     break.at.each.stop = filter(dat_track, point_type %in% c("BEGCNT")) %>%
       group_by(source_transect_id) %>% mutate(start.stop.index = seq(1:n())) %>% ungroup() %>% 
       select(source_transect_id, source_track_id, start.stop.index)
-    new.key = left_join(dat_track, break.at.each.stop, by="source_track_id") %>% 
-      select(-source_transect_id.y) %>% rename(source_transect_id=source_transect_id.x) %>% 
-      group_by(source_transect_id) %>% 
-      mutate(start.stop.index = na.locf(start.stop.index)) %>% ungroup %>%
-      mutate(newkey = paste(source_transect_id, start.stop.index, sep="_")) %>% select(-start.stop.index)
-    
+    ssi = left_join(dat_track, break.at.each.stop, by="source_track_id") %>% 
+      select(-source_transect_id.y) %>% rename(source_transect_id = source_transect_id.x) %>% 
+      mutate(start.stop.index = as.numeric(start.stop.index))  %>% 
+      select(source_track_id,source_transect_id,start.stop.index) %>% group_by(source_transect_id) %>% 
+      mutate_all(funs(na.locf(., na.rm=FALSE))) %>% 
+      ungroup %>%
+      mutate(newkey = paste(source_transect_id, start.stop.index, sep="_")) %>% 
+      mutate(newkey = ifelse(newkey=="NA_NA", NA, newkey)) %>%
+      select(-start.stop.index)
+    new.key = left_join(dat_track, select(ssi,source_track_id,newkey), by="source_track_id") %>% 
+      filter(!is.na(newkey))
+     
     # grouped by new key to avoid counting time and distance traveled between breaks
-    df = new.key %>% group_by(newkey)  %>% 
+    new.df = new.key %>% group_by(newkey)  %>% 
       mutate(lagged.lon = lead(track_lon, default = last(track_lon), order_by = track_tm),
              lagged.lat = lead(track_lat, default = last(track_lat), order_by = track_tm)) %>%
       rowwise() %>% 
@@ -387,7 +401,7 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
                                              units = "mins"))   %>%
       as.data.frame %>% arrange(start_dt, source_transect_id)
     #
-    data_transect = df %>% 
+    data_transect = new.df %>% 
       group_by(source_transect_id)  %>% 
       arrange(start_dt,start_tm) %>% 
       summarise(observer = first(observer),
@@ -403,7 +417,7 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
                 transect_distance_nb = sum(transect_distance_nb))  %>%
       ungroup() %>% as.data.frame %>% arrange(start_dt, source_transect_id) %>%
       mutate(transect_distance_nb = replace(transect_distance_nb,transect_distance_nb==0,NA)) 
-    rm(df, new.key, break.at.each.stop)
+    rm(new.df, new.key, ssi, break.at.each.stop)
     #---------------------------#
     
     # if speed isn't listed
