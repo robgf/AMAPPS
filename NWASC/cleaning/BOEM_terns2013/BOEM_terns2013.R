@@ -1,7 +1,13 @@
 # --------------------- #
 # Quality control BOEM terns 2013 data
 # from FWS MB
-# prepare it forimport into the NWASC
+# prepare it for import into the NWASC
+#
+# dataset_ids
+# July=178; 
+# Aug=179; 
+# Sep=180;
+# Sep2=181
 # --------------------- #
 
 
@@ -45,7 +51,7 @@ data = data %>% mutate(ss.s = ifelse(nchar(ss.s)==1,paste("0",ss.s,sep=""),ss.s)
 # fix beaufort
 data$Beaufort[is.na(data$Beaufort)] = data$ort[is.na(data$Beaufort)]
 data$Beaufort[is.na(data$Beaufort)] = data$Beauf[is.na(data$Beaufort)]
-data = select(data, -Beauf, -ort)
+data = dplyr::select(data, -Beauf, -ort)
 
 #split data and track
 track = data[data$Type %in% "GPS",]
@@ -116,8 +122,44 @@ track$Type[track$Type %in% "GPS"] = "WAYPNT"
 track$Longitude = as.numeric(track$Longitude)
 track$Longitude[track$Longitude>0] = track$Longitude[track$Longitude>0]*-1
 track$Latitude = as.numeric(track$Latitude)
+
+data$Transect="terns"
+track$Transect="terns"
+
+data = data %>%
+  dplyr::select(-hh,-mm,-ss.s,-YYYY,-MM,-DD,-Rec,-Type,-Station,-Platform,
+                -DstLand,-Dp,-Ang,-DstMark) %>% 
+  mutate(Transect="terns", Plumage = ifelse(Plumage=="0",NA,Plumage))
+track = track %>%
+  dplyr::select(-hh,-mm,-ss.s,-YYYY,-MM,-DD,-Rec,-Spp,-Station,
+                -DstLand,-Dp,-Ang,-Plumage,-Platform,-Behavior,
+                -behavior,-Comment.2,-Age,-DstMark)
 #---------------------#
 
+
+#---------------------#
+# behavior id
+#---------------------#
+data$behavior_id = 44
+data$Behavior[is.na(data$Behavior)] = data$behavior[is.na(data$Behavior)]
+data$behavior_id[data$Behavior %in% c("feeding","FEEDING")] = 9
+data$behavior_id[data$Behavior %in% c("FLUSH","flying","FLYING")] = 13 
+data$behavior_id[data$Behavior %in% c("milling","MILLING")] = 21
+data$behavior_id[data$Behavior %in% c("SITTI","sitting","SITTING")] = 35  
+#---------------------#
+
+
+#---------------------#
+# age id
+#---------------------#
+data$age_id = 5
+data$age_id[data$Age %in% c("AD","AD\\")] = 1
+data$age_id[data$Age %in% c("JUV")] = 2
+
+data$Comment.1[!is.na(data$Behavior)] = paste(data$Comment.1[!is.na(data$Behavior)], data$Behavior[!is.na(data$Behavior)], sep =" ; ")
+data$Comment.1[!is.na(data$Comment.2)] = paste(data$Comment.1[!is.na(data$Comment.2)], data$Comment.2[!is.na(data$Comment.2)], sep =" ; ")
+data = data %>% dplyr::select(-Behavior,-behavior,-Comment.2,-Age)
+#---------------------#
 
 #---------------------#
 ## split tracks by survey
@@ -177,7 +219,7 @@ data1SAP$Spp[data1SAP$id %in% 31]="UNKN"
 data1SAP$Spp[data1SAP$id == 18]= "BEGCNT"
 data1SAP$Comment.1[data1SAP$id == 18] = "Changed Spp from NA; added BEGCNT based on track and empty space in record"
 
-  # note offline obs
+  # offline obs
 data1SAP$offline[data1SAP$id %in% c(1:5,16,17,28,29,31)] = 1
 track1SAP$offline[track1SAP$id %in% c(1:418, 601:735, 1074:1184, 1239:1306, 1409:1691)] = 1
 #--------#
@@ -356,7 +398,151 @@ track4RRV$offline[track4RRV$id %in% c(1:122, 875:1153)] = 1
 track4RRV = track4RRV[!is.na(track4RRV$Type),]
 #--------#
 
+
+#------------------#
+# format data
+#------------------#
+rm(data,track,to.add)
+
+# change offline transect to NA
+data1RRV$Transect[data1RRV$offline==1]=NA
+data2RRV$Transect[data2RRV$offline==1]=NA
+data3RRV$Transect[data3RRV$offline==1]=NA
+data4RRV$Transect[data4RRV$offline==1]=NA
+track1RRV$Transect[track1RRV$offline==1]=NA
+track2RRV$Transect[track2RRV$offline==1]=NA
+track3RRV$Transect[track3RRV$offline==1]=NA
+track4RRV$Transect[track4RRV$offline==1]=NA
+
+data1SAP$Transect[data1SAP$offline==1]=NA
+data2SAP$Transect[data2SAP$offline==1]=NA
+data3SAP$Transect[data3SAP$offline==1]=NA
+data4SAP$Transect[data4SAP$offline==1]=NA
+track1SAP$Transect[track1SAP$offline==1]=NA
+track2SAP$Transect[track2SAP$offline==1]=NA
+track3SAP$Transect[track3SAP$offline==1]=NA
+track4SAP$Transect[track4SAP$offline==1]=NA
+
+#remove unnecessary columns and rename
+data1RRV = data1RRV %>% 
+  dplyr::select(-Type,-SurveyID) %>% 
+  rename(Comment=Comment.1, Type = Spp) 
+data2RRV = data2RRV %>% 
+  dplyr::select(-SurveyID) %>% 
+  rename(Comment=Comment.1, Type = Spp)
+data3RRV = data3RRV %>% 
+  dplyr::select(-SurveyID) %>% 
+  rename(Comment=Comment.1, Type = Spp)
+data4RRV = data4RRV %>% 
+  dplyr::select(-Type,-SurveyID) %>% 
+  rename(Comment=Comment.1, Type = Spp)
+
+data1SAP = data1SAP %>% 
+  dplyr::select(-Type,-SurveyID) %>% 
+  rename(Comment=Comment.1, Type = Spp) 
+data2SAP = data2SAP %>% 
+  dplyr::select(-SurveyID) %>% 
+  rename(Comment=Comment.1, Type = Spp) 
+data3SAP = data3SAP %>% 
+  dplyr::select(-SurveyID) %>% 
+  rename(Comment=Comment.1, Type = Spp) 
+data4SAP = data4SAP %>% 
+  dplyr::select(-Type,-SurveyID) %>% 
+  rename(Comment=Comment.1, Type = Spp) 
+
+# move BEG and END from data to track
+track1RRV = bind_rows(track1RRV,data1RRV[data1RRV$Type %in% c("BEGCNT","ENDCNT"),]) %>% 
+  arrange(date_time) %>% mutate(id=1:length(date_time))
+track2RRV = bind_rows(track2RRV,data2RRV[data2RRV$Type %in% c("BEGCNT","ENDCNT"),]) %>% 
+  arrange(date_time) %>% mutate(id=1:length(date_time))
+track3RRV = bind_rows(track3RRV,data3RRV[data3RRV$Type %in% c("BEGCNT","ENDCNT"),]) %>% 
+  arrange(date_time) %>% mutate(id=1:length(date_time))
+track4RRV = bind_rows(track4RRV,data4RRV[data4RRV$Type %in% c("BEGCNT","ENDCNT"),]) %>% 
+  arrange(date_time) %>% mutate(id=1:length(date_time))
+track1SAP = bind_rows(track1SAP,data1SAP[data1SAP$Type %in% c("BEGCNT","ENDCNT"),]) %>% 
+  arrange(date_time) %>% mutate(id=1:length(date_time))
+track2SAP = bind_rows(track2SAP,data2SAP[data2SAP$Type %in% c("BEGCNT","ENDCNT"),]) %>% 
+  arrange(date_time) %>% mutate(id=1:length(date_time))
+track3SAP = bind_rows(track3SAP,data3SAP[data3SAP$Type %in% c("BEGCNT","ENDCNT"),]) %>% 
+  arrange(date_time) %>% mutate(id=1:length(date_time))
+track4SAP = bind_rows(track4SAP,data4SAP[data4SAP$Type %in% c("BEGCNT","ENDCNT"),]) %>% 
+  arrange(date_time) %>% mutate(id=1:length(date_time))
+
+data1RRV = data1RRV[!data1RRV$Type %in% c("BEGCNT","ENDCNT"),]
+data2RRV = data2RRV[!data2RRV$Type %in% c("BEGCNT","ENDCNT"),]
+data3RRV = data3RRV[!data3RRV$Type %in% c("BEGCNT","ENDCNT"),]
+data4RRV = data4RRV[!data4RRV$Type %in% c("BEGCNT","ENDCNT"),]
+data1SAP = data1SAP[!data1SAP$Type %in% c("BEGCNT","ENDCNT"),]
+data2SAP = data2SAP[!data2SAP$Type %in% c("BEGCNT","ENDCNT"),]
+data3SAP = data3SAP[!data3SAP$Type %in% c("BEGCNT","ENDCNT"),]
+data4SAP = data4SAP[!data4SAP$Type %in% c("BEGCNT","ENDCNT"),]
 #--------#
+
+#--------#
+# combine days back together
+#--------#
+data1=bind_rows(data1RRV,data1SAP) %>% dplyr::select(-species) %>% 
+  mutate(time = sapply(strsplit(date_time," "),tail,1),
+         Transect = ifelse(!is.na(Transect),paste(Transect,Obs,sep="_"),NA),
+         date = as.Date(date,format="%m/%d/%Y"))
+data2=bind_rows(data2RRV,data2SAP) %>% 
+  mutate(time = sapply(strsplit(date_time," "),tail,1),
+         date = as.Date(sapply(strsplit(date_time," "),head,1),format="%m/%d/%Y"),
+         Transect = ifelse(!is.na(Transect),paste(Transect,Obs,sep="_"),NA))
+data3=bind_rows(data3RRV,data3SAP) %>% 
+  mutate(time = sapply(strsplit(date_time," "),tail,1),
+         date = as.Date(sapply(strsplit(date_time," "),head,1),format="%m/%d/%Y"),
+         Transect = ifelse(!is.na(Transect),paste(Transect,Obs,sep="_"),NA))
+data4=bind_rows(data4RRV,data4SAP) %>% 
+  mutate(time = sapply(strsplit(date_time," "),tail,1),
+         date = as.Date(sapply(strsplit(date_time," "),head,1),format="%m/%d/%Y"),
+         Transect = ifelse(!is.na(Transect),paste(Transect,Obs,sep="_"),NA))
+track1=bind_rows(track1RRV,track1SAP) %>% 
+  mutate(Transect = ifelse(!is.na(Transect),paste(Transect,Obs,sep="_"),NA),
+         date = as.Date(date,format="%m/%d/%Y"),
+         time = sapply(strsplit(date_time," "),tail,1))
+track2=bind_rows(track2RRV,track2SAP) %>% 
+  mutate(Transect = ifelse(!is.na(Transect),paste(Transect,Obs,sep="_"),NA),
+         date = as.Date(sapply(strsplit(date_time," "),head,1),format="%m/%d/%Y"),
+         time = sapply(strsplit(date_time," "),tail,1))
+track3=bind_rows(track3RRV,track3SAP) %>% 
+  mutate(Transect = ifelse(!is.na(Transect),paste(Transect,Obs,sep="_"),NA),
+         date = as.Date(sapply(strsplit(date_time," "),head,1),format="%m/%d/%Y"),
+         time = sapply(strsplit(date_time," "),tail,1))
+track4=bind_rows(track4RRV,track4SAP) %>% 
+  mutate(Transect = ifelse(!is.na(Transect),paste(Transect,Obs,sep="_"),NA),
+         date = as.Date(sapply(strsplit(date_time," "),head,1),format="%m/%d/%Y"),
+         time = sapply(strsplit(date_time," "),tail,1))
+rm(track1RRV,track2RRV,track3RRV,track4RRV,track1SAP,track2SAP,track3SAP,track4SAP,
+   data1RRV,data2RRV,data3RRV,data4RRV,data1SAP,data2SAP,data3SAP,data4SAP)
+#--------#
+
+# last min edits
+# change NAs to UNKN
+data1$Type[is.na(data1$Type)] = "UNKN"
+data2$Type[is.na(data2$Type)] = "UNKN"
+data3$Type[is.na(data3$Type)] = "UNKN"
+data4$Type[is.na(data4$Type)] = "UNKN"
+# add row for LAGU in distance to animal column 
+to.add  = data4[data4$Distance %in% "LAGU1",]
+to.add$id = to.add$id+0.1
+to.add$Type = "LAGU"
+to.add$Comment = "Added record based on comment"
+to.add$original_species_tx = NA
+to.add$Distance = NA
+to.add$Count = 1
+to.add$Plumage=NA
+data4 = rbind(data4,to.add) %>% arrange(Obs,id)
+rm(to.add)
+
+data4$Distance[data4$Distance %in% "LAGU1"]=NA
+#--------#
+# export
+#--------#
+#--------#
+
+#--------#
+#plot
 #x = track4RRV
 #y = data4RRV
 #plot(x$Longitude,x$Latitude,col="yellow")
