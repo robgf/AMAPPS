@@ -139,6 +139,7 @@ EAPH|Eastern Phoebe|Sayornis phoebe|178329
 EASO|Eastern Screech-Owl|Megascops asio|686658
 EATO|Eastern Towhee|Pipilo erythrophthalmus|179276
 EISC|Unidentified Eider/Scoter spp.|Melanitta/Somateria spp.|--
+EUCD|Eurasian Collared-Dove|Streptopelia decaocto|177139
 EUOY|Eurasian Oystercatcher|Haematopus ostralegus|176469
 EUSP|European Storm-petrel|Hydrobates pelagicus|174663
 EUST|European Starling|Sturnus vulgaris|179637
