@@ -10,8 +10,10 @@
 # --------------------- #
 require(rgdal)
 require(lubridate)
-require(dplyr)
 require(RODBC)
+require(ggplot2)
+require(zoo)
+require(dplyr)
 # --------------------- #
 
 
@@ -31,6 +33,15 @@ dir.out <- paste(gsub("datasets_received", paste("data_import/in_progress", surv
 # load data
 # --------------------- #
 obs = read.csv(file.path(dir.in,"HB1603Seabirdmerged.csv")) 
+obs = obs %>% mutate(long = as.numeric(as.character(long)),
+                    lat = as.numeric(as.character(lat)),
+                    time = ifelse(nchar(LMT) %in% 5, paste("0",substr(LMT,1,1),":",substr(LMT,2,3),":",substr(LMT,4,5),sep=""),
+                                  ifelse(nchar(LMT) %in% 6, paste(substr(LMT,1,2),substr(LMT,3,4),substr(LMT,5,6),sep=":"),LMT))) %>%
+  rename(source_transect_id = track.., date = LMT.date) %>% 
+  mutate(datetime = as.POSIXct(paste(date,time," "),format="%m/%d/%Y %H:%M:%S")) %>% 
+  arrange(datetime) %>%
+  mutate(source_transect_id = na.locf(source_transect_id)) %>%
+  dplyr::select(-GMT,-LMT,-GMT.date,-LMTDATETIME)
 # --------------------- #
 
 
@@ -95,10 +106,10 @@ age$code=as.numeric(age$code)
 sex$code=as.numeric(sex$code)
 behavior$code=as.numeric(behavior$code)
 
-obs = left_join(obs,assoc,by = c("association"="code")) %>% select(-association) %>% rename(association = desc) %>%
-  left_join(.,age,by = c("age"="code")) %>% select(-age) %>% rename(age = desc) %>%
-  left_join(.,sex,by = c("sex"="code")) %>% select(-sex) %>% rename(sex = desc) %>%
-  left_join(.,behavior,by = c("behavior"="code")) %>% select(-behavior) %>% rename(behavior = desc)
+obs = left_join(obs,assoc,by = c("association"="code")) %>% dplyr::select(-association) %>% rename(association = desc) %>%
+  left_join(.,age,by = c("age"="code")) %>% dplyr::select(-age) %>% rename(age = desc) %>%
+  left_join(.,sex,by = c("sex"="code")) %>% dplyr::select(-sex) %>% rename(sex = desc) %>%
+  left_join(.,behavior,by = c("behavior"="code")) %>% dplyr::select(-behavior) %>% rename(behavior = desc)
 rm(age,sex,behavior,assoc)
 
 
@@ -112,8 +123,39 @@ obs = left_join(obs,lu_age,by = c("age"="age_ds")) %>%
   left_join(.,lu_sex,by = c("sex"="sex_ds")) %>% 
   left_join(.,lu_behavior,by = c("behavior"="behavior_ds"))
 rm(lu_age,lu_sex,lu_behavior)
+
+# fix behaviors that don't match those in the look up table
+obs = obs %>% mutate(behavior_id = ifelse(behavior %in% "pattering",42,behavior_id),
+                     behavior_id = ifelse(behavior %in% "porpoising",25,behavior_id), #need to fix spelling in LU table
+                     behavior_id = ifelse(behavior %in% "following ship",15,behavior_id),
+                     behavior_id = ifelse(behavior %in% "forage flight",16,behavior_id),
+                     behavior_id = ifelse(behavior %in% "unknown flight",13,behavior_id))
+
+# fix association for following ship
+obs = obs %>% mutate(association = as.character(association),
+                     association = ifelse(behavior %in% "following ship" & association %in% c("solitary bird","none",NA),"BOAT",association))
 #---------------------#
 
+
+#---------------------#
+# add start/stops to track
+#---------------------#
+track = track %>%
+  mutate(type = ifelse(event %in% 1,"BEGCNT",ifelse(event %in% 3,"ENDCNT","WAYPNT")))
+# if there is <30 seconds between stop and new start 
+# remove that stop and start for simplicity since no real time or space has passed
+
+#x = sort(unique(track$source_transect_id))
+#n=1
+#test = bind_rows(obs[obs$source_transect_id %in% x[n],],
+#                 track[track$source_transect_id %in% x[n],]) %>% arrange(datetime)
+#y = sort(unique(test$date))
+#t = test[test$date==y[2],]
+#plot(t$long,t$lat,col="grey")
+#points(t$long[t$type!="WAYPNT"],t$lat[t$type!="WAYPNT"],col="orange")
+#points(t$long[t$type=="ENDCNT"],t$lat[t$type=="ENDCNT"],col="red",pch=15)
+#points(t$long[t$type=="BEGCNT"],t$lat[t$type=="BEGCNT"],col="green",pch=16)
+#---------------------#
 
 
 
