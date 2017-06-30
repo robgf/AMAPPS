@@ -77,7 +77,10 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   
   # reformat, create, and/or rename
   data=as.data.frame(data)
-  if(any(colnames(data) %in% c("spp","type"))) {dat$spp_cd = data[,which(colnames(data) %in% c("spp","type"))]}  
+  if(any(colnames(data) %in% c("spp","type"))) {dat$spp_cd = data[,which(colnames(data) %in% c("spp","type"))]}
+  if(any(colnames(data) %in% c("beaufort"))) {dat$seastate_beaufort_nb = data[,which(colnames(data) %in% c("beaufort"))]}  
+  if(any(colnames(data) %in% c("windspeed","wind.speed"))) {dat$wind_speed_tx = data[,which(colnames(data) %in% c("windspeed","wind.speed"))]}  
+  if(any(colnames(data) %in% c("wind.direction"))) {dat$wind_dir_tx = data[,which(colnames(data) %in% c("wind.direction"))]}  
   if(any(colnames(data) %in% c("index","id"))) {dat$source_obs_id = data[,which(colnames(data) %in% c("index","id"))]}
   if(all(is.na(dat$source_obs_id))) {dat$source_obs_id = 1:dim(data)[1]}
   if(any(colnames(data) %in% c("transect"))) {dat$source_transect_id = data$transect}
@@ -99,7 +102,8 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   #if(any(colnames(data) %in% c("age","approximate_age"))) {dat$animal_age_tx= data[,which(colnames(data) %in% c("age","approximate_age"))]}
   if(any(colnames(data) %in% c("flight_hei","flight_height"))) {dat$flight_height_tx = data[,which(colnames(data) %in% c("flight_hei","flight_height"))]}
   if(any(colnames(data) %in% c("plumage"))) {dat$plumage_tx = data[,which(colnames(data) %in% c("plumage"))]}
-  if(any(colnames(data) %in% c("distance"))) {dat$distance_to_animal_tx = data$distance}
+  if(any(colnames(data) %in% c("angle"))) {dat$angle_from_observer_nb = data[,which(colnames(data) %in% c("angle"))]}
+  if(any(colnames(data) %in% c("distance"))) {dat$distance_to_animal_tx = data[,which(colnames(data) %in% c("distance"))]}
   if(any(colnames(data) %in% c("heading"))) {dat$heading_tx = data[,which(colnames(data) %in% c("heading"))]}
   if(any(colnames(data) %in% c("sec","secs","seconds"))) {dat$seconds_from_midnight_nb = data[,which(colnames(data) %in% c("sec","secs","seconds"))]}
   if(any(colnames(data) %in% c("distance_to_animal"))) {dat$distance_to_animal_tx = data[,which(colnames(data) %in% c("distance_to_animal"))]}
@@ -111,9 +115,9 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   if(any(colnames(data) %in% c("observer_confidence", "confidence"))) {dat$observer_confidence_tx = data[,which(colnames(data) %in% c("observer_confidence", "confidence"))]}
   if(any(colnames(data) %in% c("observer", "observers"))) {dat$observer_tx = data[,which(colnames(data) %in% c("observer", "observers"))]}
   if(any(colnames(data) %in% c("comments","comment"))) {dat$comments_tx = data[,which(colnames(data) %in% c("comments","comment"))]}
-  if(any(colnames(data) %in% c("count","obs_count_general_nb"))) {
-    dat$obs_count_general_nb = data[,which(colnames(data) %in% c("count","obs_count_general_nb"))]
-    dat$obs_count_intrans_nb = data[,which(colnames(data) %in% c("count","obs_count_general_nb"))]
+  if(any(colnames(data) %in% c("count","obs_count_general_nb","number"))) {
+    dat$obs_count_general_nb = data[,which(colnames(data) %in% c("count","obs_count_general_nb","number"))]
+    dat$obs_count_intrans_nb = data[,which(colnames(data) %in% c("count","obs_count_general_nb","number"))]
   }
   # if there is a definition of where they were off effort, make the intransect counts for off effort NA
   if(any(colnames(data) %in% c("offline"))) {dat$obs_count_intrans_nb[data$offline == 1] = NA}
@@ -205,6 +209,7 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
     if(any(colnames(data_track) %in% c("lon", "longitude", "long"))) {dat_track$track_lon = data_track[,which(colnames(data_track) %in% c("lon", "longitude", "long"))]}
     if(any(colnames(data_track) %in% c("lat", "latitude"))) {dat_track$track_lat = data_track[,which(colnames(data_track) %in% c("lat", "latitude"))]}
     if(any(colnames(data_track) %in% c("type"))) {dat_track$point_type = data_track[,which(colnames(data_track) %in% c("type"))]}
+    if(any(colnames(data_track) %in% c("beaufort"))) {dat_track$seastate = data_track[,which(colnames(data_track) %in% c("beaufort"))]}
     if(any(colnames(data_track) %in% c("date","start_dt","start_date","gps_date","track_dt"))) {dat_track$track_dt = format(as.Date(data_track[,which(colnames(data_track) %in% c("date","start_dt","start_date","gps_date","track_dt"))]),format='%m/%d/%Y')}
     if(any(colnames(data_track) %in% c("time"))) {dat_track$track_tm = data_track[,which(colnames(data_track) %in% c("time"))]}
     if(any(colnames(data_track) %in% c("transect","transect_id"))) {dat_track$source_transect_id = data_track[,which(colnames(data_track) %in% c("transect","transect_id"))]}
@@ -361,7 +366,7 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
     # distance flown per transect is in nautical miles, distance between points in meters 
     break.at.each.stop = filter(dat_track, point_type %in% c("BEGCNT")) %>%
       group_by(source_transect_id) %>% mutate(start.stop.index = seq(1:n())) %>% ungroup() %>% 
-      select(source_transect_id, source_track_id, start.stop.index)
+      select(source_transect_id, source_track_id, start.stop.index, track_dt)
     ssi = left_join(dat_track, break.at.each.stop, by="source_track_id") %>% 
       select(-source_transect_id.y) %>% rename(source_transect_id = source_transect_id.x) %>% 
       mutate(start.stop.index = as.numeric(start.stop.index))  %>% 
@@ -394,22 +399,22 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
                 start_tm = first(track_tm), 
                 end_tm = last(track_tm)) %>%
       as.data.frame() %>% rowwise() %>% 
-     # mutate(transect_time_min_nb = difftime(as.POSIXct(paste(end_dt, end_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
-     #                                        as.POSIXct(paste(start_dt, start_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
-      mutate(transect_time_min_nb = difftime(as.POSIXct(paste(end_dt, end_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
-                                             as.POSIXct(paste(start_dt, start_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
+      mutate(transect_time_min_nb = difftime(as.POSIXct(paste(end_dt, end_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
+                                             as.POSIXct(paste(start_dt, start_tm, sep = " "), format = "%Y-%m-%d %H:%M:%S"), 
+     # mutate(transect_time_min_nb = difftime(as.POSIXct(paste(end_dt, end_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
+     #                                        as.POSIXct(paste(start_dt, start_tm, sep = " "), format = "%m/%d/%Y %H:%M:%S"), 
                                              units = "mins"))   %>%
       as.data.frame %>% arrange(start_dt, source_transect_id)
     #
     data_transect = new.df %>% 
-      group_by(source_transect_id)  %>% 
+      group_by(source_transect_id,start_dt)  %>% 
       arrange(start_dt,start_tm) %>% 
       summarise(observer = first(observer),
                 temp_start_lon = first(temp_start_lon),
                 temp_stop_lon = last(temp_stop_lon),
                 temp_start_lat = first(temp_start_lat),
                 temp_stop_lat = last(temp_stop_lat),
-                start_dt = as.character(first(start_dt)),
+                #start_dt = as.character(first(start_dt)),
                 end_dt = as.character(last(end_dt)),
                 start_tm = first(start_tm), 
                 end_tm  = last(end_tm),
