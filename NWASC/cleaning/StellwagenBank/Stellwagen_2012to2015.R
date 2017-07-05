@@ -9,6 +9,7 @@
 # -------------------------------- #
 require(RODBC) # odbcConnect
 require(dplyr)
+require(measurements)
 # -------------------------------- #
 
 
@@ -18,21 +19,18 @@ require(dplyr)
 surveyFolder = "Stellwagen"
 
 # SET INPUT/OUTPUT DIRECTORY PATHS
-dir <- "//IFW9mbm-fs1/SeaDuck/seabird_database/datasets_received/"
+dir <- "//IFW9mbm-fs1/SeaDuck/seabird_database/datasets_received"
 setwd(dir)
 dir.in <- paste(dir, surveyFolder, sep = "/") 
 dir.out <- paste(gsub("datasets_received", "data_import/in_progress", dir), surveyFolder,  sep = "/") 
-
-# SOURCE R FUNCTIONS
-source(file.path("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/_Rfunctions/sourceDir.R"))
-sourceDir(file.path("//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/_Rfunctions"))
 # -------------------------------- #
 
 
 #---------------------#
 # load data 
 #---------------------#
-db <- odbcConnectAccess2007(file.path(dir.in, "NCCOS_Stellwagen_Deliverable_2015_11_13th_v1.accdb"))
+# observations
+db <- odbcConnectAccess2007(file.path(dir.in, "Seabird_Mike_v.45_2017_04_21st.accdb"))
 obs <- sqlFetch(db, "Bird_Sightings")
 lu_age <- sqlFetch(db, "LUT_Age")
 lu_assoc <- sqlFetch(db, "LUT_Association")
@@ -44,31 +42,66 @@ lu_glare <- sqlFetch(db, "LUT_Glare")
 lu_spp <- sqlFetch(db, "LUT_Seabird_Species")
 odbcClose(db)
 
+# gps
+db = odbcConnectExcel2007(paste(dir.in,"auk_gps_standardized_2012_thru_Aug_05_2015 (2).xlsx",sep="/")) # open a connection to the Excel file
+a = sqlFetch(db, "Mike_Auk_GPS")
+odbcClose(db)
+
+a = a %>% mutate(time = sapply(strsplit(as.character(Time_LCL_BOSTON)," "),tail,1)) %>%
+  dplyr::select(-Source,-Time_LCL_BOSTON) %>% 
+  rename(date = Date_LCL_BOSTON,date_time = Timestamp_LCL_BOSTON) 
+
+d = read.table(paste(dir.in,"2015_10_27th_Auk_Standardized_Garmin_Unit2.txt",sep="/"), sep = "\t", header=FALSE, skip=19)
+e = read.table(paste(dir.in,"2015_09_28th_Auk_GarminUnit2.txt",sep="/"), sep = "\t", header=FALSE, skip=19)
+f = read.table(paste(dir.in,"2015_12_26th_Auk_Unit1.txt",sep="/"), sep = "\t", header=FALSE, skip=19)
+b = bind_rows(d,e,f)
+
+names(b)= c("point_type","Position","Time","Altitude","Depth",
+            "Temperature","Leg_length","Leg_time","Speed","Course")
+b = b %>% mutate(Position = as.character(Position),
+                 lat = sapply(strsplit(Position, "W"),head,1),
+                 lat = sapply(strsplit(lat, "N"),tail,1),
+                 long = sapply(strsplit(Position, "W"),tail,1),
+                 Latitude = as.numeric(measurements::conv_unit(lat, from = 'deg_dec_min', to = 'dec_deg')),
+                 Longitude = measurements::conv_unit(long, from = 'deg_dec_min', to = 'dec_deg'),
+                 Longitude = as.numeric(Longitude)*-1,
+                 date_time = as.POSIXct(Time,format="%m/%d/%Y %H:%M:%S %p "),
+                 date = as.POSIXct(sapply(strsplit(as.character(date_time)," "),head,1)),
+                 time = sapply(strsplit(as.character(date_time)," "),tail,1),
+                 heading = sapply(strsplit(Course,"°"),head,1)) %>% 
+  dplyr::select(-lat,-long,-Position,-Time,-Course)
+
+track = bind_rows(a,b) %>% arrange(date_time)
+rm(a,b,d,e,f)
+#---------------------# 
+
+#---------------------# 
+# fix codes
+#---------------------# 
 # replace codes
-obs = left_join(obs, lu_age, by=c("Age"="ID")) %>% select(-Age) %>% rename(animal_age_tx=Age.y)
-obs = left_join(obs, select(lu_behavior, Behavior, Behavior_Code), by=c("Behaviors"="Behavior_Code")) %>% 
-  select(-Behaviors) %>% rename(behavior_tx = Behavior)
-obs = left_join(obs, select(lu_plumage, ID, Plumage), by=c("Plumage"="ID")) %>% select(-Plumage) %>% 
-  rename(plumage_tx=Plumage.y)
-obs$Association[obs$Association %in% 0] = NA # no need to denote no association
-obs = left_join(obs, lu_assoc, by=c("Association"="Ass_Code")) %>% select(-Association) %>% 
-  rename(Association=Association.y)
-obs = left_join(obs, select(lu_weather, -Order), by=c("Weather"="WX_Code")) %>% select(-Weather) %>% 
-  rename(weather_tx=Weather.y)
-obs$cloud_cover_tx = obs$weather_tx
-obs = left_join(obs, lu_precip, by=c("Precipitation"="Precip_Code")) %>%  
-  mutate(weather_tx = paste(weather_tx, Precipitation.y, sep = "; ")) %>% 
-  select(-Precipitation, -Precipitation.y)
-obs = left_join(obs, lu_glare, by=c("Glare"="Glare_Code")) %>% select(-Glare) %>% rename(glare_tx=Glare.y)
+obs = left_join(obs, lu_age, by=c("Age"="ID")) %>% 
+  left_join(., select(lu_behavior, Behavior, Behavior_Code), by=c("Behavior"="Behavior_Code")) %>% 
+  left_join(., select(lu_plumage, ID, Plumage), by=c("Plumage"="ID")) %>% 
+  left_join(., mutate(lu_assoc,Ass_Code=as.factor(Ass_Code)), by=c("Association"="Ass_Code")) %>% 
+  left_join(., select(lu_weather, -Order) %>% mutate(WX_Code=as.factor(WX_Code)), by=c("Weather"="WX_Code")) %>% 
+  left_join(., lu_precip, by=c("Precipitation"="Precip_Code")) %>%  
+  left_join(., lu_glare, by=c("Glare"="Glare_Code")) %>% 
+  rename(animal_age_tx=Age.y, behavior_tx = Behavior.y, plumage_tx=Plumage.y,
+         Association_tx=Association.y, glare_tx=Glare.y, weather_tx=Weather.y) %>%
+  mutate(cloud_cover_tx = weather_tx,
+         weather_tx = paste(weather_tx, Precipitation.y, sep = "; ")) %>%
+  dplyr::select(-Behavior, -Precipitation, -Precipitation.y, -Glare, -Age) 
+
 rm(lu_age, lu_behavior, lu_plumage, lu_assoc, lu_weather, lu_precip, lu_glare)
 
 # fix time
-obs = rename(obs, gps_time = Sighting_Time)
-obs$gps_time = sapply(strsplit(as.character(obs$gps_time), " "), tail, 1)
+obs = rename(obs, gps_time = Sighting_Time) %>% 
+  mutate(gps_time = sapply(strsplit(as.character(gps_time), " "), tail, 1))
 
 # merge comments
 obs = obs %>% mutate(comments = paste(Comments, WXNotes, Association, sep = "; ")) %>% 
-  select(-Comments, -WXNotes)
+  select(-Comments, -WXNotes) %>% 
+  mutate(comments = ifelse(comments %in% c("NA;NA;NA"),NA,comments))
 
 # add row for when an associations
 
@@ -127,4 +160,3 @@ obs$spp[obs$spp %in% "VESS"] = "BOAT" #vessel
 obs$spp[obs$spp %in% "WASP"] = "UNWA" #unidentified warbler  
 obs$spp[obs$spp %in% "WHSP"] = "UNWH" #unidentified whale 
 #---------------------#
-
