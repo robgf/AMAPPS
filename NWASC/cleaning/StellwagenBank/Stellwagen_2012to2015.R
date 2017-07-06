@@ -99,9 +99,9 @@ obs = rename(obs, gps_time = Sighting_Time) %>%
   mutate(gps_time = sapply(strsplit(as.character(gps_time), " "), tail, 1))
 
 # merge comments
-obs = obs %>% mutate(comments = paste(Comments, WXNotes, Association, sep = "; ")) %>% 
-  select(-Comments, -WXNotes) %>% 
-  mutate(comments = ifelse(comments %in% c("NA;NA;NA"),NA,comments))
+#obs = obs %>% mutate(comments = paste(Comments, WXNotes, Association, sep = "; ")) %>% 
+#  select(-Comments, -WXNotes) %>% 
+#  mutate(comments = ifelse(comments %in% c("NA;NA;NA"),NA,comments))
 
 # add row for when an associations
 
@@ -147,7 +147,6 @@ obs$spp[obs$spp %in% "GUSP"] = "UNGU" # unidentified gull
 obs$spp[obs$spp %in% "JASP"] = "UNJA" # unidentified jaeger  
 obs$spp[obs$spp %in% "LAND"] = "UNBI" # any unidentified terrestrial bird  
 obs$spp[obs$spp %in% "LOSP"] = "UNLO" # loon species  
-#obs$spp[obs$spp %in% "MADE"] = "" # marine debris (NEED TO PULL OUT BALLOONS FROM COMMENTS)
 obs$spp[obs$spp %in% "NAWH"] = "RIWH" # north atlantic right whale  
 obs$spp[obs$spp %in% "OTHER"] = "UNKN"  
 obs$spp[obs$spp %in% "PHSP"] = "UNPH" #unidentified phalarope  
@@ -159,4 +158,156 @@ obs$spp[obs$spp %in% "TUSP"] = "TURT" #unidentified turtle
 obs$spp[obs$spp %in% "VESS"] = "BOAT" #vessel
 obs$spp[obs$spp %in% "WASP"] = "UNWA" #unidentified warbler  
 obs$spp[obs$spp %in% "WHSP"] = "UNWH" #unidentified whale 
+
+# marine debris (NEED TO PULL OUT BALLOONS FROM COMMENTS)
+obs$spp[obs$spp %in% "MADE" & obs$Comments %in% c("mylar ballon","Mylar ballon","Mylar ballon (blue)",
+                                                  "Mylar ballon around 0.5 km","Mylar ballons 50 yds apart",
+                                                  "mylar balloon","Mylar balloon","Mylar Balloon",
+                                                  "Mylar balloon debris","Mylar balloon picked up",
+                                                  "Mylar balloon, port side","Mylar trash huge",
+                                                  "Balloon-mylar","purple mylar balloon",
+                                                  "Balloon mylar Happy B-day")] = "MYBA"
+obs$spp[obs$spp %in% "MADE" & obs$Comments %in% c("off, balloon","orange balloon- green balloon picked up off track",
+                                                  "green ballon","green balloon","Green balloon","deflated balloon",
+                                                  "blue balloon","Ballon +picked up","balloon","Balloon",
+                                                  "balloon (caught it)","balloon (diff. than above)",
+                                                  "balloon 2nd picked up off effort","balloon mylar",
+                                                  "Balloon mylar","Balloon mylar Happy B-day ",
+                                                  "Balloon or jug","Balloon under water",
+                                                  "balloon w/ plastic bag?","Balloons",
+                                                  "Balloons 3x w/ bait ball","balloons, several",
+                                                  "3 balloons, picked up","purple balloon",
+                                                  "yellow balloon and ribbon floating on the water",
+                                                  "picked up balloon","Pink balloon","nylon balloon",
+                                                  "Popped balloon","white balloon")]="BALN"
+obs$spp[obs$spp %in% "MADE" & obs$Comments %in% c("Latex ballon","latex balloon, did not recover",
+                                                  "red latex balloon","White latex balloon, ribbon attached")]="LABA" 
+obs$spp[obs$spp %in% "MADE" & obs$Comments %in% c("plastic","Plastic","plastic bag","Plastic bag","Plastic Bag",
+                                                  "plastic bottle","Plastic bottle","plastic bottle, dead herring gull",
+                                                  "Plastic bottle, port side","Plastic bottles","plastic cup",
+                                                  "plastic fruit cup","plastic h2o bottle","Plastic jug",
+                                                  "Plastic jug; slowing for whales","plastic lion","Plastic soda bottle",
+                                                  "plastic trash bag","Plastic tub","plastic water bottle",
+                                                  "poland spring water bottle","Water bottle",
+                                                  "Unidentified plastic","Shiny plastic bottle",
+                                                  "water bottle, plastic cont.","small plastic package",
+                                                  "Bleach bottle","? Small white square, maybe plastic",
+                                                  "white plastic bag","white hard plastic",
+                                                  "White antifreeze jug","Milk jug","Jug floating",
+                                                  "Gallon Jug","flat white plastic (3' x 5')",
+                                                  "Large plastic juice bottle","marine debris- bleach bottle",
+                                                  "white plastic")]="PLAS"     
+obs$spp[obs$spp %in% "MADE" & obs$Comments %in% c("seaweed")]="MACR"
+obs$spp[obs$spp %in% "MADE" & obs$Comments %in% c("Boat pickup- Loose Buoy","broken buoy")]="BUOY"
+obs$spp[obs$spp %in% "MADE"]="FLJE"
+obs$spp[obs$spp %in% "FLJE" & obs$Comments %in% c("Rahul- recorder, John- observer")]="COMMENT"
+
+#fix observers
+obs$Observer = as.character(obs$Observer)
+obs$Observer[is.na(obs$Observer)] = as.character(obs$Recorder[is.na(obs$Observer)])
+obs$Observer[obs$Observer %in% "No Record"] = as.character(obs$Recorder[obs$Observer %in% "No Record"])
+
+obs$Observer[obs$Observer %in% "Amy O'Neil"] = "AON"                      
+obs$Observer[obs$Observer %in% "Anne-Marie Runfola"]="AMR"              
+obs$Observer[obs$Observer %in% "Anne Sterling"]="AS" 
+obs$Observer[obs$Observer %in% "Beth Slikas"]="BS"
+obs$Observer[obs$Observer %in% "Ben Lagasse"]="BL"                     
+obs$Observer[obs$Observer %in% "Blaine"]="Bl"                          
+obs$Observer[obs$Observer %in% "Blair Nikula"]="BN"                   
+obs$Observer[obs$Observer %in% "Blair Nikula, David Clapp"]="BN/DC"       
+obs$Observer[obs$Observer %in% "Bob"]="Bo"                             
+obs$Observer[obs$Observer %in% "CBC- Various"]="CBC"        
+obs$Observer[obs$Observer %in% c("Caitlin Jensen","Caitlyn Jensen")]="CJ"
+obs$Observer[obs$Observer %in% "Charlie Cooper"]="CC"                  
+obs$Observer[obs$Observer %in% "Derek Garvey"]="DG"                    
+obs$Observer[obs$Observer %in% "Derek Garvey / Stefanie Paventy"]="DG/SP"
+obs$Observer[obs$Observer %in% "Ellen Keane"]="EK"                     
+obs$Observer[obs$Observer %in% "Ellison Orcutt"]="EO"                  
+obs$Observer[obs$Observer %in% "Glenn d'Entremont"]="GdE" 
+obs$Observer[obs$Observer %in% "George Graham"]="GG"
+obs$Observer[obs$Observer %in% "Jane Sender"]="JS"   
+obs$Observer[obs$Observer %in% "Jenny"]="Je"
+obs$Observer[obs$Observer %in% "Jess Bethoney"]="JeB"                   
+obs$Observer[obs$Observer %in% "Jessica Rempel"]="JR"                 
+obs$Observer[obs$Observer %in% "Jim McCoy"]="JM"                       
+obs$Observer[obs$Observer %in% "Jim Sweeney"]="JSw"                     
+obs$Observer[obs$Observer %in% "Jim Sweeny, Naeem"]="JSw/NY"              
+obs$Observer[obs$Observer %in% "John Galluzzo"]="JG"                   
+obs$Observer[obs$Observer %in% "Justin Baldwin"]="JBa"                  
+obs$Observer[obs$Observer %in% c("Justin Leclaire","Justin LeClaire","Justin LeClere")]="JLC"                 
+obs$Observer[obs$Observer %in% "Kathy Wall"]="KW"                     
+obs$Observer[obs$Observer %in% "Kevin Powers"]="KP"                    
+obs$Observer[obs$Observer %in% "Liam Waters"]="LW"                     
+obs$Observer[obs$Observer %in% "Liz Dancer"]="LD"                     
+obs$Observer[obs$Observer %in% "Marie Martin"]="MMar"                    
+obs$Observer[obs$Observer %in% "Mark Faherty"]="MFa"                    
+obs$Observer[obs$Observer %in% "Matt Malin"]="MMal"                     
+obs$Observer[obs$Observer %in% "Matt Malin, Jessica Rempel"]="MMal/JR"      
+obs$Observer[obs$Observer %in% "Melinda Forist"]="MFo"                  
+obs$Observer[obs$Observer %in% "Naeem Yusuff"]="NY"                   
+obs$Observer[obs$Observer %in% "Peter"]="P"                           
+obs$Observer[obs$Observer %in% "Peter Briggs"]="PB"                   
+obs$Observer[obs$Observer %in% "Peter Briggs / Derek Garvey"]="PB/DG"     
+obs$Observer[obs$Observer %in% "Peter Briggs / Stefanie Paventy"]="PB/SP"
+obs$Observer[obs$Observer %in% "Peter Briggs, Trudy Tynan"]="PB/TT"      
+obs$Observer[obs$Observer %in% "Peter Crosson"]="PC"                   
+obs$Observer[obs$Observer %in% "Peter Flood"]="PF"                     
+obs$Observer[obs$Observer %in% "Peter Flood, Brian Harris"]="PF/BH"      
+obs$Observer[obs$Observer %in% "Ralph Bowman, Wayne"]="RB/WP"             
+obs$Observer[obs$Observer %in% "Sarah Guitart"]="SG"                   
+obs$Observer[obs$Observer %in% c("Shan Morrisey","Shan Morrissey")]="SM"                 
+obs$Observer[obs$Observer %in% "Stefanie Paventy"]="SP"                
+obs$Observer[obs$Observer %in% "Stefanie Paventy/Jane Sender"]="SP/JSe"    
+obs$Observer[obs$Observer %in% "Tim Factor"]="TF"                     
+obs$Observer[obs$Observer %in% "Tim Factor/Jane Sender"]="TF/JSe"          
+obs$Observer[obs$Observer %in% c("Tom Robben","Tom Robbens")]="TR"                    
+obs$Observer[obs$Observer %in% "Trudy Tynan"]="TT"                    
+obs$Observer[obs$Observer %in% "Wayne Peterson"]="WP"                  
+obs$Observer[obs$Observer %in% "Whit Manter"]="WM"           
+
+# add boats
+obs$Association_tx[obs$Comments %in% c("fish vessel", "Fish vessel",'Fisherman "Nantucket Wild"', 
+                                       'fishing "Wicked Pissah"',"fishing and recreational", "fishing boat",
+                                       "Fishing boat","Fishing Boat","Fishing Boat - Name Unknown", 
+                                       'Fishing boat "Alosa"','fishing boat, "Bad Influence"',
+                                       "fishing boat, wp/kp", "Fishing Boat; small; Datikiman", 
+                                       "Fishing boat; small; Odysea", "fishing boat?", 
+                                       "Fishing on Woodend, 1) Minerva, 2) Fools Gold, 3) Cee Jay",
+                                       "fishing or lobster", 'Fishing trawler off Race Point "Sea Hunter"',
+                                       "Fishing vess", "fishing vess sitting 1228906", "fishing vessel", 
+                                       "Fishing vessel","Fishing Vessel","fishing vessel- Bounty Hunter Gloucester",
+                                       "fishing vessel- lobster boat",'fishing vessel "Michael+Kristen"', 
+                                       "Fishing vessel NOTE: GPS track is recording the remainder of this survey",
+                                       "Fishing Vessel Poseidon", 'Fishing vessel? Frame on stern "Perfect Cs"') &
+                     is.na(obs$Association_tx)]= "Fishing vessel"
+
+to.add = obs %>% filter(Comments %in% c("fish vessel", "Fish vessel",'Fisherman "Nantucket Wild"',  
+                                        'fishing "Wicked Pissah"',"fishing and recreational", "fishing boat", 
+                                        "Fishing boat","Fishing Boat","Fishing Boat - Name Unknown", 
+                                        'Fishing boat "Alosa"','fishing boat, "Bad Influence"',
+                                        "fishing boat, wp/kp", "Fishing Boat; small; Datikiman", 
+                                        "Fishing boat; small; Odysea", "fishing boat?", 
+                                        "Fishing on Woodend, 1) Minerva, 2) Fools Gold, 3) Cee Jay",
+                                        "fishing or lobster", 'Fishing trawler off Race Point "Sea Hunter"',
+                                        "Fishing vess", "fishing vess sitting 1228906", "fishing vessel", 
+                                        "Fishing vessel","Fishing Vessel","fishing vessel- Bounty Hunter Gloucester",
+                                        "fishing vessel- lobster boat",'fishing vessel "Michael+Kristen"', 
+                                        "Fishing vessel NOTE: GPS track is recording the remainder of this survey",
+                                        "Fishing Vessel Poseidon", 'Fishing vessel? Frame on stern "Perfect Cs"'),
+                        !obs$spp %in% c("BOAT","BOFI")) %>% 
+  mutate(spp = "BOFI", N_Individuals = 1, ID=ID+0.1)
+obs = rbind(obs, to.add) %>% arrange(ID)
+rm(to.add)
+                        
 #---------------------#
+
+
+
+
+
+
+
+
+
+
+
