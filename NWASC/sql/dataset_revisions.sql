@@ -13,3 +13,7 @@ WHERE source_transect_id = '2011-01-11_NJM';
 UPDATE transect
 SET source_transect_id = '2012-01-11_NJM', start_dt = '1/11/2012', end_dt = '1/11/2012'
 WHERE source_transect_id = '2011-01-11_NJM';
+
+UPDATE dataset
+SET version = 2
+WHERE dataset_id = 135
