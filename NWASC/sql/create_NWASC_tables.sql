@@ -173,7 +173,8 @@ CREATE TABLE lu_species(
 );
 GO
 
-INSERT INTO lu_species(species_type_id,spp_cd,common_name,scientific_name,ITIS_id)
+INSERT INTO lu_species(
+	species_type_id,spp_cd,	common_name,scientific_name,ITIS_id)
 	VALUES
 	(1,'ABDH','American Black Duck X Mallard Hybrid','Anas rubripes x platy.',NULL),
 	(1,'ABDU','American Black Duck','Anas rubripes',175068),
@@ -305,6 +306,7 @@ INSERT INTO lu_species(species_type_id,spp_cd,common_name,scientific_name,ITIS_i
 	(1,'EASO','Eastern Screech-Owl','Megascops asio',686658),
 	(1,'EATO','Eastern Towhee','Pipilo erythrophthalmus',179276),
 	(1,'EISC','Unidentified Eider/Scoter spp.','Melanitta/Somateria spp.',NULL),
+	(1,'EUCD','Eurasian Collared-Dove','Streptopelia decaocto',177139),
 	(1,'EUOY','Eurasian Oystercatcher','Haematopus ostralegus',176469),
 	(1,'EUSP','European Storm-petrel','Hydrobates pelagicus',174663),
 	(1,'EUST','European Starling','Sturnus vulgaris',179637),
@@ -937,13 +939,17 @@ INSERT INTO lu_beaufort(beaufort_id,wind_speed_knots,WMO_classification,water_ds
 --create revisions table
 CREATE TABLE lu_revision_details (
 	dataset_id smallint not null,
-	revision_nb tinyint not null,
+	version_nb tinyint not null,
 	revision_date date not null,
 	revision_details nvarchar(1000) not null,
-	Primary Key (dataset_id, revision_nb)
+	Primary Key (dataset_id, version_nb)
 );
 GO
---
+
+INSERT INTO lu_revision_details(dataset_id,version_nb,revision_date,revision_details)
+	VALUES(135,2,CAST('2017-07-12' AS DATE),'Changed date from 1/11/2011 to 1/11/2012 and transect id from 2011-01-11_NJM to 2012-01-11_NJM. This includes the observation table (records :), track table (records :) and tranesct table (record 122117).')
+	--(,2,CAST('' AS DATE),'NEED TO CHANGE NOAA AMAPPS 2015 LEG TO TRANSECT IDS, in Email to Arliss')
+-- 
 
 -- look up age
 CREATE TABLE lu_age(
@@ -959,7 +965,9 @@ INSERT INTO lu_age(age_id,age_ds)
 	(2,'juvenile'),
 	(3,'mixed'),
 	(4,'other'),
-	(5,'unknown');
+	(5,'unknown'),
+	(6,'immature'),
+	(7,'subadult');
 --
 
 -- look up sex
@@ -982,7 +990,7 @@ INSERT INTO lu_sex(sex_id,sex_ds)
 -- look up behaviors
 CREATE TABLE lu_behaviors(
 	behavior_id tinyint not null,
-	behavior_ds nvarchar(20) not null
+	behavior_ds nvarchar(50) not null
 	PRIMARY KEY(behavior_id) 
 );
 GO
@@ -1045,7 +1053,8 @@ CREATE TABLE lu_parent_project(
 );
 GO
 
-INSERT INTO lu_parent_project(project_id, project_name, project_ds, project_url)
+INSERT INTO lu_parent_project(
+	project_id, project_name, project_ds, project_url)
 	VALUES
 	(1, 'AMAPPS aerial',
 		'The geographic area of operations includes near-shore and offshore waters of the U.S. Atlantic Coast from the Canada/Maine border to approximately Jacksonville, FL. Transects are located at 5'' (~ 5 nautical miles [nm]) intervals at every 1'' and 6'' minutes of latitude. Transect length depends on the location along coast. Some transects extend to 16 meter depth or out a distance of 8 nm , whichever is longer. In some cases, transects located near to where the coastline runs east-west have been extended to ensure that the survey covers areas that are at least 8 nm from land. Some transects extend as far as 30 nm off-shore to include important seabird foraging areas. In the past these annual surveys were conducted during the winter between January and February. However, when the survey expanded to include all marine bird species the surveys were flown multiple times throughout the year to better determine seabird distributions at different times of year. As a result the surveys are currently conducted in the fall (early October) and winter (early February).  Timing can also depend on available funding , data management needs, personnel shortages and availability, weather, and aircraft availability. Surveys are flown during daylight hours with no limits on the time of day. A survey can be initiated when the wind speed is < 15 knots (kts), and should be discontinued if the winds exceed 20 kts. Before starting each transect both the pilot and observers will record observation conditions on a 5-point Likert scale with 1 = Worst observation conditions, 3 = Average conditions, and 5 = Best observation conditions. Often times the pilot and observer conditions will be different as glare can affect one side of the aircraft more than the other depending on the direction of flight. Each crew area consists of east-west oriented  strip-transects. Each transect has a unique ID that uses the latitude degrees concatenated with the latitude minutes and then with the segment number [00, 01, etc.]. Typically there will just be one line segment “00”, but when more than one segment occurs on the same latitude you might also have segment “01."( e.g. 444600 or 444601).The transects are flown at a height of 200 feet above ground level and at a speed of 110 knots. Altitude is maintained  with the help of a radar altimeter in most cases. Transects extend 30 nautical miles (nm) offshore and can be flown from east to west or west to east.  Each transect is 400 meters (m) in width with 200 m observation bands on each side of the aircraft. Each observer counts outward to a the predefined 200 m width on their side of the aircraft (left-front (lf) or right-front(rf)).  The pilot serves as the left-front observer (lf) while the observer traditionally sits in the right-front (rf) or co-pilot seat of the aircraft. However, there have been times when a third backseat observer is present (e.g. a new observer being trained). The transect boundary is marked either on the strut with black tape  or the windshield (with dry erase marker) of the plane for reference using a clinometer. The survey targets the fifteen species of sea ducks and all species of marine birds wintering along the Atlantic coast.  Identification of birds to the lowest taxonomic level is ideal (e.g.species), however several generalized  groups have been created for the survey understanding that species identification can be difficult during aerial survey conditions. Such groupings are provided for other species as well including gulls, shearwaters, alcids, and scoters. Observers are also asked to  record all marine mammals, sharks and rays, and sea turtles within the transect. Finally, observers will also record any boats, including those outside of the transect , with an estimated distance in nautical miles. Balloons (both inflated and deflated) should be recording within the transect. [summary snippets copied from internal confluence site]',
@@ -1070,10 +1079,10 @@ INSERT INTO lu_parent_project(project_id, project_name, project_ds, project_url)
 	(15,'ECSAS',NULL,NULL),
 	(16,'BOEM NanoTag Massachusetts 2013',NULL,NULL),
 	(17,'BOEM Terns 2013',NULL,'https://www.boem.gov/2014-665/'),
-	(18,'EcoMon/HerringAcoutic combo',NULL),
-	(19,'StellwagenBankNMS standardized transects',NULL),
-	(20,'StellwagenBankNMS Whale Watch',NULL),
-	(21,'Deepwater Wind BI Boat',NULL);
+	(18,'EcoMon/HerringAcoutic combo',NULL,NULL),
+	(19,'StellwagenBankNMS standardized transects',NULL,NULL),
+	(20,'StellwagenBankNMS Whale Watch',NULL,NULL),
+	(21,'Deepwater Wind BI Boat',NULL,NULL);
 --
  
 ------------------------
@@ -1322,7 +1331,7 @@ INSERT INTO dataset(
  	(220,21,'DeepwaterWindBlockIsland_boat_Aug11a','b','cts','ot',300,300,0,'no',NULL,65,'BOEM,TetraTech,Deepwater Wind RI',8),
  	(221,21,'DeepwaterWindBlockIsland_boat_Aug11b','b','cts','ot',300,300,0,'no',NULL,65,'BOEM,TetraTech,Deepwater Wind RI',8),
  	(222,21,'DeepwaterWindBlockIsland_boat_Sep11a','b','cts','ot',300,300,0,'no',NULL,65,'BOEM,TetraTech,Deepwater Wind RI',8),
-	(223,21,'DeepwaterWindBlockIsland_boat_Sep11b','b','cts','ot',300,300,0,'no',NULL,65,'BOEM,TetraTech,Deepwater Wind RI',8),
+	(223,21,'DeepwaterWindBlockIsland_boat_Sep11b','b','cts','ot',300,300,0,'no',NULL,65,'BOEM,TetraTech,Deepwater Wind RI',8);
  --	(,21,'DeepwaterWindBlockIsland0910_camera','c','cts','ot',60,60,9,'no',NULL,65,'BOEM,TetraTech,Deepwater Wind RI',53),
 
 	--(,20,'StellwagenBankNMS_WW_2011-10-22','b','dts','og',NULL,NULL,9,'no',NULL,9,'NOAA',NULL),
@@ -1684,7 +1693,10 @@ CREATE TABLE progress_table (
 );
 GO
 
-INSERT INTO progress_table(dataset_id,dataset_name,action_required_or_taken,date_of_action,who_will_act,data_acquired,metadata_acquired,report_acquired,additional_info)
+INSERT INTO progress_table(
+	dataset_id, share_level_id, dataset_name, action_required_or_taken,
+	date_of_action, who_will_act, data_acquired,
+	metadata_acquired, report_acquired, additional_info)
 	VALUES
 	(92,7,'PIROP','need to investigate',NULL,'KC',0,0,0,'Apparently already in database but across several other surveys, need to figure out which'),
 	(93,0,'SEANET','need to investigate',NULL,'KC',0,0,0,'Not sure that we actually want this in here'),
@@ -1701,7 +1713,6 @@ INSERT INTO progress_table(dataset_id,dataset_name,action_required_or_taken,date
 	(169,99,'BOEMHighDef_NC2011Camera','need to finish QA/QC',NULL,'KC',1,0,1,'There were issues with the gps and time'),
 	(172,9,'BRIMaine2016','looked at data, needs QA/QC',NULL,'KC',1,0,0,NULL),
 	(173,0,'NYSERDA_APEM','need to invevstigate',NULL,'KC',0,0,0,'Was in contact with provider about submission guidelines, need to check back'),
-	(174,99,'AMAPPS_NOAA/NMFS_NEFSCBoat2016','started QA/QC',NULL,'KC',1,0,0,NULL),
 	(175,9,'DeepwaterWindBlockIsland0910','needs QA/QC',NULL,'KC',1,0,0,NULL),
 	(176,0,'EcoMonMar2014','need to request',NULL,'TW/KC',0,0,1,'In contact with TW and AW about this'),
 	(177,0,'EcoMonOct2015','need to request',NULL,'TW/KC',0,0,1,'In contact with TW and AW about this'),
@@ -1713,13 +1724,7 @@ INSERT INTO progress_table(dataset_id,dataset_name,action_required_or_taken,date
 	(183,0,'EcoMonJun2013','need to request',NULL,'TW/KC',0,0,1,'In contact with TW and AW about this'),
 	(184,0,'EcoMonNov2013','need to request',NULL,'TW/KC',0,0,1,'In contact with TW and AW about this'),
 	(185,0,'EcoMonFeb2011','need to request',NULL,'TW/KC',0,0,1,'In contact with TW and AW about this'),
-	(186,0,'EcoMonJun2011','need to request',NULL,'TW/KC',0,0,1,'In contact with TW and AW about this'),
-	(145,99,'BOEMNanoTag_Mass_Aug2013','QA/QC in progress',NULL,'KC',1,0,1,NULL),
-	(177,99,'BOEMNanoTag_Mass_Sept2013a','QA/QC in progress',NULL,'KC',1,0,1,'replicate run in Sept.'),
-	(178,99,'BOEMNanoTag_Mass_Sept2013b','QA/QC in progress',NULL,'KC',1,0,1,'replicate run in Sept.'),
-	(179,99,'BOEM_terns_Jul2013','QA/QC in progress',NULL,'KC',1,0,1,NULL),
-	(180,99,'BOEM_terns_Aug2013','QA/QC in progress',NULL,'KC',1,0,1,NULL),
-	(181,99,'BOEM_terns_Sep2013','QA/QC in progress',NULL,'KC',1,0,1,'replicate run in Sept.');
+	(186,0,'EcoMonJun2011','need to request',NULL,'TW/KC',0,0,1,'In contact with TW and AW about this');
 	
 --
 
@@ -1761,6 +1766,7 @@ INSERT INTO data_requests(
 	(4,70,'Common Loon (COLO) between June 15-Aug 15, years 1910- present',CAST('2016-05-10' AS DATE),
 		'not filled',NULL,NULL),
 	(5,71,'Razorbills (RAZO), looking for any counts from Maine to Florida at sea for winter 2012-13',
-		CAST('2016-04-10' AS DATE),'not filled',NULL,NULL);
+		CAST('2016-04-10' AS DATE),'not filled',NULL,NULL),
+	(6,3,'MassCEC',CAST('2017-06-29' AS DATE),'filled',CAST('2017-06-29' AS DATE),NULL);
 --
 
