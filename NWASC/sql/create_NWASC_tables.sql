@@ -1767,6 +1767,7 @@ INSERT INTO data_requests(
 		'not filled',NULL,NULL),
 	(5,71,'Razorbills (RAZO), looking for any counts from Maine to Florida at sea for winter 2012-13',
 		CAST('2016-04-10' AS DATE),'not filled',NULL,NULL),
-	(6,3,'MassCEC',CAST('2017-06-29' AS DATE),'filled',CAST('2017-06-29' AS DATE),NULL);
+	(6,3,'MassCEC',CAST('2017-06-29' AS DATE),'filled',CAST('2017-06-29' AS DATE),NULL),
+	(7,50,'All FWS AMAPPS and Seaduck data',CAST('2017-07-12' AS DATE),'not filled',NULL,'This is for an R5 GIS exercise');
 --
 
