@@ -18,6 +18,7 @@ will be determined by what I provide:
   - all of my data, including observations  
   - general information and spatial survey data (tracks, points, dates; but no observations)  
   - only general information about my program  
+- I am contributing the best available data  
 - I understand that users will see the data use agreement for the NWASC; however data may 
 also be shared through other “portals” such as OBIS or AKN, and in some of those cases, 
 the use policy may not appear as directly as it does here. Those portals may have their 
@@ -25,7 +26,7 @@ own policies, e.g. [OBIS](http://www.iobis.org/data/policy/).
 - I understand because my data may be disseminated to other data portals, I may not be aware when data are accessed.  
 - I understand that by depositing my data in the NWASC, some editing may occur. Edits may be required 
 by the database manager for consistency across datasets in the repository, or for quality control reasons.   
-- I understand that as a data owner or contributor, I can also download my data including any edits.  
+- I understand that as a data owner or contributor, I can also download my data including any edits.   
 - I agree that if I learn of significant errors in a contributed dataset, I will notify the database manager or contact person.  
 - By providing my email address, I am allowing members of the Community of Users to contact me regarding 
 availability or other questions with this dataset.  
@@ -37,7 +38,7 @@ sensitive data out of the repository.
 
 Please also be aware of the [Data Use Agreement](https://github.com/USFWS/AMAPPS/blob/master/NWASC/Data%20use%20agreement%20for%20NWASC.rmd) 
 and 
-[Submission Guidelines](https://github.com/USFWS/AMAPPS/blob/master/NWASC/Submission%20Guidelines%20for%20NWASC.rmd) for data contributors.  
+[Submission Guidelines](https://github.com/USFWS/AMAPPS/blob/master/NWASC/Submission%20Guidelines%20for%20NWASC.rmd) for data contributors.  Please also be aware of the [FWS Scientific Integrity Policy](https://www.fws.gov/science/pdf/ScientificIntegrityFWSCode212fw7.pdf). 
 
 If you agree to these terms please sign and return to the data manager (kaycee_coleman@fws.gov) or 
 [fill out the form online](https://docs.google.com/forms/d/e/1FAIpQLSeG_kyZ3gkd60R5dwxUuyE2Cx8XySfS-XuJbAlo6eLRNgOURg/viewform?usp=sf_link):  
