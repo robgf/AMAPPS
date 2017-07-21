@@ -31,7 +31,7 @@ through the NWASC requires agreement with the following:
 **Data Use Agreements:**
 
 1.	The USFWS shall not be held liable for improper or incorrect use of the data described and/or contained herein. 
-2.	I understand that even though the following data have undergone substantial editing and review prior to posting, errors or inaccuracies may still exist in the data.  Thus, this data should be regarded as provisional since subsequent reviews may result in significant revisions to the data. These data have been processed successfully on computer systems within the Division of Migratory Bird Management (DMBM), U.S. Fish & Wildlife Service (USFWS), however no warranty expressed or implied is made regarding the accuracy or utility of the data on any other system or for general or scientific purposes, nor shall the act of distribution constitute any such warranty. This disclaimer applies both to individual use of the data and aggregate use of the data. I will employ these data at my own risk.  
+2.	While we have tried to do everything possible to include the best available data, I understand that even though the following data have undergone substantial editing and review prior to posting, errors or inaccuracies may still exist in the data.  Thus, this data should be regarded as provisional since subsequent reviews may result in significant revisions to the data. These data have been processed successfully on computer systems within the Division of Migratory Bird Management (DMBM), U.S. Fish & Wildlife Service (USFWS), however no warranty expressed or implied is made regarding the accuracy or utility of the data on any other system or for general or scientific purposes, nor shall the act of distribution constitute any such warranty. This disclaimer applies both to individual use of the data and aggregate use of the data. I will employ these data at my own risk.  
 3.	If errors are found, I will report them to the data manager.
 4.	I will pay careful attention to the contents of the metadata files associated with these data.
 5.	I acknowledge that the USFWS strongly recommends that these data are directly acquired from a USFWS, DMBM source, and not indirectly through other sources which may have changed the data in some way. The only other acceptable aggregated source would be through the National Oceanographic Data Center / National Centers for Environmental Information (NODC/NCEI), yet these data are only archived yearly so version number should be noted. 
@@ -62,7 +62,7 @@ Sussman, A. and US DOI; US Geological Survey (2014). Atlantic Offshore Seabird D
 Version [version number]. [Access date]  
 
 Please also be aware of the [Data Sharing agreement](https://github.com/USFWS/AMAPPS/blob/master/NWASC/Data%20sharing%20agreement%20for%20NWASC.rmd) 
-for data contributors.  
+for data contributors.  Also please be aware of the [FWS Science Integrity Policy](https://www.fws.gov/science/pdf/ScientificIntegrityFWSCode212fw7.pdf).
 
 If you agree to these terms please sign and return to the data manager (kaycee_coleman@fws.gov) or 
 [fill out the form online](https://docs.google.com/forms/d/e/1FAIpQLSdvDoSF5nnw9jbXHIK6E3tE2jLub_Bykf3zQup9EuphVbgpYA/viewform?usp=sf_link):  
