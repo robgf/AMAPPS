@@ -13,6 +13,7 @@ library(sp)  # vector data
 library(raster)  # raster data
 library(rgdal)  # input/output, projections
 library(rgeos)  # geometry ops
+library(ggplot2)
 # ------------------------ #
 
 
