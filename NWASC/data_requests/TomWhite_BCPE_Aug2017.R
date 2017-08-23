@@ -1,9 +1,6 @@
 # ------------------------ #
 # combine old and new seabird catalog data
 # pull out black-capped petrel observations
-
-# in progress
-
 # ------------------------ #
 
 
@@ -136,13 +133,254 @@ data$lon[data$observation_id %in% c(787484,802769,789131)] = NA
 data$lon[data$observation_id %in% c(353280,353407,353404,787484,802769,54980,789131)] = data$lat[data$observation_id %in% c(353280,353407,353404,787484,802769,54980,789131)]
 data$lat[data$observation_id %in% c(353280,353407,353404,787484,802769,54980,789131)] = NA
 
-data = data %>% mutate(lon = replace(lon[is.na(lon)],is.na(lon),temp_lon[is.na(lon)]),
-                       lat = replace(lat[is.na(lat)],is.na(lat),temp_lat[is.na(lat)]),
-                       lon = as.numeric(lon), lat = as.numeric(lat)) %>%
+data$obs_count_general_nb[data$dataset_id %in% c(23,174) & !is.na(data$obs_count_intrans_nb)]=NA
+
+data = data %>% mutate(lon = ifelse(is.na(lon),temp_lon,lon),
+                       lat = ifelse(is.na(lat),temp_lat,lat),
+                       lon = as.numeric(lon), lat = as.numeric(lat)) %>% 
+  rowwise() %>% mutate(total_count = sum(obs_count_general_nb,obs_count_intrans_nb,na.rm=TRUE)) %>%
   dplyr::select(-temp_lat, -temp_lon, -who_created, -who_created_tx)
 
-# filter out transects that are in this data
 
+# fix dates to be the same format
+data$obs_dt[grepl("/",data$obs_dt)] = as.character(as.Date(data$obs_dt[grepl("/",data$obs_dt)],format="%m/%d/%Y"))
+
+# create year variable due to users intent for data use and select those of interest
+data = mutate(data, year = substr(obs_dt, 1, 4),
+              month = as.numeric(substr(obs_dt, 6, 7)),
+              season = ifelse(month %in% 3:5, "spring",
+                              ifelse(month %in% 6:8, "summer",
+                                     ifelse(month %in% 9:11, "fall","winter")))) %>% 
+  dplyr::select(observation_id, dataset_id, source_dataset_id, transect_id, 
+                obs_dt, year, month, season, obs_count_intrans_nb, obs_count_general_nb,
+                total_count, lat, lon)
+
+# filter out transects that are in this data
+track_data = filter(track_data, transect_id %in% unique(data$transect_id))
+transect_data = filter(transect_data, transect_id %in% unique(data$transect_id))
+
+# filter out datasets
+datasets = filter(data.in.db, dataset_id %in% unique(data$dataset_id)) %>% 
+  dplyr::select(dataset_id, survey_type_cd, survey_method_cd, dataset_type_cd, 
+                source_dataset_id, survey_width_m, individual_observation_width_m, 
+                start_date, end_date, parent_project, qual_rpt, meta_std, resp_party, 
+                comments, url_program,subject, keywords, title, version, abstract, purpose)
+# ------------------------ #
+
+
+# ------------------------ #
+# summarize data
+# They are interested in total sightings/year within the survey area. 
+# Also, a helpful metric would be total days surveyed or sampled each of those years. 
+# This would help us to determine (or at least account for) if any changes in petrel 
+# numbers from one year to another was due to real population changes, or perhaps a result of 
+# increased/decreased survey effort(s).
+# ------------------------ #
+
+# number by year
+x = data %>%
+  group_by(year) %>% 
+  summarise(mean_count_intrans=mean(obs_count_intrans_nb), var_count_intrans = var(obs_count_intrans_nb), sd_count_intrans = sd(obs_count_intrans_nb), 
+            mean_count_ingeneral=mean(obs_count_general_nb), var_count_ingeneral = var(obs_count_general_nb), sd_count_ingeneral = sd(obs_count_general_nb),
+            mean_count_total=mean(total_count), var_count_total = var(total_count), sd_count_total = sd(total_count),
+            sum_count_intrans=sum(obs_count_intrans_nb,na.rm=TRUE), 
+            sum_count_general = sum(obs_count_general_nb,na.rm=TRUE), 
+            sum_count_total = sum(total_count,na.rm=TRUE),
+            sum_days = length(unique(paste(obs_dt,dataset_id)))) 
+
+ggplot(data, aes(year,obs_count_intrans_nb,fill=year))+
+  geom_boxplot()+
+  guides(fill=FALSE)+
+  xlab("year")+
+  ylab("count")+
+  ggtitle("mean count per year on transect, not normalized by effort, y-axis cut at 25")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  coord_cartesian(ylim = c(0,25))
+
+ggplot(data, aes(year,obs_count_general_nb,fill=year))+
+  geom_boxplot()+
+  guides(fill=FALSE)+
+  xlab("year")+
+  ylab("count")+
+  ggtitle("mean count per year off transect, not normalized by effort, y-axis cut at 25")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  coord_cartesian(ylim = c(0,25))
+
+ggplot(data, aes(year,total_count,fill=year))+
+  geom_boxplot()+
+  guides(fill=FALSE)+
+  xlab("year")+
+  ylab("count")+
+  ggtitle("mean count per year total, not normalized by effort, y-axis cut at 25")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  coord_cartesian(ylim = c(0,25))
+
+ggplot(x, aes(year,sum_count_general))+
+  geom_bar(stat="identity")+
+  xlab("year")+
+  ylab("count")+
+  ggtitle("total counts per year off transect, not normalized by effort")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(x, aes(year,sum_count_intrans))+
+  geom_bar(stat="identity")+
+  xlab("year")+
+  ylab("count")+
+  ggtitle("total counts per year on transect, not normalized by effort")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(x, aes(year,sum_count_total))+
+  geom_bar(stat="identity")+
+  xlab("year")+
+  ylab("count")+
+  ggtitle("total counts per year, not normalized by effort")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(x, aes(year,sum_days))+
+  geom_bar(stat="identity")+
+  xlab("year")+
+  ylab("count")+
+  ggtitle("total days surveys per year")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# by season
+x = data %>% 
+  group_by(season) %>% 
+  summarise(mean_count_intrans=mean(obs_count_intrans_nb, na.rm=TRUE), var_count_intrans = var(obs_count_intrans_nb, na.rm=TRUE), sd_count_intrans = sd(obs_count_intrans_nb, na.rm=TRUE), 
+            mean_count_ingeneral=mean(obs_count_general_nb, na.rm=TRUE), var_count_ingeneral = var(obs_count_general_nb, na.rm=TRUE), sd_count_ingeneral = sd(obs_count_general_nb, na.rm=TRUE),
+            mean_count_total=mean(total_count, na.rm=TRUE), var_count_total = var(total_count, na.rm=TRUE), sd_count_total = sd(total_count, na.rm=TRUE),
+            sum_count_intrans=sum(obs_count_intrans_nb, na.rm=TRUE), 
+            sum_count_general = sum(obs_count_general_nb, na.rm=TRUE), 
+            sum_count_total = sum(total_count, na.rm=TRUE),
+            sum_days = length(unique(paste(obs_dt,dataset_id)))) 
+
+ggplot(data, aes(season,obs_count_intrans_nb,fill=season))+
+  geom_boxplot()+
+  guides(fill=FALSE)+
+  xlab("season")+
+  ylab("count")+
+  ggtitle("mean count per season on transect, not normalized by effort, y-axis cut at 10")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  coord_cartesian(ylim = c(0,10))
+
+ggplot(data, aes(season,obs_count_general_nb,fill=season))+
+  geom_boxplot()+
+  guides(fill=FALSE)+
+  xlab("season")+
+  ylab("count")+
+  ggtitle("mean count per season off transect, not normalized by effort, y-axis cut at 20")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  coord_cartesian(ylim = c(0,20))
+
+ggplot(data, aes(season,total_count,fill=season))+
+  geom_boxplot()+
+  guides(fill=FALSE)+
+  xlab("season")+
+  ylab("count")+
+  ggtitle("mean count per season total, not normalized by effort, y-axis cut at 15")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  coord_cartesian(ylim = c(0,15))
+
+ggplot(x, aes(season,sum_count_general))+
+  geom_bar(stat="identity")+
+  xlab("season")+
+  ylab("count")+
+  ggtitle("total counts per season off transect, not normalized by effort")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(x, aes(season,sum_count_intrans))+
+  geom_bar(stat="identity")+
+  xlab("season")+
+  ylab("count")+
+  ggtitle("total counts per season on transect, not normalized by effort")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(x, aes(season,sum_count_total))+
+  geom_bar(stat="identity")+
+  xlab("season")+
+  ylab("count")+
+  ggtitle("total counts per season, not normalized by effort")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(x, aes(season,sum_days))+
+  geom_bar(stat="identity")+
+  xlab("season")+
+  ylab("count")+
+  ggtitle("total days surveyed per seaon")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# by year by season
+x = data %>% 
+  group_by(year, season) %>% 
+  summarise(mean_count_intrans=mean(obs_count_intrans_nb, na.rm=TRUE), var_count_intrans = var(obs_count_intrans_nb, na.rm=TRUE), sd_count_intrans = sd(obs_count_intrans_nb, na.rm=TRUE), 
+            mean_count_ingeneral=mean(obs_count_general_nb, na.rm=TRUE), var_count_ingeneral = var(obs_count_general_nb, na.rm=TRUE), sd_count_ingeneral = sd(obs_count_general_nb, na.rm=TRUE),
+            mean_count_total=mean(total_count, na.rm=TRUE), var_count_total = var(total_count, na.rm=TRUE), sd_count_total = sd(total_count, na.rm=TRUE),
+            sum_count_intrans=sum(obs_count_intrans_nb, na.rm=TRUE), 
+            sum_count_general = sum(obs_count_general_nb, na.rm=TRUE), 
+            sum_count_total = sum(total_count, na.rm=TRUE),
+            sum_days = length(unique(paste(obs_dt,dataset_id))))  
+
+ggplot(data, aes(year,obs_count_intrans_nb,fill=season))+
+  geom_boxplot()+
+  guides(fill=FALSE)+
+  facet_wrap(~as.factor(season), nrow=4)+
+  xlab("year")+
+  ylab("count")+
+  ggtitle("mean count per season on transect, not normalized by effort, y-axis cut at 20")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  coord_cartesian(ylim = c(0,20))
+
+ggplot(data, aes(year,obs_count_general_nb,fill=season))+
+  geom_boxplot()+
+  guides(fill=FALSE)+
+  facet_wrap(~as.factor(season), nrow=4)+
+  xlab("year")+
+  ylab("count")+
+  ggtitle("mean count per season off transect, not normalized by effort, y-axis cut at 30")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  coord_cartesian(ylim = c(0,30))
+
+ggplot(data, aes(year,total_count,fill=season))+
+  geom_boxplot()+
+  guides(fill=FALSE)+
+  facet_wrap(~as.factor(season), nrow=4)+
+  xlab("year")+
+  ylab("count")+
+  ggtitle("mean count per season, not normalized by effort, y-axis cut at 30")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  coord_cartesian(ylim = c(0,30))
+
+ggplot(x, aes(year,sum_count_intrans))+
+  geom_bar(stat="identity")+
+  facet_wrap(~as.factor(season), nrow=4)+
+  xlab("year")+
+  ylab("count")+
+  ggtitle("total counts per season on transect, not normalized by effort")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(x, aes(year,sum_count_general))+
+  geom_bar(stat="identity")+
+  facet_wrap(~as.factor(season), nrow=4)+
+  xlab("year")+
+  ylab("count")+
+  ggtitle("total counts per season off transect, not normalized by effort")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(x, aes(year,sum_count_total))+
+  geom_bar(stat="identity")+
+  facet_wrap(~as.factor(season), nrow=4)+
+  xlab("year")+
+  ylab("count")+
+  ggtitle("total counts per season, not normalized by effort")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(x, aes(year,sum_days))+
+  geom_bar(stat="identity")+
+  facet_wrap(~as.factor(season), nrow=4)+
+  xlab("year")+
+  ylab("count")+
+  ggtitle("total days surveyed per season by year")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 # ------------------------ #
 
 
@@ -152,39 +390,8 @@ data = data %>% mutate(lon = replace(lon[is.na(lon)],is.na(lon),temp_lon[is.na(l
 write.csv(data, paste(dir.out, "observations.csv", sep="/"), row.names=FALSE)
 write.csv(track_data, paste(dir.out, "tracks.csv", sep="/"), row.names=FALSE)
 write.csv(transect_data, paste(dir.out, "transects.csv", sep="/"), row.names=FALSE)
-write.csv(data.in.db, paste(dir.out, "datasets.csv", sep="/"), row.names=FALSE)
+write.csv(datasets, paste(dir.out, "datasets.csv", sep="/"), row.names=FALSE)
 
-rm(old_transects, transects.in.db, transect_data, old_transect_lines, old_transect_points, data.in.db)
-
-# remove NA's
-obs_data = obs_data[!is.na(obs_data$temp_lat),]
-obs_data = obs_data[!is.na(obs_data$temp_lon),]
-
-track_data = track_data[!is.na(track_data$track_lat),]
+rm(old_transects, transects.in.db, transect_data, old_transect_lines, old_transect_points, 
+   data.in.db, obs.in.db, tracks.in.db, old_obs, obs_data)
 # ------------------------ #
-
-
-# ------------------------ #
-# make shapefiles
-# ------------------------ #
-# Coerce into SpatialPointsDataframe
-coordinates(data) = ~temp_lon + temp_lat
-coordinates(tracks.in.db) = ~track_lon + track_lat
-coordinates(track_data) = ~track_lon + track_lat
-
-# Assign projection
-proj4string(data)=CRS("+proj=longlat +datum=WGS84") 
-proj4string(tracks.in.db)=CRS("+proj=longlat +datum=WGS84") 
-proj4string(track_data)=CRS("+proj=longlat +datum=WGS84") 
-
-# write shapefile
-writeOGR(obj=data, dsn=dir.out, layer="all_obs_data", driver="ESRI Shapefile") 
-writeOGR(obj=tracks.in.db, dsn=dir.out, layer="new_track_data", driver="ESRI Shapefile") 
-writeOGR(obj=track_data, dsn=dir.out, layer="all_track_data_as_points", driver="ESRI Shapefile") 
-# old line and point track files will also be in the folder 
-# since they might be easier to work with 
-# ------------------------ #
-
-
-
-
