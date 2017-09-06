@@ -1,3 +1,10 @@
+##--------------------------##
+# fixing errors in AMAPPS 2017 08 data
+##--------------------------##
+
+
+##--------------------------##
+## Pilot notes
 ##Non-standard species or codes:		
 #Code	Description	
 # MOMO	Mola Mola Ocean Sunfish	
@@ -17,9 +24,12 @@
 # Note: Did not record the ENDSEG for 415100.															
 # Note: Called the end of 415101 about 1/2 mile late.															
 # Note: Cut off the West end of 412101 (ended early) which overlies Martha's Vineyard.															
+##--------------------------##
 
-# FIXING ERRORS IN THE AMAPPS 2013 09 DATA
 
+##--------------------------##
+# species errors
+##--------------------------##
 # DataChange comments for spp_cd errors
 changes = c("TRAWL","MOMO","WIDO","NOGAA,NOGAI")
 for (a in 1:length(changes)) {
@@ -30,7 +40,17 @@ for (a in 1:length(changes)) {
 rm(changes, a)
 
 # CODE ERRORS
-obs$type[obs$type %in% "TRAWL" & obs$comment %in% "lobster boat"] = "BOLO"
+obs$original.spp.codes = obs$type
+
+obs$type[obs$type %in% "TRAWL" & obs$comment %in% c("lobster boat","400, lobster boat",
+                                                    "300,lobster boat",
+                                                    "600, lobster boat no birds following",
+                                                    "lobster boat no birds following",
+                                                    "lobster boat with 3 HEGU fowing")] = "BOLO"
+obs$type[obs$type %in% "TRAWL" & obs$comment %in% c("fishing birds following",
+                                                    "fishing with gannets and gulls following")] = "BOFI"
+
+obs$type[obs$type %in% "TRAWL"] = "BOTD"
 obs$type[obs$type %in% "MOMO"] = "MOLA"
 obs$type[obs$type %in% "WIDO"]	= "WSDO"
 
@@ -40,8 +60,12 @@ obs$type[obs$type %in% c("NOGAA, NOGAI")] = "NOGA"
 
 
 message("Fixed AOU codes")
+##--------------------------##
 
+
+##--------------------------##
 ## other errors
+##--------------------------##
 #behavior
 obs$behavior[obs$comment %in% c("f","s","F","S") & obs$behavior %in% ""] = obs$comment[obs$comment %in% c("f","s","F","S") & obs$behavior %in% ""]
 obs$behavior[obs$comment %in% c("300,F, following lobster boat",
@@ -94,3 +118,4 @@ obs$distance.to.obs[obs$comment %in% c("600",
                                           "600, lobster boat no birds following",
                                           "600,S,adult, following trawler")] = 600                                          
 obs$distance.to.obs[obs$comment %in% c("700")] = 700
+##--------------------------##
