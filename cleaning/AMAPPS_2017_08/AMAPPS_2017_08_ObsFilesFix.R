@@ -5,15 +5,17 @@
 
 ##--------------------------##
 ## Pilot notes
-##Non-standard species or codes:		
-#Code	Description	
+
+## Crew 4446
+## Non-standard species or codes:		
+# Code	Description	
 # MOMO	Mola Mola Ocean Sunfish	
 #	NOGA adult	Note that Koneff did not record age class on Aug 18, and only Koneff used these codes.  TPW put age class in comments.
 # NOGAi	NOGA immature 	Note that Koneff did not record age class on Aug 18, and only Koneff used these codes.  TPW put age class in comments.
 # UNSK	Unknown Skua	
 # WIDO	White-sided Dolphin	
 # FIWH	Fin Whale	
-##Other relevant information and comments:															
+## Other relevant information and comments:															
 # Note:  started slightly offshore on numerous transects due to coastal development.															
 # Note:  distances to Trawlers (fishing vessels) is shown in meters from transect centerline.															
 # Note:  MDK had no BEGSEG for 444100															
@@ -64,7 +66,7 @@ message("Fixed AOU codes")
 
 
 ##--------------------------##
-## other errors
+## fill in other fields from comments
 ##--------------------------##
 #behavior
 obs$behavior[obs$comment %in% c("f","s","F","S") & obs$behavior %in% ""] = obs$comment[obs$comment %in% c("f","s","F","S") & obs$behavior %in% ""]
@@ -118,4 +120,59 @@ obs$distance.to.obs[obs$comment %in% c("600",
                                           "600, lobster boat no birds following",
                                           "600,S,adult, following trawler")] = 600                                          
 obs$distance.to.obs[obs$comment %in% c("700")] = 700
+##--------------------------##
+
+
+##--------------------------##
+# fix transects errors
+##--------------------------##
+# MDK had no BEGSEG for 444100
+to.add = obs[obs$transect %in% 444100 & obs$obs %in% "tpw" & obs$type %in% "BEGSEG",]
+to.add$obs = "mdk"
+to.add$comment = "added from tpw's record"
+to.add$index = NA
+obs = rbind(obs, to.add)
+
+# MDK did not record ENDCNT/BEGCNT when going over land on 442601 
+to.add = obs[obs$transect %in% 442601 & obs$obs %in% "tpw" & obs$type %in% "BEGSEG",]
+to.add$obs = "mdk"
+to.add$comment = "added from tpw's record"
+to.add$index = NA
+obs = rbind(obs, to.add)
+
+# TPW missed start point for 423100, use MDK's	
+to.add = obs[obs$transect %in% 423100 & obs$obs %in% "mdk" & obs$type %in% "BEGSEG",]
+to.add$obs = "tpw"
+to.add$comment = "added from mdk's record"
+to.add$index = NA
+obs = rbind(obs, to.add)
+
+# Note: Did not record the ENDSEG for 415100.	
+to.add = obs[obs$transect %in% 415100 & obs$obs %in% "tpw" & obs$type %in% "ENDSEG",]
+to.add$obs = "mdk"
+to.add$comment = "added from tpw's record"
+to.add$index = NA
+obs = rbind(obs, to.add)
+rm(to.add)
+# Note: Called the end of 415101 about 1/2 mile late.
+##--------------------------##
+
+
+##--------------------------##
+# fix errors
+##--------------------------##
+
+## counts
+obs$count[obs$count %in% c("1.1.f","1.2.f.adult")] = 1
+obs = obs[obs$obs %in% "mdk" && !obs$count %in% "",]
+
+# investigate high counts
+x = obs[as.numeric(obs$count) > 100 & !obs$type %in% c("BEGSEG","ENDSEG","BEGCNT","ENDCNT","COCH"),]
+obs$distance.to.obs[obs$type %in% "BOTD" & obs$obs %in% "tpw" & obs$count %in% "200"] = 200
+obs$count[obs$type %in% "BOTD" & obs$obs %in% "tpw" & obs$count %in% "200"] = 1
+rm(x)
+
+## dates
+# mdk uses 5 instead of 8
+obs$month[obs$obs %in% "mdk"] = 8
 ##--------------------------##
