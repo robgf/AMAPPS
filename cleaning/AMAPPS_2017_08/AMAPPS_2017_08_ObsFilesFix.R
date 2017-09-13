@@ -32,17 +32,17 @@
 ##--------------------------##
 # species errors
 ##--------------------------##
-# DataChange comments for spp_cd errors
-changes = c("TRAWL","MOMO","WIDO","NOGAA,NOGAI")
-for (a in 1:length(changes)) {
-  obs$dataChange[which(obs$type == changes[a])] = 
-    paste(obs$dataChange[which(obs$type == changes[a])],
-          "; Changed TYPE from ", changes[a], sep ="") 
-}
-rm(changes, a)
-
-# CODE ERRORS
+obs$type = as.vector(obs$type)
 obs$original.spp.codes = obs$type
+
+db <- odbcConnectAccess2007("//ifw-hqfs1/MB SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
+spplist <- sqlFetch(db, "lu_species")
+odbcClose(db)
+
+tmp <- !obs$type %in% spplist$spp_cd
+message("Found ", sum(tmp), " entries with non-matching AOU codes")
+sort(unique(obs$type[tmp]))
+rm(spplist)
 
 obs$type[obs$type %in% "TRAWL" & obs$comment %in% c("lobster boat","400, lobster boat",
                                                     "300,lobster boat",
@@ -52,16 +52,39 @@ obs$type[obs$type %in% "TRAWL" & obs$comment %in% c("lobster boat","400, lobster
 obs$type[obs$type %in% "TRAWL" & obs$comment %in% c("fishing birds following",
                                                     "fishing with gannets and gulls following")] = "BOFI"
 
+obs$type[obs$type %in% "BIRD"] = "UNBI"
+obs$type[obs$type %in% "BODU"] = ""    #*******
+obs$type[obs$type %in% "DDCO"] = "DCCO"  #?  
+obs$type[obs$type %in% "DOLP"] = "UNDO"    
+obs$type[obs$type %in% "DUCK"] = "UNDU"    
+obs$type[obs$type %in% "HEGU"] = "HERG"      
+obs$type[obs$type %in% "LEST"] = "LETU"      
+obs$type[obs$type %in% "LHSP"] = "LESP"      
+obs$type[obs$type %in% "SEAL"] = "UNSE"      
+obs$type[obs$type %in% "UNSB"] = "SHOR"   
+obs$type[obs$type %in% "UNTU"] = "TURT"   
+obs$type[obs$type %in% "WHAL"] = "UNWH"      
+obs$type[obs$type %in% "WSIP"] = "WISP"  
 obs$type[obs$type %in% "TRAWL"] = "BOTD"
 obs$type[obs$type %in% "MOMO"] = "MOLA"
-obs$type[obs$type %in% "WIDO"]	= "WSDO"
+obs$type[obs$type %in% "WIDO"] = "WSDO"
+obs$type[obs$type %in% "SALPEN"]	= "SPEN"
 
 obs$age[obs$type %in% c("NOGAA")] = "adult"
 obs$age[obs$type %in% c("NOGAI")] = "immature"
-obs$type[obs$type %in% c("NOGAA, NOGAI")] = "NOGA"
+obs$type[obs$type %in% c("NOGAA", "NOGAI")] = "NOGA"
 
+tmp = obs$type != obs$original.spp.codes
+obs$dataChange[tmp] = paste(obs$dataChange[tmp], "; changed TYPE from ", obs$original.spp.codes[tmp], sep = "")
+rm(tmp, old)
 
+obs$type[obs$type %in% "COMMENT" & obs$comment %in% c("lobster gear hundreds of pots",
+                                                      "lobster gear everywhere")] = "FGLO"
+  
 message("Fixed AOU codes")
+
+## remove duplicate fields
+
 ##--------------------------##
 
 
@@ -154,7 +177,24 @@ to.add$comment = "added from tpw's record"
 to.add$index = NA
 obs = rbind(obs, to.add)
 rm(to.add)
+
 # Note: Called the end of 415101 about 1/2 mile late.
+
+# 441100 missing 2 ends or typo for beg
+obs$type[obs$transect %in% 441100 & obs$obs %in% "tpw" & obs$sec %in% c(61518.03, 62576.77)] = "REMOVE"
+
+# 442602 typo for beg
+obs$type[obs$transect %in% 442602 & obs$obs %in% "mdk" & obs$sec %in% 37227.20] = "BEGSEG"
+
+# 443100 double end
+obs$type[obs$transect %in% 443100 & obs$obs %in% "tpw" & obs$sec %in% 35851.50] = "REMOVE"
+
+# 444600 double end
+obs$type[obs$transect %in% 444600 & obs$obs %in% "tpw" & 
+           obs$sec %in% 31284.55 & obs$type %in% "ENDCNT"] = "REMOVE"
+
+# remove dublicates coded as remove
+obs = filter(obs, !type %in% "REMOVE")
 ##--------------------------##
 
 
@@ -164,15 +204,18 @@ rm(to.add)
 
 ## counts
 obs$count[obs$count %in% c("1.1.f","1.2.f.adult")] = 1
-obs = obs[obs$obs %in% "mdk" && !obs$count %in% "",]
+obs = filter(obs, !count %in% "")
 
-# investigate high counts
-x = obs[as.numeric(obs$count) > 100 & !obs$type %in% c("BEGSEG","ENDSEG","BEGCNT","ENDCNT","COCH"),]
+## investigate high counts
+#x = obs[as.numeric(obs$count) > 100 & !obs$type %in% c("BEGSEG","ENDSEG","BEGCNT","ENDCNT","COCH"),]
 obs$distance.to.obs[obs$type %in% "BOTD" & obs$obs %in% "tpw" & obs$count %in% "200"] = 200
 obs$count[obs$type %in% "BOTD" & obs$obs %in% "tpw" & obs$count %in% "200"] = 1
-rm(x)
+#rm(x)
 
 ## dates
 # mdk uses 5 instead of 8
 obs$month[obs$obs %in% "mdk"] = 8
+
+## change meters to nm
+obs$distance.to.obs[obs$obs %in% c("tpw","mdk")] = obs$distance.to.obs[obs$obs %in% c("tpw","mdk")] * 0.000539957
 ##--------------------------##
