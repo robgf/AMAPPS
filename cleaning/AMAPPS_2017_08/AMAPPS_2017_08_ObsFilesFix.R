@@ -32,7 +32,7 @@
 ##--------------------------##
 # species errors
 ##--------------------------##
-obs$type = as.vector(obs$type)
+obs$type = as.vector(obs$type) # not sure why this is coming in as a matrix - need to check
 obs$original.spp.codes = obs$type
 
 db <- odbcConnectAccess2007("//ifw-hqfs1/MB SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
@@ -53,8 +53,8 @@ obs$type[obs$type %in% "TRAWL" & obs$comment %in% c("fishing birds following",
                                                     "fishing with gannets and gulls following")] = "BOFI"
 
 obs$type[obs$type %in% "BIRD"] = "UNBI"
-obs$type[obs$type %in% "BODU"] = ""    #*******
-obs$type[obs$type %in% "DDCO"] = "DCCO"  #?  
+obs$type[obs$type %in% "BODU"] = "BODO"   
+obs$type[obs$type %in% "DDCO"] = "DCCO"  
 obs$type[obs$type %in% "DOLP"] = "UNDO"    
 obs$type[obs$type %in% "DUCK"] = "UNDU"    
 obs$type[obs$type %in% "HEGU"] = "HERG"      
@@ -76,11 +76,14 @@ obs$type[obs$type %in% c("NOGAA", "NOGAI")] = "NOGA"
 
 tmp = obs$type != obs$original.spp.codes
 obs$dataChange[tmp] = paste(obs$dataChange[tmp], "; changed TYPE from ", obs$original.spp.codes[tmp], sep = "")
-rm(tmp, old)
+rm(tmp)
 
+# pull out type for useful comments
+# change comment codes with no text in comment to remove -> will be removed in transects
 obs$type[obs$type %in% "COMMENT" & obs$comment %in% c("lobster gear hundreds of pots",
                                                       "lobster gear everywhere")] = "FGLO"
-  
+obs = mutate(obs, type = replace(type, type %in% "COMMENT","REMOVE"))
+
 message("Fixed AOU codes")
 
 ## remove duplicate fields
@@ -150,38 +153,50 @@ obs$distance.to.obs[obs$comment %in% c("700")] = 700
 # fix transects errors
 ##--------------------------##
 # MDK had no BEGSEG for 444100
+obs$type[obs$transect %in% 444100 & obs$obs %in% "tpw" & obs$type %in% "BEGCNT" & obs$sec %in% 31483.70]="BEGSEG"
 to.add = obs[obs$transect %in% 444100 & obs$obs %in% "tpw" & obs$type %in% "BEGSEG",]
 to.add$obs = "mdk"
 to.add$comment = "added from tpw's record"
 to.add$index = NA
+to.add$seat = "lf"
 obs = rbind(obs, to.add)
 
 # MDK did not record ENDCNT/BEGCNT when going over land on 442601 
+obs$type[obs$transect %in% 442601 & obs$obs %in% "tpw" & obs$type %in% "BEGCNT" & obs$sec %in% 38768.43] = "BEGSEG"
 to.add = obs[obs$transect %in% 442601 & obs$obs %in% "tpw" & obs$type %in% "BEGSEG",]
 to.add$obs = "mdk"
 to.add$comment = "added from tpw's record"
 to.add$index = NA
+to.add$seat = "lf"
 obs = rbind(obs, to.add)
 
 # TPW missed start point for 423100, use MDK's	
+obs$type[obs$transect %in% 423100 & obs$obs %in% "mdk" & obs$type %in% "BEGCNT"] = "BEGSEG"
 to.add = obs[obs$transect %in% 423100 & obs$obs %in% "mdk" & obs$type %in% "BEGSEG",]
 to.add$obs = "tpw"
 to.add$comment = "added from mdk's record"
 to.add$index = NA
+to.add$seat = "rf"
 obs = rbind(obs, to.add)
 
 # Note: Did not record the ENDSEG for 415100.	
+obs$type[obs$transect %in% 415100 & obs$obs %in% "tpw" & obs$type %in% "BEGCNT"] = "BEGSEG"
+obs$type[obs$transect %in% 415100 & obs$obs %in% "tpw" & obs$type %in% "ENDCNT"] = "ENDSEG"
 to.add = obs[obs$transect %in% 415100 & obs$obs %in% "tpw" & obs$type %in% "ENDSEG",]
 to.add$obs = "mdk"
 to.add$comment = "added from tpw's record"
 to.add$index = NA
+to.add$seat = "lf"
 obs = rbind(obs, to.add)
 rm(to.add)
 
 # Note: Called the end of 415101 about 1/2 mile late.
 
-# 441100 missing 2 ends or typo for beg
+# 441100 
+#missing 2 ends or typo for beg
 obs$type[obs$transect %in% 441100 & obs$obs %in% "tpw" & obs$sec %in% c(61518.03, 62576.77)] = "REMOVE"
+#change ENDCNT to END SEG
+obs$type[obs$transect %in% 444100 & obs$obs %in% "mdk" & obs$type %in% "ENDCNT" & obs$sec %in% 32331.37]="ENDSEG" 
 
 # 442602 typo for beg
 obs$type[obs$transect %in% 442602 & obs$obs %in% "mdk" & obs$sec %in% 37227.20] = "BEGSEG"
@@ -193,8 +208,23 @@ obs$type[obs$transect %in% 443100 & obs$obs %in% "tpw" & obs$sec %in% 35851.50] 
 obs$type[obs$transect %in% 444600 & obs$obs %in% "tpw" & 
            obs$sec %in% 31284.55 & obs$type %in% "ENDCNT"] = "REMOVE"
 
+#change ENDCNT to END SEG
+obs$type[obs$transect %in% 411601 & obs$obs %in% "mdk" & obs$type %in% "ENDCNT"]="ENDSEG" 
+
 # remove dublicates coded as remove
 obs = filter(obs, !type %in% "REMOVE")
+
+# change offline obs transects to NA
+obs = mutate(obs, offline = ifelse(offline %in% "y", 1, 0),
+             transect = replace(transect, transect %in% c("0","000000"),NA),
+             transect = ifelse(offline %in% 1, NA, transect))
+
+message("Fixed transect errors")
+## descriptive plots
+#ggplot(filter(obs,obs %in% "mdk"), aes(long,lat,col=transect))+geom_point()
+
+#ggplot(filter(obs,obs %in% "mdk", type %in% c("BEGCNT","ENDCNT","BEGSEG","ENDSEG")), 
+#       aes(long,lat,col=type))+geom_point()+geom_text(aes(label=transect),hjust=0, vjust=0)
 ##--------------------------##
 
 
@@ -204,6 +234,7 @@ obs = filter(obs, !type %in% "REMOVE")
 
 ## counts
 obs$count[obs$count %in% c("1.1.f","1.2.f.adult")] = 1
+obs$count[obs$count %in% "0"] = NA
 obs = filter(obs, !count %in% "")
 
 ## investigate high counts
@@ -215,7 +246,12 @@ obs$count[obs$type %in% "BOTD" & obs$obs %in% "tpw" & obs$count %in% "200"] = 1
 ## dates
 # mdk uses 5 instead of 8
 obs$month[obs$obs %in% "mdk"] = 8
+obs = mutate(obs, date = as.Date(paste(month, day, year, sep="/"),format="%m/%d/%Y"))
 
 ## change meters to nm
 obs$distance.to.obs[obs$obs %in% c("tpw","mdk")] = obs$distance.to.obs[obs$obs %in% c("tpw","mdk")] * 0.000539957
+
+## condition
+
+message("Fixed other errors")
 ##--------------------------##
