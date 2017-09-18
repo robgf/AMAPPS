@@ -62,14 +62,16 @@ obs$type[obs$type %in% "LEST"] = "LETU"
 obs$type[obs$type %in% "LHSP"] = "LESP"      
 obs$type[obs$type %in% "SEAL"] = "UNSE"      
 obs$type[obs$type %in% "UNSB"] = "SHOR"   
-obs$type[obs$type %in% "UNTU"] = "TURT"   
+obs$type[obs$type %in% c("UIST","UNTU")] = "TURT"   
 obs$type[obs$type %in% "WHAL"] = "UNWH"      
 obs$type[obs$type %in% "WSIP"] = "WISP"  
 obs$type[obs$type %in% "TRAWL"] = "BOTD"
 obs$type[obs$type %in% "MOMO"] = "MOLA"
 obs$type[obs$type %in% "WIDO"] = "WSDO"
 obs$type[obs$type %in% "SALPEN"]	= "SPEN"
-
+obs$type[obs$type %in% "GULL"]	= "UNGU"    
+obs$type[obs$type %in% "HTOWR"]	= "TOWR"   
+obs$type[obs$type %in% "LOST"]	= "LOTU"    
 obs$age[obs$type %in% c("NOGAA")] = "adult"
 obs$age[obs$type %in% c("NOGAI")] = "immature"
 obs$type[obs$type %in% c("NOGAA", "NOGAI")] = "NOGA"
@@ -218,6 +220,15 @@ obs = filter(obs, !type %in% "REMOVE")
 obs = mutate(obs, offline = ifelse(offline %in% "y", 1, 0),
              transect = replace(transect, transect %in% c("0","000000"),NA),
              transect = ifelse(offline %in% 1, NA, transect))
+
+# jsw 324600, switch BEG and END
+obs$type[obs$obs %in% "jsw" & obs$transect %in% 324600 & obs$sec %in% 55539.87] = "ENDCNT"
+obs$type[obs$obs %in% "jsw" & obs$transect %in% 324600 & obs$sec %in% 55239.01] = "BEGCNT"
+  
+# jsw missing transects
+obs$transect[obs$obs %in% "jsw"] = NA # currently "null"
+obs$transect[obs$obs %in% "jsw" & obs$type %in% c("BEGCNT","ENDCNT")] = obs$count[obs$obs %in% "jsw" & obs$type %in% c("BEGCNT","ENDCNT")]
+obs$transect[obs$obs %in% "jsw"] = na.locf(obs$transect[obs$obs %in% "jsw"]) #all offline are na so dont need to change transects to NA for offline yet
 
 message("Fixed transect errors")
 ## descriptive plots
