@@ -221,18 +221,40 @@ obs = mutate(obs, offline = ifelse(offline %in% "y", 1, 0),
              transect = replace(transect, transect %in% c("0","000000"),NA),
              transect = ifelse(offline %in% 1, NA, transect))
 
-# jsw 324600, switch BEG and END
-obs$type[obs$obs %in% "jsw" & obs$transect %in% 324600 & obs$sec %in% 55539.87] = "ENDCNT"
-obs$type[obs$obs %in% "jsw" & obs$transect %in% 324600 & obs$sec %in% 55239.01] = "BEGCNT"
-  
+# missing transects (NAs)
+# tpw 434100
+# tpw 433600
+# tpw 430600
+# tpw 424100 add Beg?
+# tpw 8/24 40522.50: 40610.21 -> all off transect counts by mdk times. 414101 ends at 40522.35
+# twp 412101
+
 # jsw missing transects
+obs$offline[obs$obs %in% "jsw"] = 0 # no offline indicated
+obs$offline[obs$obs %in% "jsw" & 
+              obs$sec %in% c(49480.29,50794.27,50833.73,32384.48,35213.19,39706.75) & 
+              obs$type  %in% "TOWR"] = 1
 obs$transect[obs$obs %in% "jsw"] = NA # currently "null"
 obs$transect[obs$obs %in% "jsw" & obs$type %in% c("BEGCNT","ENDCNT")] = obs$count[obs$obs %in% "jsw" & obs$type %in% c("BEGCNT","ENDCNT")]
-obs$transect[obs$obs %in% "jsw"] = na.locf(obs$transect[obs$obs %in% "jsw"]) #all offline are na so dont need to change transects to NA for offline yet
+obs$transect[obs$obs %in% "jsw" & obs$offline %in% 0] = na.locf(obs$transect[obs$obs %in% "jsw" & obs$offline %in% 0]) #all offline are na so dont need to change transects to NA for offline yet
+
+# jsw 324600, switch BEG and END
+obs$type[obs$obs %in% "jsw" & obs$transect %in% "324600" & obs$sec %in% 55539.87] = "ENDCNT"
+obs$type[obs$obs %in% "jsw" & obs$transect %in% "324600" & obs$sec %in% 55239.01] = "BEGCNT"
+
+if(any(is.na(obs$transect[obs$offline %in% 0]))){
+  message("missing transect number for on transect record")}
+
+if(any(!is.na(obs$transect[obs$offline %in% 1]))){
+  message("remove transect number for offline record")}
 
 message("Fixed transect errors")
+
 ## descriptive plots
 #ggplot(filter(obs,obs %in% "mdk"), aes(long,lat,col=transect))+geom_point()
+
+#ggplot(filter(obs,obs %in% "mdk", type %in% c("BEGCNT","ENDCNT","BEGSEG","ENDSEG")), 
+#       aes(long,lat,col=transect))+geom_point()+geom_text(aes(label=transect),hjust=0, vjust=0)
 
 #ggplot(filter(obs,obs %in% "mdk", type %in% c("BEGCNT","ENDCNT","BEGSEG","ENDSEG")), 
 #       aes(long,lat,col=type))+geom_point()+geom_text(aes(label=transect),hjust=0, vjust=0)
@@ -245,6 +267,9 @@ message("Fixed transect errors")
 
 ## counts
 obs$count[obs$count %in% c("1.1.f","1.2.f.adult")] = 1
+obs$distance.to.obs[obs$count %in% c("1/4")] = 0.25
+obs$distance.to.obs[obs$count %in% c("1.5")] = 1.5
+obs$count[obs$count %in% c("1/4","1.5")] = 1
 obs$count[obs$count %in% "0"] = NA
 obs = filter(obs, !count %in% "")
 
@@ -257,7 +282,8 @@ obs$count[obs$type %in% "BOTD" & obs$obs %in% "tpw" & obs$count %in% "200"] = 1
 ## dates
 # mdk uses 5 instead of 8
 obs$month[obs$obs %in% "mdk"] = 8
-obs = mutate(obs, date = as.Date(paste(month, day, year, sep="/"),format="%m/%d/%Y"))
+obs = mutate(obs, date = as.Date(paste(month, day, year, sep="/"),format="%m/%d/%Y"),
+             month = as.numeric(month), day = as.numeric(day), year = as.numeric(year))
 
 ## change meters to nm
 obs$distance.to.obs[obs$obs %in% c("tpw","mdk")] = obs$distance.to.obs[obs$obs %in% c("tpw","mdk")] * 0.000539957
