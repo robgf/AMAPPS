@@ -1062,7 +1062,47 @@ INSERT INTO lu_parent_project(
 	project_id, project_name, project_ds, project_url)
 	VALUES
 	(1, 'AMAPPS aerial',
-		'The geographic area of operations includes near-shore and offshore waters of the U.S. Atlantic Coast from the Canada/Maine border to approximately Jacksonville, FL. Transects are located at 5'' (~ 5 nautical miles [nm]) intervals at every 1'' and 6'' minutes of latitude. Transect length depends on the location along coast. Some transects extend to 16 meter depth or out a distance of 8 nm , whichever is longer. In some cases, transects located near to where the coastline runs east-west have been extended to ensure that the survey covers areas that are at least 8 nm from land. Some transects extend as far as 30 nm off-shore to include important seabird foraging areas. In the past these annual surveys were conducted during the winter between January and February. However, when the survey expanded to include all marine bird species the surveys were flown multiple times throughout the year to better determine seabird distributions at different times of year. As a result the surveys are currently conducted in the fall (early October) and winter (early February).  Timing can also depend on available funding , data management needs, personnel shortages and availability, weather, and aircraft availability. Surveys are flown during daylight hours with no limits on the time of day. A survey can be initiated when the wind speed is < 15 knots (kts), and should be discontinued if the winds exceed 20 kts. Before starting each transect both the pilot and observers will record observation conditions on a 5-point Likert scale with 1 = Worst observation conditions, 3 = Average conditions, and 5 = Best observation conditions. Often times the pilot and observer conditions will be different as glare can affect one side of the aircraft more than the other depending on the direction of flight. Each crew area consists of east-west oriented  strip-transects. Each transect has a unique ID that uses the latitude degrees concatenated with the latitude minutes and then with the segment number [00, 01, etc.]. Typically there will just be one line segment “00”, but when more than one segment occurs on the same latitude you might also have segment “01."( e.g. 444600 or 444601).The transects are flown at a height of 200 feet above ground level and at a speed of 110 knots. Altitude is maintained  with the help of a radar altimeter in most cases. Transects extend 30 nautical miles (nm) offshore and can be flown from east to west or west to east.  Each transect is 400 meters (m) in width with 200 m observation bands on each side of the aircraft. Each observer counts outward to a the predefined 200 m width on their side of the aircraft (left-front (lf) or right-front(rf)).  The pilot serves as the left-front observer (lf) while the observer traditionally sits in the right-front (rf) or co-pilot seat of the aircraft. However, there have been times when a third backseat observer is present (e.g. a new observer being trained). The transect boundary is marked either on the strut with black tape  or the windshield (with dry erase marker) of the plane for reference using a clinometer. The survey targets the fifteen species of sea ducks and all species of marine birds wintering along the Atlantic coast.  Identification of birds to the lowest taxonomic level is ideal (e.g.species), however several generalized  groups have been created for the survey understanding that species identification can be difficult during aerial survey conditions. Such groupings are provided for other species as well including gulls, shearwaters, alcids, and scoters. Observers are also asked to  record all marine mammals, sharks and rays, and sea turtles within the transect. Finally, observers will also record any boats, including those outside of the transect , with an estimated distance in nautical miles. Balloons (both inflated and deflated) should be recording within the transect. [summary snippets copied from internal confluence site]',
+		'The geographic area of operations includes near-shore and offshore waters of the U.S. 
+		Atlantic Coast from the Canada/Maine border to approximately Jacksonville, FL. Transects 
+		are located at 5'' (~ 5 nautical miles [nm]) intervals at every 1'' and 6'' minutes of 
+		latitude. Transect length depends on the location along coast. Some transects extend to 
+		16 meter depth or out a distance of 8 nm , whichever is longer. In some cases, transects 
+		located near to where the coastline runs east-west have been extended to ensure that the 
+		survey covers areas that are at least 8 nm from land. Some transects extend as far as 30 
+		nm off-shore to include important seabird foraging areas. In the past these annual surveys 
+		were conducted during the winter between January and February. However, when the survey 
+		expanded to include all marine bird species the surveys were flown multiple times throughout 
+		the year to better determine seabird distributions at different times of year. As a result the 
+		surveys are currently conducted in the fall (early October) and winter (early February).  
+		Timing can also depend on available funding , data management needs, personnel shortages and 
+		availability, weather, and aircraft availability. Surveys are flown during daylight hours 
+		with no limits on the time of day. A survey can be initiated when the wind speed is < 15 
+		knots (kts), and should be discontinued if the winds exceed 20 kts. Before starting each 
+		transect both the pilot and observers will record observation conditions on a 5-point Likert 
+		scale with 1 = Worst observation conditions, 3 = Average conditions, and 5 = Best observation 
+		conditions. Often times the pilot and observer conditions will be different as glare can affect 
+		one side of the aircraft more than the other depending on the direction of flight. Each crew area 
+		consists of east-west oriented  strip-transects. Each transect has a unique ID that uses the latitude 
+		degrees concatenated with the latitude minutes and then with the segment number [00, 01, etc.]. 
+		Typically there will just be one line segment “00”, but when more than one segment occurs on the 
+		same latitude you might also have segment “01."( e.g. 444600 or 444601).The transects are flown at 
+		a height of 200 feet above ground level and at a speed of 110 knots. Altitude is maintained  
+		with the help of a radar altimeter in most cases. Transects extend 30 nautical miles (nm) offshore 
+		and can be flown from east to west or west to east.  Each transect is 400 meters (m) in width with 
+		200 m observation bands on each side of the aircraft. Each observer counts outward to a the predefined 
+		200 m width on their side of the aircraft (left-front (lf) or right-front(rf)).  The pilot serves as 
+		the left-front observer (lf) while the observer traditionally sits in the right-front (rf) or co-pilot 
+		seat of the aircraft. However, there have been times when a third backseat observer is present (e.g. a 
+		new observer being trained). The transect boundary is marked either on the strut with black tape  or the 
+		windshield (with dry erase marker) of the plane for reference using a clinometer. The survey targets the 
+		fifteen species of sea ducks and all species of marine birds wintering along the Atlantic coast.  Identification 
+		of birds to the lowest taxonomic level is ideal (e.g.species), however several generalized  groups have been 
+		created for the survey understanding that species identification can be difficult during aerial survey conditions. 
+		Such groupings are provided for other species as well including gulls, shearwaters, alcids, and scoters. 
+		Observers are also asked to  record all marine mammals, sharks and rays, and sea turtles within the transect. 
+		Finally, observers will also record any boats, including those outside of the transect , with an estimated 
+		distance in nautical miles. Balloons (both inflated and deflated) should be recording within the transect. 
+		[summary snippets copied from internal confluence site]',
 		'http://www.nefsc.noaa.gov/psb/AMAPPS/'),
 	(2, 'AMAPPS boat',
 		NULL,
@@ -1075,7 +1115,13 @@ INSERT INTO lu_parent_project(
 	(8,'DOE BRI aerial',NULL,NULL),
 	(9,'DOE BRI boat',NULL,NULL),
 	(10,'EcoMon (NEFSC Ecosystem Monitoring) Cruises',
-		'Shelf-wide Research Vessel Surveys are conducted 6-7 times per year over the continental shelf from Cape Hatteras, North Carolina to Cape Sable, Nova Scotia, using NOAA research ships or charter vessels. Three surveys are performed jointly with the bottom trawl surveys in the winter, spring and autumn. An additional four cruises, conducted in winter, late spring, late summer and late autumn, are dedicated to plankton and hydrographic data collection. The Cape Hatteras to Cape Sable area is divided into four regions, and 30 randomly selected stations are targeted for sampling from each region.',
+		'Shelf-wide Research Vessel Surveys are conducted 6-7 times per year over the 
+		continental shelf from Cape Hatteras, North Carolina to Cape Sable, Nova Scotia, 
+		using NOAA research ships or charter vessels. Three surveys are performed jointly 
+		with the bottom trawl surveys in the winter, spring and autumn. An additional four 
+		cruises, conducted in winter, late spring, late summer and late autumn, are dedicated 
+		to plankton and hydrographic data collection. The Cape Hatteras to Cape Sable area is 
+		divided into four regions, and 30 randomly selected stations are targeted for sampling from each region.',
 		'https://www.nefsc.noaa.gov/HydroAtlas/'),
 	(11,'Florida Light and Power, Long Island',NULL,NULL),
 	(12,'Herring Acoustic',NULL,NULL),
@@ -1089,8 +1135,17 @@ INSERT INTO lu_parent_project(
 	(20,'StellwagenBankNMS Whale Watch',NULL,NULL),
 	(21,'Deepwater Wind BI Boat',NULL,NULL),
 	(22,'StellwagenBankNMS second side transects',NULL,NULL),
-	(23,'StellwagenBankNMS "other" protocol',NULL,NULL);
---
+	(23,'StellwagenBankNMS "other" protocol',NULL,NULL),
+	(24,'NYSERDA','In preparation for offshore wind energy development, the New York State Energy and 
+	Research Development Authority (NYSERDA) has initiated the largest offshore high resolution aerial 
+	survey of marine and bird life in U.S. history. Normandeau Associates, Inc. and APEM Ltd (Normandeau-APEM team) 
+	will gather 3 years of baseline surveys to assess the entire New York Offshore Planning Area (OPA) 
+	with particular emphasis on the Wind Energy Area (WEA).  The surveys use ultra-high resolution 
+	aerial digital imagery to assess use by birds, marine mammals, turtles, and fish. This proactive 
+	study of potential impacts will facilitate a more efficient track to energy production offshore New 
+	York by providing the necessary information to meet the U.S. Bureau of Ocean Energy Management''s (BOEM''s) 
+	regulatory requirements for environmental review of WEAs.','https://remote.normandeau.com/nys_overview.php');
+-- select * from lu_parent_project
  
 ------------------------
 -- create main tables --
@@ -1277,8 +1332,7 @@ INSERT INTO dataset(
 	(121,NULL,'NOAA/NMFS_NEFSCBoat2004','b','cts','ot',300,300,5,'yes','yes',52,'NOAA',10,1),
 	(120,NULL,'NOAA/NMFS_NEFSCBoat2007','b','cts','ot',300,300,5,'yes','yes',52,'NOAA',11,1),
 	(32,NULL,'NOAABycatch','b','byc','og',NULL,NULL,5,'yes',NULL,19,'NOAA',NULL,1),        		
-	(20,NULL,'NOAAMBO7880','b','dts','ot',300,300,5,'yes','yes',15,'NOAA',NULL,1),   
-	(173,NULL,'NYSERDA_APEM',NULL,NULL,NULL,NULL,NULL,0,'no',NULL,NULL,'BOEM,APEM',NULL,1),					
+	(20,NULL,'NOAAMBO7880','b','dts','ot',300,300,5,'yes','yes',15,'NOAA',NULL,1),   					
 	(23,NULL,'Patteson','b','go','og',NULL,NULL,5,'yes',NULL,32,NULL,NULL,1),        		
 	(92,NULL,'PIROP','b',NULL,NULL,NULL,NULL,7,'yes',NULL,16,NULL,NULL,1),				
 	(75,NULL,'PlattsBankAerial','a','cts','ot',340,170 ,5,'yes',NULL,39,NULL,99.892,1),        		
@@ -1368,7 +1422,7 @@ INSERT INTO dataset(
 	(240,22,'StellwagenBankNMS_SS_Sep2015','b','cts','ot',NULL,NULL,99,'no',NULL,9,'NOAA',NULL,1),
 	(241,22,'StellwagenBankNMS_SS_Oct2015','b','cts','ot',NULL,NULL,99,'no',NULL,9,'NOAA',NULL,1),
 	(242,22,'StellwagenBankNMS_SS_Dec2015','b','cts','ot',NULL,NULL,99,'no',NULL,9,'NOAA',NULL,1),
-	(243,21,'DeepwaterWindBlockIsland0910_camera','c','cts','ot',60,60,9,'no',NULL,65,'BOEM,TetraTech,Deepwater Wind RI',53,1),
+	(243,21,'DeepwaterWindBlockIsland0910_camera','c','cts','ot',NULL,NULL,9,'no',NULL,65,'BOEM,TetraTech,Deepwater Wind RI',53,1),
 	(244,20,'StellwagenBankNMS_WW_2011-10-22','b','dts','og',NULL,NULL,9,'no',NULL,9,'NOAA',NULL,1),
 	(245,20,'StellwagenBankNMS_WW_2012-06-17','b','dts','og',NULL,NULL,9,'no',NULL,9,'NOAA',NULL,1),
 	(246,20,'StellwagenBankNMS_WW_2012-06-24','b','dts','og',NULL,NULL,9,'no',NULL,9,'NOAA',NULL,1),
@@ -1496,7 +1550,6 @@ INSERT INTO dataset(
 	(368,20,'StellwagenBankNMS_WW_2015-10-24','b','dts','og',NULL,NULL,9,'no',NULL,9,'NOAA',NULL,1),
 	(369,20,'StellwagenBankNMS_WW_2015-11-01','b','dts','og',NULL,NULL,9,'no',NULL,9,'NOAA',NULL,1),
 	(370,20,'StellwagenBankNMS_WW_2015-11-07','b','dts','og',NULL,NULL,9,'no',NULL,9,'NOAA',NULL,1),
-	----other
 	(371,23,'StellwagenBankNMS_Other_Sept2013','b','dts','og',NULL,NULL,9,'no',NULL,9,'NOAA',NULL,1),--listed as standardized but is in question
 	(372,23,'StellwagenBankNMS_Other_2011-08-02','b','dts','og',NULL,NULL,9,'no',NULL,9,'NOAA',NULL,1),
 	(373,23,'StellwagenBankNMS_Other_2011-09-15','b','dts','og',NULL,NULL,9,'no',NULL,9,'NOAA',NULL,1),
@@ -1521,9 +1574,27 @@ INSERT INTO dataset(
 	(392,10,'EcoMonOct2016','b','cts','ot',300,300,0,'no',NULL,16,'NOAA',NULL,1),--PC 1609 no bird observer 
 	(393,10,'EcoMonFeb2017','b','cts','ot',300,300,0,'no',NULL,16,'NOAA',NULL,1),--HB 1701
 	(394,10,'EcoMonJune2017','b','cts','ot',300,300,0,'no',NULL,16,'NOAA',NULL,1),--GU 1706
-	(395,1,'AMAPPS_FWS_Aerial_Summer2017','a','cts','ot',400,200,5,'no','no',50,'BOEM,USFWS,NOAA,NAVY',110,1);
+	(395,1,'AMAPPS_FWS_Aerial_Summer2017','a','cts','ot',400,200,5,'no','no',50,'BOEM,USFWS,NOAA,NAVY',110,1),
+	(173,24,'NYSERDA_APEM_1','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
+	(396,1,'AMAPPS_FWS_Aerial_2018','a','cts','ot',400,200,5,'no','no',50,'BOEM,USFWS,NOAA,NAVY',110,1),
+	(397,1,'AMAPPS_FWS_Aerial_2019','a','cts','ot',400,200,5,'no','no',50,'BOEM,USFWS,NOAA,NAVY',110,1),
+	(398,24,'NYSERDA_APEM_2','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
+	(399,24,'NYSERDA_APEM_3','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
+	(400,24,'NYSERDA_APEM_4','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
+	(401,24,'NYSERDA_APEM_5','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
+	(402,24,'NYSERDA_APEM_6','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
+	(403,24,'NYSERDA_APEM_7','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
+	(404,24,'NYSERDA_APEM_8','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
+	(405,24,'NYSERDA_APEM_9','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
+	(406,24,'NYSERDA_APEM_10','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
+	(407,24,'NYSERDA_APEM_11','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
+	(408,24,'NYSERDA_APEM_12','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1);
+--	(,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2017','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
+--	(,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2018','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
+--	(,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2019','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
 
---
+
+-- select * from dataset
 --
 
 -- create transect table
@@ -1692,7 +1763,12 @@ INSERT INTO links_and_literature(
  	(38,386 ,NULL,'https://www.nefsc.noaa.gov/HydroAtlas/2013/NOV_ECOMON_GU1305/CRUISE_REPORT_2013005GU.pdf',NULL,NULL,NULL,NULL),
  	(39,383 ,NULL,'https://www.nefsc.noaa.gov/HydroAtlas/2011/FEB_ECOMON_DEL1102/CRUISE_REPORT_2011002DE.pdf',NULL,NULL,NULL,NULL),
  	(40,384 ,NULL,'https://www.nefsc.noaa.gov/HydroAtlas/2011/JUN_ECOMON_DEL1105/CRUISE_REPORT_2011005DE.pdf',NULL,NULL,NULL,NULL),
-    (41,393 ,NULL,'https://www.nefsc.noaa.gov/HydroAtlas/2017/FEB_ECOMON_HB1701/CRUISE_REPORT_2017001HB.pdf',NULL,NULL,NULL,NULL);
+    (41,393 ,NULL,'https://www.nefsc.noaa.gov/HydroAtlas/2017/FEB_ECOMON_HB1701/CRUISE_REPORT_2017001HB.pdf',NULL,NULL,NULL,NULL),
+	(42,173,'https://remote.normandeau.com/login.php','https://remote.normandeau.com/docs/Summary%20of%20Summer%202016%20Survey%201.pdf',NULL,NULL,NULL,NULL),
+	(43,398,'https://remote.normandeau.com/login.php','https://remote.normandeau.com/docs/NYSERDA-Fall%202016%20Survey2_Summary.pdf',NULL,NULL,NULL,NULL),
+	(44,399,'https://remote.normandeau.com/login.php','https://remote.normandeau.com/docs/NYSERDA%20Winter%202017%20-%20Survey%20Summary%20Report.pdf',NULL,NULL,NULL,NULL),
+	(45,400,'https://remote.normandeau.com/login.php','https://remote.normandeau.com/docs/NYSERDA%20Spring%202017%20-%20Survey%20Summary%20Report.pdf',NULL,NULL,NULL,NULL),
+	(46,401,'https://remote.normandeau.com/login.php','https://remote.normandeau.com/docs/NYSERDA%20Summer%202017%20-%20Survey%20Summary%20Report.pdf',NULL,NULL,NULL,NULL);
 -- select * from links_and_literature
 
 --ECOMON Nov 2014 no birds in report? combined with Herring Acoustic https://www.nefsc.noaa.gov/HydroAtlas/2014/NOV_ECOMON_PC1405/CRUISE_REPORT_2014005PC.pdf
@@ -1735,15 +1811,14 @@ INSERT INTO progress_table(
 	(96,0,'NantucketShoals1998','need to investigate',NULL,'TW',0,0,0,NULL),
 	(97,0,'DEandChesBaysUSFWS1190','need to investigate',NULL,'MTJ/KC',0,0,0,NULL),
 	(100,0,'AtlanticFlywaySeaducks','need to investigate',NULL,'MTJ/KC',0,0,0,NULL),
-	(101,0,'DUMLOnslowBay2007','need to investigate',NULL,'AW',0,0,0,NULL),
+	(101,0,'DUMLOnslowBay2007','requested',CAST('2017-10-18' as date),'AW',0,0,0,'data provider on materinty leave, will contact again in a few months'),
 	(106,0,'WaterfowlUSFWS2001','need to investigate',NULL,'MTJ/KC',0,0,0,NULL),
 	(119,0,'ECSAS','Arliss has, on hold for now',NULL,'KC',0,0,0,'waiting until data is published'),
 	(163,0,'RoyalSociety','need to investigate',NULL,'TW',0,0,0,NULL),
-	(166,0,'BarHarborWW09','requested multiple times',CAST('2017-7-21' AS DATE),'KC',0,0,0,NULL),
-	(167,0,'BarHarborWW010','requested multiple times',CAST('2017-7-21' AS DATE),'KC',0,0,0,NULL),
+	(166,0,'BarHarborWW09','requested multiple times',CAST('2017-10-17' as date),'KC',0,0,0,NULL),
+	(167,0,'BarHarborWW010','requested multiple times',CAST('2017-10-17' as date),'KC',0,0,0,NULL),
 	(169,99,'BOEMHighDef_NC2011Camera','need to finish QA/QC',NULL,'KC',1,0,1,'There were issues with the gps and time'),
-	(172,9,'BRIMaine2016','looked at data, needs QA/QC',NULL,'KC',1,0,0,NULL),
-	(173,0,'NYSERDA_APEM','need to invevstigate',NULL,'KC',0,0,0,'Was in contact with provider about submission guidelines, need to check back'),
+	(172,99,'BRIMaine2016','QA/QC in progress',NULL,'KC',1,0,0,NULL),
 	(95,99,'StellwagenBankNMS_Jun2012','QA/QC in progress',NULL,'KC',1,1,0,'Script from Arliss as guide'),	
 	(182,99,'StellwagenBankNMS_Aug2012','QA/QC in progress',NULL,'KC',1,1,0,'Script from Arliss as guide'),
 	(183,99,'StellwagenBankNMS_Oct2012','QA/QC in progress',NULL,'KC',1,1,0,'Script from Arliss as guide'),
@@ -1817,7 +1892,17 @@ INSERT INTO progress_table(
 	(386,0,'EcoMonNov2013','need to request',NULL,'TW/KC',0,0,1,'In contact with TW and AW about this'),
 	(383,0,'EcoMonFeb2011','need to request',NULL,'TW/KC',0,0,1,'In contact with TW and AW about this'),
 	(384,0,'EcoMonJun2011','need to request',NULL,'TW/KC',0,0,1,'In contact with TW and AW about this'),
-	(395,99,'FWS_AMAPPS_Aerial_Summer2017','QA/QC in progress',NULL,'KC',1,0,1,'In contact with the last three observers');
+	(395,99,'FWS_AMAPPS_Aerial_Summer2017','QA/QC in progress',NULL,'KC',1,0,0,'In contact with the last three observers'),
+	(173,0,'NYSERDA_APEM_1','requested',CAST('2017-10-18' as date),'KC',0,0,1,'working on details with provider'),
+	(398,0,'NYSERDA_APEM_2','requested',CAST('2017-10-18' as date),'KC',0,0,1,'working on details with provider'),
+	(399,0,'NYSERDA_APEM_3','requested',CAST('2017-10-18' as date),'KC',0,0,1,'working on details with provider'),
+	(400,0,'NYSERDA_APEM_4','requested',CAST('2017-10-18' as date),'KC',0,0,1,'working on details with provider'),
+	(401,0,'NYSERDA_APEM_5','requested',CAST('2017-10-18' as date),'KC',0,0,1,'working on details with provider'),
+	(243,9,'DeepwaterWindBlockIsland0910_camera','needs QA/QC',NULL,'KC',1,0,0,'this will need reformating');
+-- 	update progress_table
+-- 	set 
+--	date_of_action=CAST('2017-10-18' as date)
+-- 	where dataset_id = 401
 -- select * from progress_table
 
 --create boem lease block table
