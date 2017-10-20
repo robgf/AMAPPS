@@ -1,6 +1,8 @@
 #-------------- #
-# clean ME data
+# clean BRI ME 2016 data
 # prepare it for NWASC
+#
+# dataset id  = 172
 # ------------- #
 
 
@@ -67,16 +69,51 @@ est.transects = full_join(t1,dplyr::select(tn,TransectID,endLat,endLon,lastObser
 rm(t1,tn)
 
 # only looking at known transect start and stop times
-transects = dplyr::select(est.transects,TransectID,TransectStarted,TransectEnded,TransectName,TransectComments) %>% 
-  rename(source_transect_id = TransectID,comments=TransectComments) %>% 
+transects = dplyr::select(est.transects,TransectID,TransectStarted,TransectEnded,TransectComments) %>% 
+  rename(source_transect_id = TransectID,
+         comments_tx=TransectComments) %>% 
   mutate(start_tm = sapply(strsplit(as.character(TransectStarted)," "),tail,1),
          end_tm = sapply(strsplit(as.character(TransectEnded)," "),tail,1), 
          start_dt = sapply(strsplit(as.character(TransectStarted)," "),head,1), 
          end_dt = sapply(strsplit(as.character(TransectEnded)," "),head,1)) %>% 
   dplyr::select(-TransectStarted,-TransectEnded)
 
-# missing end times for these transects
+# mean variables
+speeds = mutate(data, 
+                GPSSpeed_mps = replace(GPSSpeed_mps,GPSSpeed_mps<0,NA),
+                GPSSpeed_mps = as.numeric(GPSSpeed_mps)) %>% 
+  group_by(TransectID) %>% 
+  summarise(speed = mean(GPSSpeed_mps, na.rm=TRUE)*1.94384, #mps to knots
+            seastate_beaufort_nb = round(mean(BeaufortID, na.rm=TRUE)),
+            altitude_nb_m = mean(GPSAltitude_m, na.rm=TRUE),
+            observer_tx = first(Observer)) %>%
+  mutate(speed = replace(speed,speed %in% "NaN",NA))
+speeds$observer_tx[speeds$TransectID %in% c(9,12,14,39,45,
+                                            48,50,51,52,53,
+                                            54,57,58,63,64,
+                                            65,71,72,77,78,
+                                            81,82,83)] = "KD/SG"
+speeds$observer_tx[speeds$TransectID %in% c(24,41,42)] = "EB/SG"
+speeds$observer_tx[speeds$TransectID %in% 29] = "EB/KD"
+speeds$observer_tx[speeds$TransectID %in% 35] = "IO/JH"
+speeds$observer_tx[speeds$TransectID %in% c(73,74)] = "CE/KD"
+
+transects = left_join(transects,speeds,by=c("source_transect_id" = "TransectID"))
+rm(speeds)
+
+## missing end times for these transects
 # c(2,6,9,14,19,23,29,33,45,46,48,52,56,59,61,64,65,68,69,71,73,75,77,79,80,82,84,91)
+
+## two observers for these transects
+# c(9,12,14,39,45,  
+#   48,50,51,52,53,  
+#   54,57,58,63,64,  
+#   65,71,72,77,78,  
+#   81,82,83,24,41, 
+#   42,29,35,73,74)
+# effort doesnt appear to be duplicated, they appear to be switching off
+
+## also on transects c(18,28,93) observers switch sides of the vessel
 # ------------- #
 
 
@@ -84,13 +121,37 @@ transects = dplyr::select(est.transects,TransectID,TransectStarted,TransectEnded
 # define species codes off itis 
 # check that common names are the same
 # ------------- #
-mutate(data,sort(unique(SpeciesCode[is.na(SpeciesITISNumber)])))
-
 db <- odbcDriverConnect('driver={SQL Server}; server=ifw-dbcsqlcl1.fws.doi.net; database=NWASC; trusted_connection=true')
 spplist <- sqlFetch(db, "lu_species")
 odbcClose(db)
-data = left_join(data, dplyr::select(spplist,spp_cd,ITIS_id), by=c("SpeciesITISNumber"="ITIS_id")) %>%
-  mutate(replace)
+
+data$SpeciesCode = as.character(data$SpeciesCode)
+data = left_join(data, dplyr::select(spplist,spp_cd,ITIS_id), by=c("SpeciesITISNumber"="ITIS_id")) 
+
+#sort(unique(data$SpeciesCode[is.na(data$SpeciesITISNumber)]))
+#"CRTE" #Common/Roseate Tern -> UCRT
+#"GBHG" #Great Black-backed/Herring Gull
+#"SHOR" #Unidentified shorebird
+#"UNDU" #Unidentified Duck
+#"UNGU" #Unidentified Gull
+#"UNLG" #Unidentified Large Gull
+#"UNSG" #Unidentified small gull
+#"UNSP" #Unidentified Storm-petrel
+# fix those where there are NAs in the ITIS 
+data$spp_cd[data$SpeciesCode %in% c("GBHG", "SHOR", "UNDU", "UNGU", "UNLG", "UNSG", "UNSP")] = data$SpeciesCode[data$SpeciesCode %in% c("GBHG", "SHOR", "UNDU", "UNGU", "UNLG", "UNSG", "UNSP")]
+data$spp_cd[data$SpeciesCode %in% "CRTE"]="UCRT"
+
+# check the common names of those that changed to make sure 
+x = as.data.frame(cbind(as.vector(data$SpeciesCode[data$SpeciesCode != data$spp_cd]),
+                        as.vector(data$SpeciesCommonName[data$SpeciesCode != data$spp_cd]),
+                        as.vector(data$spp_cd[data$SpeciesCode != data$spp_cd])))
+#fix those with unidentified classifications where ITIS fills in more than one record
+data$spp_cd[data$SpeciesCode %in% "UNTE"] = "UNTE"
+data$spp_cd[data$SpeciesCode %in% "UNST"] = "UNST"
+data$spp_cd[data$SpeciesCode %in% "UNJA"] = "UNJA"
+data$spp_cd[data$SpeciesCode %in% "UNPE"] = "UNPE"
+data$spp_cd[data$SpeciesCode %in% "UNSH"] = "UNSH"
+rm(x,spplist)
 # ------------- #
 
 
@@ -138,7 +199,8 @@ data = data %>%
          obs_tm=sapply(strsplit(as.character(ObservationTimestamp)," "),tail,1),
          original_species_tx = paste(SpeciesCode,SpeciesCommonName,SpeciesITISNumber,sep=" ; "),
          distance_to_animal_tx = paste(distance_m,"meter(s)",sep=" "),
-         observer_comments = paste(ObservationComment,BehaviorDescription,sep=" ; ")) %>% 
+         observer_comments = paste(ObservationComment,BehaviorDescription,sep=" ; "),
+         flight_height_tx = paste(GPSAltitude_m,"meter(s)",sep=" ")) %>% 
   rename(source_obs_id=ObservationID,
          source_transect_id=TransectID,
          obs_lat = GPSLatitude,
@@ -155,16 +217,28 @@ data = data %>%
          cloud_cover_tx = Weather,
          original_age_tx = Age,
          original_behavior_tx = Behavior,
-         original_sex_tx = Sex) %>%
+         original_sex_tx = Sex,
+         glare_tx = Glare,
+         travel_direction_tx = Direction) %>%
   dplyr::select(-TransectStarted,-TransectEnded,-TransectComments,
                 -ObservationType,-SpeciesCommonName,
                 -SpeciesITISNumber,-BehaviorDescription,
                 -distance_m,-ObservationComment,-GPSTimestamp,
-                -TransectName,-SpeciesCode)
+                -TransectName,-SpeciesCode,
+                -ID,-TransectName,-ObservationTimestamp,
+                -GPSSpeed_mps,-GPSAltitudeAccuracy_m,
+                -GPSAccuracy_m,-GPSAltitude_m)
+
+# errors from transect notes
+data$obs_dt[data$source_transect_id %in% 38]="2016-07-07"
+transects$start_dt[transects$source_transect_id %in% 38]="2016-07-07"
+transects$end_dt[transects$source_transect_id %in% 38]="2016-07-07"
 # ------------- #
 
 
 # ------------- #
 # export
 # ------------- #
+write.csv(data,"//ifw-hqfs1/MB SeaDuck/seabird_database/data_import/in_progress/Maine_gov/data172.csv",row.names=FALSE,na="NA")
+write.csv(transects,"//ifw-hqfs1/MB SeaDuck/seabird_database/data_import/in_progress/Maine_gov/transects172.csv",row.names=FALSE,na="NA")
 # ------------- #
