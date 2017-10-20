@@ -1633,6 +1633,7 @@ CREATE TABLE transect (
 -- create observation table
 CREATE TABLE observation (
 	observation_id int not null,
+	source_obs_id int null, 
 	dataset_id smallint not null,
 	transect_id int null, 
 	obs_dt date null,
@@ -1646,9 +1647,12 @@ CREATE TABLE observation (
 	observer_tx nvarchar(20) null,
 	observer_position nvarchar(20) null,
 	seconds_from_midnight numeric null,
+	original_age_tx nvarchar(50) null,
 	age_id tinyint null,
 	plumage_tx nvarchar(50) null,
+	original_behavior_tx nvarchar(100) null,
 	behavior_id tinyint null,
+	original_sex_tx varchar(50) null,
 	sex_id tinyint null,
 	travel_direction_tx nvarchar(50) null,
 	heading_tx nvarchar(50) null,
