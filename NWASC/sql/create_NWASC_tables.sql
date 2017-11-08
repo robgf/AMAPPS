@@ -1590,14 +1590,13 @@ INSERT INTO dataset(
 	(407,24,'NYSERDA_APEM_11','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
 	(408,24,'NYSERDA_APEM_12','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
 -- 	(409,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2017','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
--- 	(410,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2016_HB1306','b','cts','ot',300,300,9,'yes','yes',53,'BOEM,USFWS,NOAA,NAVY',NULL,1),
--- 	(411,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2017_HS1701','b','cts','ot',300,300,9,'yes','yes',53,'BOEM,USFWS,NOAA,NAVY',NULL,1);
+
+-- 	(,21,'DeepwaterWindBlockIsland_bats',NULL,NULL,NULL,NULL,NULL,9,'no',NULL,65,'BOEM,TetraTech,Deepwater Wind RI',NULL,1),
 --	(,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2018','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
 --	(,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2019','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
 
-
 -- select * from dataset
---
+
 
 -- create transect table
 CREATE TABLE transect (
@@ -1769,24 +1768,28 @@ INSERT INTO links_and_literature(
  	(38,386 ,NULL,'https://www.nefsc.noaa.gov/HydroAtlas/2013/NOV_ECOMON_GU1305/CRUISE_REPORT_2013005GU.pdf',NULL,NULL,NULL,NULL),
  	(39,383 ,NULL,'https://www.nefsc.noaa.gov/HydroAtlas/2011/FEB_ECOMON_DEL1102/CRUISE_REPORT_2011002DE.pdf',NULL,NULL,NULL,NULL),
  	(40,384 ,NULL,'https://www.nefsc.noaa.gov/HydroAtlas/2011/JUN_ECOMON_DEL1105/CRUISE_REPORT_2011005DE.pdf',NULL,NULL,NULL,NULL),
-    (41,393 ,NULL,'https://www.nefsc.noaa.gov/HydroAtlas/2017/FEB_ECOMON_HB1701/CRUISE_REPORT_2017001HB.pdf',NULL,NULL,NULL,NULL),
+	(41,393 ,NULL,'https://www.nefsc.noaa.gov/HydroAtlas/2017/FEB_ECOMON_HB1701/CRUISE_REPORT_2017001HB.pdf',NULL,NULL,NULL,NULL),
 	(42,173,'https://remote.normandeau.com/login.php','https://remote.normandeau.com/docs/Summary%20of%20Summer%202016%20Survey%201.pdf',NULL,NULL,NULL,NULL),
 	(43,398,'https://remote.normandeau.com/login.php','https://remote.normandeau.com/docs/NYSERDA-Fall%202016%20Survey2_Summary.pdf',NULL,NULL,NULL,NULL),
 	(44,399,'https://remote.normandeau.com/login.php','https://remote.normandeau.com/docs/NYSERDA%20Winter%202017%20-%20Survey%20Summary%20Report.pdf',NULL,NULL,NULL,NULL),
 	(45,400,'https://remote.normandeau.com/login.php','https://remote.normandeau.com/docs/NYSERDA%20Spring%202017%20-%20Survey%20Summary%20Report.pdf',NULL,NULL,NULL,NULL),
 	(46,401,'https://remote.normandeau.com/login.php','https://remote.normandeau.com/docs/NYSERDA%20Summer%202017%20-%20Survey%20Summary%20Report.pdf',NULL,NULL,NULL,NULL),
 	(47,119,'http://iobis.org/explore/#/dataset/2656','http://ipt.iobis.org/obiscanada/resource?r=cws_eastcoastseabirdsatc',NULL,NULL,'http://iobis.org/explore/#/dataset/2656',NULL);
---  update links_and_literature
---  set
---  report = 'http://ipt.iobis.org/obiscanada/resource?r=cws_eastcoastseabirdsatc'
---  publication_url = 'http://iobis.org/explore/#/dataset/2656'
---  where dataset_id = 119
+
+/*  update links_and_literature script template*/
+/*  update links_and_literature
+	set
+	report = 'http://ipt.iobis.org/obiscanada/resource?r=cws_eastcoastseabirdsatc'
+	publication_url = 'http://iobis.org/explore/#/dataset/2656'
+	where dataset_id = 119
+*/
 
 -- select * from links_and_literature
 
---ECOMON Nov 2014 no birds in report? combined with Herring Acoustic https://www.nefsc.noaa.gov/HydroAtlas/2014/NOV_ECOMON_PC1405/CRUISE_REPORT_2014005PC.pdf
---ECOMON Dec 2011 we might have this data listed as Nov? Tim White on boat. Not the same as Nov 2011, finish stations not hit in Nov https://www.nefsc.noaa.gov/HydroAtlas/2011/DEC_ECOMON_DEL1110/CRUISE_REPORT_2011010DE.pdf
-
+/* notes
+	-ECOMON Nov 2014 no birds in report? combined with Herring Acoustic https://www.nefsc.noaa.gov/HydroAtlas/2014/NOV_ECOMON_PC1405/CRUISE_REPORT_2014005PC.pdf
+	-ECOMON Dec 2011 we might have this data listed as Nov? Tim White on boat. Not the same as Nov 2011, finish stations not hit in Nov https://www.nefsc.noaa.gov/HydroAtlas/2011/DEC_ECOMON_DEL1110/CRUISE_REPORT_2011010DE.pdf
+*/
 
 --create and populate progress_table table
 CREATE TABLE progress_table (
@@ -1911,16 +1914,22 @@ INSERT INTO progress_table(
 	(400,0,'NYSERDA_APEM_4','requested',CAST('2017-10-18' as date),'KC',0,0,1,'working on details with provider'),
 	(401,0,'NYSERDA_APEM_5','requested',CAST('2017-10-18' as date),'KC',0,0,1,'working on details with provider'),
 	(243,9,'DeepwaterWindBlockIsland0910_camera','needs QA/QC',NULL,'KC',1,0,0,'this will need reformating'),
-	(119,0,'ECSAS','Data downloaded from OBIS, need to request effort data',NULL,'KC',0,0,0,'Arliss has full dataset');
--- 	update progress_table
--- 	set 
---	date_of_action=CAST('2017-11-08' as date),
---	action_required_or_taken = 'downloaded from OBIS, need to request effort data',
---	additional_info='Arliss has full dataset',
---	data_acquired=1,
---	metadata_acquired=1
--- 	where dataset_id = 119
--- select * from progress_table
+	(119,9,'ECSAS','Data downloaded from OBIS, need to request effort data',NULL,'KC',1,1,0,'Arliss has full dataset');
+
+/* update progress table script template */  	
+/*	update progress_table
+  	set 
+ 	date_of_action=CAST('2017-11-08' as date),
+ 	action_required_or_taken = 'downloaded from OBIS, need to request effort data',
+ 	additional_info='Arliss has full dataset',
+ 	data_acquired=1,
+ 	metadata_acquired=1,
+    share_level_id = 9
+ 	where dataset_id = 119
+*/
+
+/* select progress table script template */ 
+--  select * from progress_table
 
 --create boem lease block table
 CREATE TABLE boem_lease_blocks (
@@ -1971,6 +1980,17 @@ INSERT INTO requests(
 	(12,'service',72, 'Ecological Services analysis for BCPE data', CAST('2017-8-15' AS DATE), 'filled', CAST('2017-9-15' AS DATE), NULL),
 	(13,'data',73, 'AKN request, data and information', CAST('2017-7-28' AS DATE), 'patially filled',NULL, 'back and forth with Rob on details and info'),
 	(14,'data',59,'official survey name for each dataset listed in the source_dataset_id column', CAST('2017-09-8' AS DATE), 'filled', CAST('2017-09-11' AS DATE), NULL);
+
 -- example: (id, type, person, description, CAST('req. date' AS DATE), status, CAST('date filled' AS DATE), notes);
--- select*from requests join lu_people on requester=user_id;
--- update data_requests SET date_filled = CAST('2017-07-17' AS DATE), request_status = 'filled'  WHERE request_id = 7
+/*  update data_requests script template */  	
+/*	update data_requests 
+	set date_filled = CAST('2017-07-17' AS DATE), 
+	request_status = 'filled'  
+	where request_id = 7
+*/
+
+/*  look up people who need to be contacted for a project */ 
+/*  select * from requests 
+	join lu_people 
+	on requester = user_id;
+*/
