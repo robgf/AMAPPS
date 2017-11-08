@@ -1588,8 +1588,10 @@ INSERT INTO dataset(
 	(405,24,'NYSERDA_APEM_9','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
 	(406,24,'NYSERDA_APEM_10','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
 	(407,24,'NYSERDA_APEM_11','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
-	(408,24,'NYSERDA_APEM_12','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1);
---	(,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2017','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
+	(408,24,'NYSERDA_APEM_12','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
+-- 	(409,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2017','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
+-- 	(410,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2016_HB1306','b','cts','ot',300,300,9,'yes','yes',53,'BOEM,USFWS,NOAA,NAVY',NULL,1),
+-- 	(411,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2017_HS1701','b','cts','ot',300,300,9,'yes','yes',53,'BOEM,USFWS,NOAA,NAVY',NULL,1);
 --	(,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2018','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
 --	(,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2019','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
 
@@ -1772,7 +1774,14 @@ INSERT INTO links_and_literature(
 	(43,398,'https://remote.normandeau.com/login.php','https://remote.normandeau.com/docs/NYSERDA-Fall%202016%20Survey2_Summary.pdf',NULL,NULL,NULL,NULL),
 	(44,399,'https://remote.normandeau.com/login.php','https://remote.normandeau.com/docs/NYSERDA%20Winter%202017%20-%20Survey%20Summary%20Report.pdf',NULL,NULL,NULL,NULL),
 	(45,400,'https://remote.normandeau.com/login.php','https://remote.normandeau.com/docs/NYSERDA%20Spring%202017%20-%20Survey%20Summary%20Report.pdf',NULL,NULL,NULL,NULL),
-	(46,401,'https://remote.normandeau.com/login.php','https://remote.normandeau.com/docs/NYSERDA%20Summer%202017%20-%20Survey%20Summary%20Report.pdf',NULL,NULL,NULL,NULL);
+	(46,401,'https://remote.normandeau.com/login.php','https://remote.normandeau.com/docs/NYSERDA%20Summer%202017%20-%20Survey%20Summary%20Report.pdf',NULL,NULL,NULL,NULL),
+	(47,119,'http://iobis.org/explore/#/dataset/2656','http://ipt.iobis.org/obiscanada/resource?r=cws_eastcoastseabirdsatc',NULL,NULL,'http://iobis.org/explore/#/dataset/2656',NULL);
+--  update links_and_literature
+--  set
+--  report = 'http://ipt.iobis.org/obiscanada/resource?r=cws_eastcoastseabirdsatc'
+--  publication_url = 'http://iobis.org/explore/#/dataset/2656'
+--  where dataset_id = 119
+
 -- select * from links_and_literature
 
 --ECOMON Nov 2014 no birds in report? combined with Herring Acoustic https://www.nefsc.noaa.gov/HydroAtlas/2014/NOV_ECOMON_PC1405/CRUISE_REPORT_2014005PC.pdf
@@ -1817,7 +1826,6 @@ INSERT INTO progress_table(
 	(100,0,'AtlanticFlywaySeaducks','need to investigate',NULL,'MTJ/KC',0,0,0,NULL),
 	(101,0,'DUMLOnslowBay2007','requested',CAST('2017-10-18' as date),'AW',0,0,0,'data provider on materinty leave, will contact again in a few months'),
 	(106,0,'WaterfowlUSFWS2001','need to investigate',NULL,'MTJ/KC',0,0,0,NULL),
-	(119,0,'ECSAS','Arliss has, on hold for now',NULL,'KC',0,0,0,'waiting until data is published'),
 	(163,0,'RoyalSociety','need to investigate',NULL,'TW',0,0,0,NULL),
 	(166,0,'BarHarborWW09','requested multiple times',CAST('2017-10-17' as date),'KC',0,0,0,NULL),
 	(167,0,'BarHarborWW010','requested multiple times',CAST('2017-10-17' as date),'KC',0,0,0,NULL),
@@ -1902,11 +1910,16 @@ INSERT INTO progress_table(
 	(399,0,'NYSERDA_APEM_3','requested',CAST('2017-10-18' as date),'KC',0,0,1,'working on details with provider'),
 	(400,0,'NYSERDA_APEM_4','requested',CAST('2017-10-18' as date),'KC',0,0,1,'working on details with provider'),
 	(401,0,'NYSERDA_APEM_5','requested',CAST('2017-10-18' as date),'KC',0,0,1,'working on details with provider'),
-	(243,9,'DeepwaterWindBlockIsland0910_camera','needs QA/QC',NULL,'KC',1,0,0,'this will need reformating');
+	(243,9,'DeepwaterWindBlockIsland0910_camera','needs QA/QC',NULL,'KC',1,0,0,'this will need reformating'),
+	(119,0,'ECSAS','Data downloaded from OBIS, need to request effort data',NULL,'KC',0,0,0,'Arliss has full dataset');
 -- 	update progress_table
 -- 	set 
---	date_of_action=CAST('2017-10-18' as date)
--- 	where dataset_id = 401
+--	date_of_action=CAST('2017-11-08' as date),
+--	action_required_or_taken = 'downloaded from OBIS, need to request effort data',
+--	additional_info='Arliss has full dataset',
+--	data_acquired=1,
+--	metadata_acquired=1
+-- 	where dataset_id = 119
 -- select * from progress_table
 
 --create boem lease block table
