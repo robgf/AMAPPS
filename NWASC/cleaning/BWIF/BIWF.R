@@ -30,21 +30,21 @@ dir.out <- paste(gsub("datasets_received", "data_import/in_progress", dir), surv
 # load boat data and transects
 # -------------------------------- #
 data = read_excel(paste(dir.in,"2016-11-09_BIWF OFFSHORE AVIAN DATA 0709 - 0610.xls",sep="/"))
-ex = odbcConnectExcel2007(paste(dir.in,"2016-11-09_BIWF Full Year HD Aerial Data.xlsx",sep="/"))
-hd.data =  sqlFetch(ex, '12 month HD data Avian Only$'_xlnm#_FilterDatabase )
+hd.data = read_excel(paste(dir.in,"2016-11-09_BIWF Full Year HD Aerial Data.xlsx",sep="/"), 
+                         sheet = "12 month HD data Avian Only")
 ons.data = odbcConnectExcel2007(paste(dir.in,"2016-11-09_BIWF ONS 0709 - 0610.xlsx",sep="/"))
-on.avian = sqlFetch(ons.data, "DATA - ONSHORE AVAIN")
+on.avian = sqlFetch(ons.data, "DATA - ONSHORE AVIAN")
 on.weather = sqlFetch(ons.data, "ONSHORE WEATHER")
 on.pt = sqlFetch(ons.data, "PT-Weather Avgs")
 on.cormmet = sqlFetch(ons.data, "Corm and Met")
 on.dist = sqlFetch(ons.data, "Data for Distance")
 odbcCloseAll()
-rm(ex,ons.data)
+rm(ons.data)
 
-bat.data = read.table(paste(dir.in,"2016-11-09_BIWF BATS SUMMER 2009.xls",sep="/"),header="TRUE")                                                                                                                               
-bio.data = read.table(paste(dir.in,"2016-11-09_BIWF Biological Survey Data Summer Fall 2009 Tt.xls",sep="/"),header="TRUE")                                                                                                     
+bat.data = read_excel(paste(dir.in,"2016-11-09_BIWF BATS SUMMER 2009.xls",sep="/"))                                                                                                                               
+bio.data = read_excel(paste(dir.in,"2016-11-09_BIWF Biological Survey Data Summer Fall 2009 Tt.xls",sep="/"))                                                                                                     
 #metadata = read.table(paste(dir.in,"2016-11-09_BIWF_AvianBat_MetaData.xlsx",sep="/"),header="TRUE")                                                                                                                             
-raptor.data = read.table(paste(dir.in,"2018-11-09_BIWF RAPTOR DATA 2009 - 2010.xls",sep="/"),header="TRUE")                                                                                                                        
+raptor.data = read_excel(paste(dir.in,"2018-11-09_BIWF RAPTOR DATA 2009 - 2010.xls",sep="/"))                                                                                                                    
 
 #radar.merlin = readOGR(dir.in,'BIWF_MERLIN_Radar_Location')
 #radar.vesper = readOGR(dir.in,'BIWF_VESPER_Radar_Location')
@@ -67,6 +67,7 @@ avian.on.surv.pt = readOGR(dir.in,'BIWF_Onshore_Sea_Watch_Avian_Survey_Points')
 # -------------------------------- #
 
 
+
 # -------------------------------- #
 # fix species
 # -------------------------------- #
@@ -77,6 +78,3 @@ odbcClose(db)
 # -------------------------------- #
 
 
-# -------------------------------- #
-# camera data
-# -------------------------------- #
