@@ -25,7 +25,39 @@
 # Note:  TPW missed start point for 423100 and the geographic location of the start point for MDK should be verified on line.  Note that this line was started east of the published start point to due harbor boat traffic.															
 # Note: Did not record the ENDSEG for 415100.															
 # Note: Called the end of 415101 about 1/2 mile late.															
-# Note: Cut off the West end of 412101 (ended early) which overlies Martha's Vineyard.															
+# Note: Cut off the West end of 412101 (ended early) which overlies Martha's Vineyard.		
+
+# Wortham Crew
+#Transect	Status	Comments
+#324600	Full	Surveyed over two days			
+#324100	Partial	Adverse Weather			
+
+# Earsom Crew
+#Transect	Comments			
+#405600		22 Aug stopped count for land, no lost distance			
+#405600		22 Aug stopped count for land, no lost distance			
+#405600		22 Aug stopped count for land, no lost distance			
+#410101		22 Aug stopped count for land, no lost distance			
+#405601	Partial	22 Aug lost end of line due to airspace restriction; ended at 405600N/720858W			
+#404100		22 Aug stopped count for land, no lost distance			
+#402600		22 Aug forgot to call a stop/resume count for a narrow strip of land			
+#400600		22 Aug trawler was just offshore and entering port; was not fishing			
+#400100		22 Aug stopped count for land, no lost distance			
+#395600		22 Aug stopped count for land, no lost distance			
+#395100		22 Aug stopped count for land, no lost distance			
+#394100		22 Aug stopped count for land, no lost distance			
+#371601		24 Aug circled to look at debris, no lost distance			
+#385600		26 Aug pilot did not record end of the line; use observer's location			
+#384600		26 Aug stopped count for land, no lost distance			
+#381600		26 Aug stopped count for land, no lost distance			
+#380600		26 Aug stopped count for land, no lost distance			
+#375600		26 Aug stopped count for land, no lost distance			
+#375600		26 Aug stopped count for land, no lost distance			
+#372100		26 Aug stopped count for land, no lost distance			
+#370600		26 Aug stopped count for land, no lost distance			
+#365601/00		26 Aug did not record break between these two transects			
+#355100		27 Aug stopped count for land, no lost distance			
+#354600		27 Aug stopped count for land, no lost distance			
 ##--------------------------##
 
 
@@ -49,8 +81,6 @@ obs$type[obs$type %in% "TRAWL" & obs$comment %in% c("lobster boat","400, lobster
                                                     "600, lobster boat no birds following",
                                                     "lobster boat no birds following",
                                                     "lobster boat with 3 HEGU fowing")] = "BOLO"
-obs$type[obs$type %in% "TRAWL" & obs$comment %in% c("fishing birds following",
-                                                    "fishing with gannets and gulls following")] = "BOFI"
 
 obs$type[obs$type %in% "BIRD"] = "UNBI"
 obs$type[obs$type %in% "BODU"] = "BODO"   
@@ -248,6 +278,17 @@ if(any(is.na(obs$transect[obs$offline %in% 0]))){
 if(any(!is.na(obs$transect[obs$offline %in% 1]))){
   message("remove transect number for offline record")}
 
+# SDE has "null" in transect
+obs$transect[obs$transect %in% "null"] = NA
+obs$transect[is.na(obs$transect) & obs$type %in% c("BEGCNT","ENDCNT")] = obs$count[is.na(obs$transect) & obs$type %in% c("BEGCNT","ENDCNT")]
+
+#400600		missing SDE
+to.add = 
+
+#371601		24 Aug circled to look at debris, no lost distance			
+#385600		26 Aug pilot did not record end of the line; use observer's location			
+#365601/00		26 Aug did not record break between these two transects	
+
 message("Fixed transect errors")
 
 ## descriptive plots
@@ -265,7 +306,9 @@ message("Fixed transect errors")
 # fix errors
 ##--------------------------##
 
-## counts
+# ---------- #  
+# counts
+# ---------- # 
 obs$count[obs$count %in% c("1.1.f","1.2.f.adult")] = 1
 obs$distance.to.obs[obs$count %in% c("1/4")] = 0.25
 obs$distance.to.obs[obs$count %in% c("1.5")] = 1.5
@@ -278,17 +321,44 @@ obs = filter(obs, !count %in% "")
 obs$distance.to.obs[obs$type %in% "BOTD" & obs$obs %in% "tpw" & obs$count %in% "200"] = 200
 obs$count[obs$type %in% "BOTD" & obs$obs %in% "tpw" & obs$count %in% "200"] = 1
 #rm(x)
+# ---------- # 
 
-## dates
+# ---------- # 
+# dates
+# ---------- # 
 # mdk uses 5 instead of 8
 obs$month[obs$obs %in% "mdk"] = 8
 obs = mutate(obs, date = as.Date(paste(month, day, year, sep="/"),format="%m/%d/%Y"),
              month = as.numeric(month), day = as.numeric(day), year = as.numeric(year))
 
-## change meters to nm
-obs$distance.to.obs[obs$obs %in% c("tpw","mdk")] = obs$distance.to.obs[obs$obs %in% c("tpw","mdk")] * 0.000539957
+# jfv says it's the 30th when it was flown on the 26th
+obs$comment[obs$obs %in% "jfv" & obs$day %in% 30] = paste(obs$comment[obs$obs %in% "jfv" & obs$day %in% 30],
+                                                          "DAY changed from 30", sep = "; ")
+obs$day[obs$obs %in% "jfv" & obs$day %in% 30] = 26
+# ---------- # 
 
-## condition
+
+# ---------- # 
+# distance
+# ---------- # 
+# change meters to nm
+obs$distance.to.obs[obs$obs %in% c("tpw","mdk")] = obs$distance.to.obs[obs$obs %in% c("tpw","mdk")] * 0.000539957
+# ---------- # 
+
+
+# ---------- # 
+# condition
+# ---------- # 
+# ---------- # 
+
+
+# ---------- # 
+# offline
+# ---------- # 
+obs$offline[is.na(obs$transect) & 
+              obs$comment %in% c("counting on transit leg","counting on transit transect","transit transect") & 
+              obs$offline %in% 0] = 1
+# ---------- #
 
 message("Fixed other errors")
 ##--------------------------##
