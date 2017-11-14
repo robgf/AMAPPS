@@ -278,16 +278,71 @@ if(any(is.na(obs$transect[obs$offline %in% 0]))){
 if(any(!is.na(obs$transect[obs$offline %in% 1]))){
   message("remove transect number for offline record")}
 
-# SDE has "null" in transect
+# SDE & JFV have "null" in transect, need to change to NA and fill in 
 obs$transect[obs$transect %in% "null"] = NA
 obs$transect[is.na(obs$transect) & obs$type %in% c("BEGCNT","ENDCNT")] = obs$count[is.na(obs$transect) & obs$type %in% c("BEGCNT","ENDCNT")]
 
-#400600		missing SDE
-to.add = 
+obs$transect[obs$obs %in% c('sde','jfv')] = na.locf(obs$transect[obs$obs %in% c('sde','jfv')])
+obs$transect[obs$obs %in% c('sde','jfv') & obs$offline %in% 1] = NA
 
-#371601		24 Aug circled to look at debris, no lost distance			
-#385600		26 Aug pilot did not record end of the line; use observer's location			
-#365601/00		26 Aug did not record break between these two transects	
+#371601		24 Aug circled to look at debris, no lost distance	
+
+#385600		26 Aug pilot did not record end of the line; use observer's location	
+to.add = obs[obs$transect %in% 385600 & obs$type %in% "ENDCNT" & obs$obs %in% 'jfv',]
+to.add = mutate(to.add, 
+                seat = "lf",
+                obs = "sde",
+                comment = "pilot did not record end of the line; used observer's location",
+                index = NA,
+                day = 26)
+obs = rbind(obs, to.add)
+rm(to.add)
+
+# 353100 
+obs$type[obs$transect %in% 353100 & obs$sec %in% 55155.21 & obs$type %in% "ENDCNT"] = "BEGCNT"
+
+# 355100  
+obs$type[obs$transect %in% 355100 & obs$sec %in% 50874.36 & obs$type %in% "ENDCNT"] = "COMMENT" # not sure whats up with this
+
+# 355101 missing an END
+to.add = obs[obs$transect %in% 355101 & obs$type %in% "ENDCNT" & obs$obs %in% 'sde',]
+to.add = mutate(to.add, 
+                seat = "rf",
+                obs = "jfv",
+                comment = "pilot did not record end of the line; used observer's location",
+                index = NA)
+obs = rbind(obs, to.add)
+rm(to.add)
+
+# 26 Aug did not record break between these two transects			
+# 365100  no BEG for either
+# NEED TO ADDRESS
+# 365101  no END for either
+
+# 374100 -> wrong transect
+obs$transect[obs$transect %in% 374100  & obs$sec %in% 40083.59 & obs$type %in% "ENDCNT"] = 374600 # not sure whats up with this
+
+# 375600 neither SDE or JFV has an END
+obs$transect[obs$transect %in% 375601 & obs$sec %in% c(38548.45, 38538.71)] = 375600
+
+# transects that need to be addressed
+
+# 141    375601       2       4      sde
+# 137    381100       1       0      sde
+# 138    381101       1       2      sde
+# 96     410100       2       3      sde
+# 264    411601       3       1      mdk
+# 259    413101       6       5      mdk
+# 255    413601       1       2      mdk
+# 249    415100       1       0      mdk
+# 239    423100       0       2      mdk
+# 229    441600      15      14      mdk
+# 213    442601       7       8      mdk
+# 212    442602       1       2      mdk
+# 209    444100       2       3      mdk
+# 208    444600       3       2      mdk
+
+
 
 message("Fixed transect errors")
 
