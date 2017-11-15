@@ -74,7 +74,7 @@ odbcClose(db)
 tmp <- !obs$type %in% spplist$spp_cd
 message("Found ", sum(tmp), " entries with non-matching AOU codes")
 sort(unique(obs$type[tmp]))
-rm(spplist)
+
 
 obs$type[obs$type %in% "TRAWL" & obs$comment %in% c("lobster boat","400, lobster boat",
                                                     "300,lobster boat",
@@ -91,7 +91,7 @@ obs$type[obs$type %in% "HEGU"] = "HERG"
 obs$type[obs$type %in% "LEST"] = "LETU"      
 obs$type[obs$type %in% "LHSP"] = "LESP"      
 obs$type[obs$type %in% "SEAL"] = "UNSE"      
-obs$type[obs$type %in% "UNSB"] = "SHOR"   
+obs$type[obs$type %in% c("UNSB","UISB","SHORE")] = "SHOR"   
 obs$type[obs$type %in% c("UIST","UNTU")] = "TURT"   
 obs$type[obs$type %in% "WHAL"] = "UNWH"      
 obs$type[obs$type %in% "WSIP"] = "WISP"  
@@ -105,16 +105,63 @@ obs$type[obs$type %in% "LOST"]	= "LOTU"
 obs$age[obs$type %in% c("NOGAA")] = "adult"
 obs$age[obs$type %in% c("NOGAI")] = "immature"
 obs$type[obs$type %in% c("NOGAA", "NOGAI")] = "NOGA"
+obs$type[obs$type %in% "BSTP"] = "BRSP" #band rumped storm petrel 
+obs$type[obs$type %in% "GRST"] = "GRTU"# green sea turtle
+obs$type[obs$type %in% "UISP"] = "UNSP"# unid. ??
 
 tmp = obs$type != obs$original.spp.codes
 obs$dataChange[tmp] = paste(obs$dataChange[tmp], "; changed TYPE from ", obs$original.spp.codes[tmp], sep = "")
 rm(tmp)
 
 # pull out type for useful comments
-# change comment codes with no text in comment to remove -> will be removed in transects
 obs$type[obs$type %in% "COMMENT" & obs$comment %in% c("lobster gear hundreds of pots",
                                                       "lobster gear everywhere")] = "FGLO"
-obs = mutate(obs, type = replace(type, type %in% "COMMENT","REMOVE"))
+# mixed
+obs$type[obs$type %in% "MIXD" & obs$comment %in% c("UNLG,0,S","UNLG,3,S","UNLG,3,F")]= "UNLG"
+
+to.add = obs[obs$type %in% "MIXD" & obs$comment %in% "40%GBBG;60%HEGU",]
+obs$count[obs$type %in% "MIXD" & obs$comment %in% "40%GBBG;60%HEGU"] = 36
+obs$type[obs$type %in% "MIXD" & obs$comment %in% "40%GBBG;60%HEGU"] = "GBBG"
+to.add = mutate(to.add,
+                count = 54,
+                type = "HERG",
+                index = index+0.1)
+obs = rbind(obs, to.add)
+rm(to.add)
+
+to.add = obs[obs$type %in% "MIXD" & obs$comment %in% "30%GBBG;70%HEGU,0",]
+obs$count[obs$type %in% "MIXD" & obs$comment %in% "30%GBBG;70%HEGU,0"] = 15
+obs$type[obs$type %in% "MIXD" & obs$comment %in% "30%GBBG;70%HEGU,0"] = "GBBG"
+to.add = mutate(to.add,
+                count = 35,
+                type = "HERG",
+                index = index+0.1)
+obs = rbind(obs, to.add)
+rm(to.add)
+
+obs$comment[obs$type %in% "MIXD" & obs$count %in% "9050%HEGU25%BOGU25%LAGU"] = "50%HEGU;25%BOGU;25%LAGU"
+to.add = obs[obs$type %in% "MIXD" & obs$count %in% "9050%HEGU25%BOGU25%LAGU",]
+to.add1 = mutate(to.add,
+                 count = 23, #rounded up since can't have 1/2 a bird
+                 type = "BOGU",
+                 index = index+0.1)
+to.add2 = mutate(to.add,
+                 count = 23, #rounded up since can't have 1/2 a bird
+                 type = "LAGU",
+                 index = index+0.2)
+obs = rbind(obs, to.add1, to.add2)
+rm(to.add,to.add1,to.add2)
+obs$count[obs$type %in% "MIXD" & obs$comment %in% "50%HEGU;25%BOGU;25%LAGU"] = 45
+obs$type[obs$type %in% "MIXD" & obs$comment %in% "50%HEGU;25%BOGU;25%LAGU"] = "HERG"
+
+obs$type[obs$type %in% "MIXD"] = "UNKN" # listing as unknown for now, waiting for observer to get back to me
+
+
+# final check
+ammendended.list = c(as.character(spplist$spp_cd),"BEGCNT","ENDCNT","BEGSEG","ENDSEG","COCH","COMMENT")
+tmp <- !obs$type %in% ammendended.list
+message("Found ", sum(tmp), " entries with non-matching AOU codes after edits")
+sort(unique(obs$type[tmp]))
 
 message("Fixed AOU codes")
 
@@ -126,6 +173,7 @@ message("Fixed AOU codes")
 ##--------------------------##
 ## fill in other fields from comments
 ##--------------------------##
+
 #behavior
 obs$behavior[obs$comment %in% c("f","s","F","S") & obs$behavior %in% ""] = obs$comment[obs$comment %in% c("f","s","F","S") & obs$behavior %in% ""]
 obs$behavior[obs$comment %in% c("300,F, following lobster boat",
@@ -193,15 +241,6 @@ to.add$index = NA
 to.add$seat = "lf"
 obs = rbind(obs, to.add)
 
-# MDK did not record ENDCNT/BEGCNT when going over land on 442601 
-obs$type[obs$transect %in% 442601 & obs$obs %in% "tpw" & obs$type %in% "BEGCNT" & obs$sec %in% 38768.43] = "BEGSEG"
-to.add = obs[obs$transect %in% 442601 & obs$obs %in% "tpw" & obs$type %in% "BEGSEG",]
-to.add$obs = "mdk"
-to.add$comment = "added from tpw's record"
-to.add$index = NA
-to.add$seat = "lf"
-obs = rbind(obs, to.add)
-
 # TPW missed start point for 423100, use MDK's	
 obs$type[obs$transect %in% 423100 & obs$obs %in% "mdk" & obs$type %in% "BEGCNT"] = "BEGSEG"
 to.add = obs[obs$transect %in% 423100 & obs$obs %in% "mdk" & obs$type %in% "BEGSEG",]
@@ -222,11 +261,9 @@ to.add$seat = "lf"
 obs = rbind(obs, to.add)
 rm(to.add)
 
-# Note: Called the end of 415101 about 1/2 mile late.
-
 # 441100 
 #missing 2 ends or typo for beg
-obs$type[obs$transect %in% 441100 & obs$obs %in% "tpw" & obs$sec %in% c(61518.03, 62576.77)] = "REMOVE"
+obs$type[obs$transect %in% 441100 & obs$obs %in% "tpw" & obs$sec %in% c(61518.03, 62576.77)] = "COMMENT"
 #change ENDCNT to END SEG
 obs$type[obs$transect %in% 444100 & obs$obs %in% "mdk" & obs$type %in% "ENDCNT" & obs$sec %in% 32331.37]="ENDSEG" 
 
@@ -234,30 +271,19 @@ obs$type[obs$transect %in% 444100 & obs$obs %in% "mdk" & obs$type %in% "ENDCNT" 
 obs$type[obs$transect %in% 442602 & obs$obs %in% "mdk" & obs$sec %in% 37227.20] = "BEGSEG"
 
 # 443100 double end
-obs$type[obs$transect %in% 443100 & obs$obs %in% "tpw" & obs$sec %in% 35851.50] = "REMOVE"
+obs$type[obs$transect %in% 443100 & obs$obs %in% "tpw" & obs$sec %in% 35851.50] = "COMMENT"
 
 # 444600 double end
 obs$type[obs$transect %in% 444600 & obs$obs %in% "tpw" & 
-           obs$sec %in% 31284.55 & obs$type %in% "ENDCNT"] = "REMOVE"
+           obs$sec %in% 31284.55 & obs$type %in% "ENDCNT"] = "COMMENT"
 
 #change ENDCNT to END SEG
 obs$type[obs$transect %in% 411601 & obs$obs %in% "mdk" & obs$type %in% "ENDCNT"]="ENDSEG" 
-
-# remove dublicates coded as remove
-obs = filter(obs, !type %in% "REMOVE")
 
 # change offline obs transects to NA
 obs = mutate(obs, offline = ifelse(offline %in% "y", 1, 0),
              transect = replace(transect, transect %in% c("0","000000"),NA),
              transect = ifelse(offline %in% 1, NA, transect))
-
-# missing transects (NAs)
-# tpw 434100
-# tpw 433600
-# tpw 430600
-# tpw 424100 add Beg?
-# tpw 8/24 40522.50: 40610.21 -> all off transect counts by mdk times. 414101 ends at 40522.35
-# twp 412101
 
 # jsw missing transects
 obs$offline[obs$obs %in% "jsw"] = 0 # no offline indicated
@@ -282,10 +308,9 @@ if(any(!is.na(obs$transect[obs$offline %in% 1]))){
 obs$transect[obs$transect %in% "null"] = NA
 obs$transect[is.na(obs$transect) & obs$type %in% c("BEGCNT","ENDCNT")] = obs$count[is.na(obs$transect) & obs$type %in% c("BEGCNT","ENDCNT")]
 
+obs = arrange(obs,month,day,obs,sec, index)
 obs$transect[obs$obs %in% c('sde','jfv')] = na.locf(obs$transect[obs$obs %in% c('sde','jfv')])
 obs$transect[obs$obs %in% c('sde','jfv') & obs$offline %in% 1] = NA
-
-#371601		24 Aug circled to look at debris, no lost distance	
 
 #385600		26 Aug pilot did not record end of the line; use observer's location	
 to.add = obs[obs$transect %in% 385600 & obs$type %in% "ENDCNT" & obs$obs %in% 'jfv',]
@@ -314,35 +339,27 @@ to.add = mutate(to.add,
 obs = rbind(obs, to.add)
 rm(to.add)
 
-# 26 Aug did not record break between these two transects			
-# 365100  no BEG for either
-# NEED TO ADDRESS
-# 365101  no END for either
-
 # 374100 -> wrong transect
 obs$transect[obs$transect %in% 374100  & obs$sec %in% 40083.59 & obs$type %in% "ENDCNT"] = 374600 # not sure whats up with this
 
 # 375600 neither SDE or JFV has an END
 obs$transect[obs$transect %in% 375601 & obs$sec %in% c(38548.45, 38538.71)] = 375600
 
-# transects that need to be addressed
+# 381101  sde missing BEG
+to.add = obs[obs$transect %in% 381101 & obs$type %in% "BEGCNT" & obs$obs %in% 'jfv',]
+to.add = mutate(to.add, 
+                seat = "lf",
+                obs = "sde",
+                comment = "pilot did not record beginning of the line; used observer's location",
+                index = NA)
+obs = rbind(obs, to.add)
+rm(to.add)
 
-# 141    375601       2       4      sde
-# 137    381100       1       0      sde
-# 138    381101       1       2      sde
-# 96     410100       2       3      sde
-# 264    411601       3       1      mdk
-# 259    413101       6       5      mdk
-# 255    413601       1       2      mdk
-# 249    415100       1       0      mdk
-# 239    423100       0       2      mdk
-# 229    441600      15      14      mdk
-# 213    442601       7       8      mdk
-# 212    442602       1       2      mdk
-# 209    444100       2       3      mdk
-# 208    444600       3       2      mdk
+# 410100       
+obs$type[obs$transect %in% 410100 & obs$sec %in% 31459.01] = "COMMENT" #not sure whats up here
 
-
+# 444600
+obs$type[obs$transect %in% 444600 & obs$sec %in% 31075.00] = "COMMENT" #not sure whats up here
 
 message("Fixed transect errors")
 
@@ -404,6 +421,214 @@ obs$distance.to.obs[obs$obs %in% c("tpw","mdk")] = obs$distance.to.obs[obs$obs %
 # ---------- # 
 # condition
 # ---------- # 
+# "343600"
+to.add = obs[obs$transect %in% 343600 & obs$sec %in% 59640.68,]
+obs$count[obs$transect %in% 343600 & obs$sec %in% 59640.68]=2
+to.add = mutate(to.add,
+                condition = 3,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+# "404601"
+to.add = obs[obs$transect %in% 404601 & obs$sec %in% 29965.11,]
+obs$count[obs$transect %in% 404601 & obs$sec %in% 29965.11]=5
+obs$condition[obs$transect %in% 404601 & obs$sec %in% 29965.11]=5
+to.add = mutate(to.add,
+                count = 3,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+to.add = obs[obs$transect %in% 404601 & obs$sec %in% 30759.10,]
+to.add = mutate(to.add,
+                count = 4,
+                condition = 4,
+                index=index-0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+to.add = obs[obs$transect %in% 404601 & obs$sec %in% 30680.55,]
+obs$count[obs$transect %in% 404601 & obs$sec %in% 30680.55]=5
+to.add = mutate(to.add,
+                count = 3,
+                condition = 3,
+                index=index-0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#"405602"
+to.add = obs[obs$transect %in% 405602 & obs$sec %in% 33769.26,]
+obs$count[obs$transect %in% 405602 & obs$sec %in% 33769.26]=3
+to.add = mutate(to.add,
+                count = 5,
+                condition = 5,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#"410601"
+to.add = obs[obs$transect %in% 410601 & obs$sec %in% 38026.63,]
+obs$count[obs$transect %in% 410601 & obs$sec %in% 38026.63]=4
+to.add = mutate(to.add,
+                count = 3,
+                condition = 3,
+                index=index-0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+# "412601" 
+to.add = obs[obs$transect %in% 412601 & obs$sec %in% 48016.08,]
+obs$count[obs$transect %in% 412601 & obs$sec %in% 48016.08]=4
+to.add = mutate(to.add,
+                count = 5,
+                condition = 5,
+                index=index-0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#"413102" 
+to.add = obs[obs$transect %in% 413102 & obs$sec %in% 45292.94 & obs$type %in% "COCH",]
+obs$count[obs$transect %in% 413102 & obs$sec %in% 45292.94 & obs$type %in% "COCH"]=5
+to.add = mutate(to.add,
+                count = 3,
+                condition = 3,
+                index=index-0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#"413601" 
+to.add = obs[obs$transect %in% 413601 & obs$sec %in% 37927.10 & obs$type %in% "COCH",]
+obs$count[obs$transect %in% 413601 & obs$sec %in% 37927.10 & obs$type %in% "COCH"]=5
+to.add = mutate(to.add,
+                count = 3,
+                condition = 3,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#"413602" 
+to.add = obs[obs$transect %in% 413602 & obs$sec %in% 38578.08 & obs$type %in% "COCH",]
+obs$count[obs$transect %in% 413602 & obs$sec %in% 38578.08 & obs$type %in% "COCH"]=3
+to.add = mutate(to.add,
+                count = 4,
+                condition = 4,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+to.add = obs[obs$transect %in% 413602 & obs$sec %in% 38871.09 & obs$type %in% "COCH",]
+obs$count[obs$transect %in% 413602 & obs$sec %in% 38871.09 & obs$type %in% "COCH"] = 4
+to.add = mutate(to.add,
+                count = 3,
+                condition = 3,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#"415100" 
+to.add = obs[obs$transect %in% 415100 & obs$sec %in% 33634.87 & obs$type %in% "COCH",]
+obs$count[obs$transect %in% 415100 & obs$sec %in% 33634.87 & obs$type %in% "COCH"]=4
+to.add = mutate(to.add,
+                count = 5,
+                condition = 5,
+                index=index-0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#"415601"
+to.add = obs[obs$transect %in% 415601 & obs$sec %in% 32316.91 & obs$type %in% "COCH",]
+obs$count[obs$transect %in% 415601 & obs$sec %in% 32316.91 & obs$type %in% "COCH"]=5
+to.add = mutate(to.add,
+                count = 4,
+                condition = 4,
+                index=index-0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#"420100" 
+to.add = obs[obs$transect %in% 420100 & obs$sec %in% 31304.51 & obs$type %in% "COCH",]
+obs$count[obs$transect %in% 420100 & obs$sec %in% 31304.51 & obs$type %in% "COCH"]=4
+to.add = mutate(to.add,
+                count = 5,
+                condition = 5,
+                index=index-0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#"420101" 
+obs$type[obs$transect %in% 420101 & obs$sec %in% 31721.47 & obs$type %in% "COCH"] = "COMMENT" 
+
+#"424100" 
+to.add = obs[obs$transect %in% 424100 & obs$sec %in% 46147.42 & obs$type %in% "COCH",]
+obs$count[obs$transect %in% 424100 & obs$sec %in% 46147.42 & obs$type %in% "COCH"]=3
+to.add = mutate(to.add,
+                count = 5,
+                condition = 5,
+                index=index-0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+to.add = obs[obs$transect %in% 424100 & obs$sec %in% 46585.13 & obs$type %in% "COCH",]
+obs$count[obs$transect %in% 424100 & obs$sec %in% 46585.13 & obs$type %in% "COCH"] = 4
+to.add = mutate(to.add,
+                count = 3,
+                condition = 3,
+                index=index-0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+obs$count[obs$transect %in% 424100 & obs$sec %in% 47069.07 & obs$type %in% "COCH"] = 5
+obs$offline[obs$transect %in% 424100 & obs$sec %in% 47069.07 & obs$type %in% "COCH"] = 1
+obs$transect[obs$transect %in% 424100 & obs$sec %in% 47069.07 & obs$type %in% "COCH"] = NA
+
+#"424600"
+to.add = obs[obs$transect %in% 424600 & obs$sec %in% 45211.66 & obs$type %in% "COCH",]
+obs$count[obs$transect %in% 424600 & obs$sec %in% 45211.66 & obs$type %in% "COCH"] = 4
+to.add = mutate(to.add,
+                count = 5,
+                condition = 5,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#"425100" 
+obs$count[obs$transect %in% 425100 & obs$sec %in% 43549.45] = 3
+obs$count[obs$transect %in% 425100 & obs$sec %in% 43632.28] = 4
+
+#"430100" 
+obs$count[obs$transect %in% 430100 & obs$sec %in% 42096.20] = 4
+obs$count[obs$transect %in% 430100 & obs$sec %in% 42120.77] = 3
+
+#"431100" 
+to.add = obs[obs$transect %in% 431100 & obs$sec %in% 41274.03 & obs$type %in% "COCH",]
+obs$count[obs$transect %in% 431100 & obs$sec %in% 41274.03 & obs$type %in% "COCH"] = 5
+to.add = mutate(to.add,
+                count = 3,
+                condition = 3,
+                index=index-0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#"433600" 
+to.add = obs[obs$transect %in% 433600 & obs$sec %in% 46112.60 & obs$type %in% "COCH",]
+obs$count[obs$transect %in% 433600 & obs$sec %in% 46112.60 & obs$type %in% "COCH"] = 5
+to.add = mutate(to.add,
+                count = 4,
+                condition = 4,
+                index=index-0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#"434100"
+to.add = obs[obs$transect %in% 434100 & obs$sec %in% 43170.57 & obs$type %in% "COCH",]
+obs$count[obs$transect %in% 434100 & obs$sec %in% 43170.57 & obs$type %in% "COCH"] = 4
+to.add = mutate(to.add,
+                count = 3,
+                condition = 3,
+                index=index-0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
 # ---------- # 
 
 
@@ -417,3 +642,29 @@ obs$offline[is.na(obs$transect) &
 
 message("Fixed other errors")
 ##--------------------------##
+
+# STILL NEED TO ADDRESS
+#(missing COUNT for 6 non-offline observations)
+#(there are 9 observations with count >= 10,000)
+
+#x = obs[is.na(obs$count),] #checked is OK
+
+# errors
+#x = obs[obs$transect %in% 381100,]
+#x = obs[obs$transect %in% 365100,]
+#x = obs[obs$transect %in% 365101,]
+# 26 Aug did not record break between these two transects			
+# 365100  no BEG for either
+# NEED TO ADDRESS
+# 365101  no END for either
+#371601		24 Aug circled to look at debris, no lost distance	
+# Note: Called the end of 415101 about 1/2 mile late.
+# missing transects (NAs)
+# tpw 434100
+# tpw 433600
+# tpw 430600
+# tpw 424100 add Beg?
+# tpw 8/24 40522.50: 40610.21 -> all off transect counts by mdk times. 414101 ends at 40522.35
+# twp 412101
+
+
