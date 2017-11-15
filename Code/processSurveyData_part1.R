@@ -14,19 +14,32 @@
 # ---------------------------------------------------------------------------- #
 
 #processSurveyData_part1 <- function(dir.in, dir.out, errfix.file, py.exe) {
+
+# ----------------------------- #
 # LOAD PACKAGES 
+# ----------------------------- #
 require(geosphere) # used in fixSeconds function
 require(parallel) # used to make a cluster
 require(rgdal) # for writeOGR
 require(zoo) # fill in missing points
-require(dplyr)
+require(dplyr) # %>% 
+require(RODBC) # connect to database
+require(ggplot2) #ggplot
+# ----------------------------- #
 
+
+# ----------------------------- #
 # DEFINE SURVEY, CHANGE THIS!!!
+# ----------------------------- #
 surveyFolder = "AMAPPS/"
-yearLabel = "AMAPPS_2014_10"
+yearLabel = "AMAPPS_2017_08"
+# ----------------------------- #
 
+
+# ----------------------------- #
 # SET INPUT/OUTPUT DIRECTORY PATHS
-dir <- "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/"
+# ----------------------------- #
+dir <- "//ifw-hqfs1/MB SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/"
 setwd(dir)
 dbpath <- gsub("Jeff_Working_Folder", "DataBase", dir)
 dir.in <- paste(gsub("Jeff_Working_Folder", "SurveyData/", dir), surveyFolder, yearLabel, sep = "") 
@@ -45,14 +58,13 @@ errfix.file <- file.path(dir.out, paste(yearLabel, "_ObsFilesFix.R", sep = ""))
 #py.exe = "C:/Python27/ArcGIS10.3/python.exe" #32 bit
 py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
 
-    
   # SET TIMER
-  ptm <- proc.time()
+  #ptm <- proc.time()
   
   
   # STORE CREW FOLDER AND FILENAME REFERENCES
   crews <- list.files(dir.in, pattern = "Crew")
-  
+  # ----------------------------- #  
   
   # ---------------------------------------------------------------------------- #
   # STEP 1: READ IN RAW OBSERVATION DATA
@@ -79,14 +91,16 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   
   # QUICK LOOK AT NUMBER OF RECORDS AVAILABLE
   out.obstab1 <- table(obs$crew, obs$seat)
+  out.obstab1
   out.obstab2 <- table(obs$obs, obs$seat)
+  out.obstab2
   # ---------------------------------------------------------------------------- #
   
   
   # ---------------------------------------------------------------------------- #
   # STEP 2: READ IN RAW TRACK DATA
   # ---------------------------------------------------------------------------- #
-  trackfiles <- list.files(dir.in, pattern = "_track.txt", recursive = TRUE, 
+  trackfiles <- list.files(dir.in, pattern = "_track", recursive = TRUE, #changed from "_track.txt"
                            full.names = TRUE)
   track <- lapply(setNames(trackfiles, basename(trackfiles)), getTrackFiles)
   track <- lapply(track, function(x) data.frame(cbind(x, "crew" = unlist(strsplit(basename(dirname(dirname(x$file))), "_"))[1])))
@@ -100,6 +114,7 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   
   # QUICK LOOK AT NUMBER OF RECORDS AVAILABLE
   out.tracktab <- table(track$crew, track$seat)
+  out.tracktab
   # ---------------------------------------------------------------------------- #
   
   
@@ -107,7 +122,7 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   # STEP 3: OUTPUT COAST SURVEY DATA; FIX OBSERVATION FILE ERRORS
   # ---------------------------------------------------------------------------- #
   obs <- commonErrors(obs)
-  obs <- fixMixed(obs) # pull apart MIXD obs
+  #obs <- fixMixed(obs) # pull apart MIXD obs
   
   if (!file.exists(errfix.file)) {
     warning("Error fix R file is missing and will not be sourced.")
@@ -180,8 +195,8 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
       } else {
         alt.list = gsub("_rf_","_lf_",alt.list)
         alt.tracks = track[names(track) %in% alt.list]
-        alt.tracks = do.call(rbind.data.frame,alt.tracks)
-        alt.tracks$key = gsub("_lf_","_rf_",alt.tracks$key)
+        alt.tracks = do.call(rbind.data.frame, alt.tracks)
+        alt.tracks$key = gsub("_lf_", "_rf_", alt.tracks$key)
         alt.tracks$seat = "rf"
     
         track = do.call(rbind.data.frame, track)
@@ -201,8 +216,7 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   #})
   #obstrack <- do.call(rbind.data.frame, obstrack)
   
-  obstrack <- obstrack[order(obstrack$crew, obstrack$seat, obstrack$year, obstrack$month, 
-                             obstrack$day, obstrack$sec, obstrack$index), ]
+  obstrack <- arrange(obstrack, crew, seat, year, month, day, sec, index)
   row.names(obstrack) <- NULL
   obstrack$ID <- as.numeric(row.names(obstrack))
   rm(obs, track, trackfiles, obsfiles, alt.tracks)
@@ -227,13 +241,14 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   }
 
   ## define which transect the point is on
-  obstrack$transect = na.locf(obstrack$transect)
+  #obstrack$transect = na.locf(obstrack$transect)
 
   # CALCULATE DISTANCE FROM EACH POINT TO MASTER TRANSECT FILE
   # THIS PROCESS EMPLOYS PARALLEL COMPUTING TO DECREASE PROCESSING TIME
   
   # find closest point to line (where data would be the bird data without transect info)
-  obstrack = obstrack[,c("lat", "long", "transect", colnames(obstrack)[!colnames(obstrack) %in% c("lat", "long", "transect")])]
+  obstrack = obstrack[,c("lat", "long", "transect", 
+                         colnames(obstrack)[!colnames(obstrack) %in% c("lat", "long", "transect")])]
   strt<-Sys.time(); 
   cl <- makeCluster(as.numeric(detectCores()))
   clusterExport(cl, "trans", envir = environment())
@@ -324,7 +339,7 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   # ---------------------------------------------------------------------------- #
   # STEP 10: FLAG POINTS FOR FURTHER INVESTIGATION FOR OTHER ERRORS
   # ---------------------------------------------------------------------------- #
-  obstrack <- obstrack[order(obstrack$ID), ]
+  obstrack <- arrange(obstrack,ID)
   obstrack$key <- paste(obstrack$crew, obstrack$seat, obstrack$year, obstrack$month, 
                         obstrack$day, obstrack$transLat, obstrack$transLong, sep = "_")
   allkeys <- unique(obstrack$key[as.numeric(obstrack$transLat) > 0])
@@ -381,11 +396,18 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
       }
   }
   onland = unlist(mapply(overLand, x, y))
-  # ***continue here***
+  # 
   obstrack$onLand <- ifelse(is.na(onland), 0, 1)
   rm(geodat, onland, x, y)
   # ---------------------------------------------------------------------------- #
 
+  
+  # ---------------------------------------------------------------------------- #
+  # STEP 12: REMOVE POINTS THAT ARE OBVIOUS TRANSIT POINTS
+  # ---------------------------------------------------------------------------- #
+  to.remove = obstrack[obstrack$flag1==1 & obstrack$onLand==1,]
+  # ---------------------------------------------------------------------------- #  
+  
   
   # ---------------------------------------------------------------------------- #
   # STEP 12: OUTPUT DATA 
