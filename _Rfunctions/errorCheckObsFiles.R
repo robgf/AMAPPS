@@ -2,6 +2,7 @@
 # errorCheckObsFiles.R
 # Date Created: 2011-09-06
 # Author: JBL
+# edited by: KColeman
 #
 # Description: This program checks the pilot and observer observation files 
 # for errors and outputs them to a .csv file.
@@ -10,7 +11,7 @@
 errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
 
   # CHECK IF THERE IS AN UNEQUAL NUMBER OF BEGCNT AND ENDCNT ROWS FOR EACH SEGMENT
-  checkBegEnd(obs) 
+  checkBegEnd(dat) 
   
   # YEAR COLUMN SHOULD MATCH DATE FROM OBSERVATION FILE NAME
   year <- substr(matrix(unlist(strsplit(basename(dat$file), "_")), nrow = nrow(dat), 
@@ -63,9 +64,9 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
                               sep = "")
   tmp <- dat$type == "COCH" & dat$condition %in% c("1", "2", "3", "4", "5") & 
     dat$condition != dat$count
-  message("Found ", sum(tmp), " additional errors in CONDITION column.")
-  if(sum(tmp)>0){dat[tmp,]}
-  dat$dataError[tmp] <- paste(dat$dataError[tmp], "; CONDITION != COUNT", sep = "")
+  message("Found ", sum(tmp[tmp %in% TRUE]), " additional errors in CONDITION column.")
+  if(sum(tmp[tmp %in% TRUE])>0){dat[tmp,]}
+  dat$dataError[tmp %in% TRUE] <- paste(dat$dataError[tmp %in% TRUE], "; CONDITION != COUNT", sep = "")
   
   # OFFLINE COLUMN SHOULD ONLY BE "0" OR "1"
   tmp <- tolower(dat$offline) %in% c("na", "no", "n", "", " ")
@@ -111,20 +112,21 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
   dat$type[dat$type %in% c("ENDCOUNT", "STOP")] <- "ENDCNT"
   
   # FOR BEG/END POINTS, OFFLINE COLUMN SHOULD BE "0"
-  tmp <- dat$offline != "0" & dat$type %in% c("BEGSEG", "ENDSEG", "BEGCNT", "ENDCNT")
+  # since some obs decided to keep track off offline/transit counts, need to also make sure there is a transect
+  tmp <- !is.na(dat$transect) & dat$offline != "0" & dat$type %in% c("BEGSEG", "ENDSEG", "BEGCNT", "ENDCNT")
   dat$dataChange[tmp] <- paste(dat$dataChange[tmp], "; changed OFFLINE from ", 
                                dat$offline[tmp], sep = "")
   dat$offline[tmp] <- "0"
   
   # COMPARE TYPE VALUES TO DATABASE SPECIES LIST
-  #code <- odbcConnectExcel2007(xls.file = paste(speciesPath, "NWASC_codes.xlsx", sep=""))
-  #spplist <- sqlFetch(code, "codes")$spp_cd
-  #odbcClose(code)
-  spp <- read.xlsx(paste(speciesPath,"NWASC_codes.xlsx", sep=""), sheetName = "codes")
-  spplist <- spp$spp_cd
-  tmp <- !dat$type %in% c("BEGSEG", "ENDSEG", "BEGCNT", "ENDCNT", "COCH") & 
-    !dat$type %in% c("BOAT", "GILL", "SHIP", "TRAW", "BALN") & !dat$type %in% spplist
+  db <- odbcConnectAccess2007("//ifw-hqfs1/MB SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
+  spplist <- sqlFetch(db, "lu_species")
+  odbcClose(db)
+  
+  ammendended.list = c(as.character(spplist$spp_cd),"BEGCNT","ENDCNT","BEGSEG","ENDSEG","COCH","COMMENT")
+  tmp <- !obs$type %in% ammendended.list
   message("Found ", sum(tmp), " entries with non-matching AOU codes")
+
   if(sum(tmp)>0){dat[tmp,]}
   if (sum(tmp) > 0) {
     tab <- data.frame(table(dat$type[tmp]))
