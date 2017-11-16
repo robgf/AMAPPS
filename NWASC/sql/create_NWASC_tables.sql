@@ -1061,7 +1061,7 @@ GO
 INSERT INTO lu_parent_project(
 	project_id, project_name, project_ds, project_url)
 	VALUES
-	(1, 'AMAPPS aerial',
+	(1,'AMAPPS USFWS',
 		'The geographic area of operations includes near-shore and offshore waters of the U.S. 
 		Atlantic Coast from the Canada/Maine border to approximately Jacksonville, FL. Transects 
 		are located at 5'' (~ 5 nautical miles [nm]) intervals at every 1'' and 6'' minutes of 
@@ -1104,9 +1104,7 @@ INSERT INTO lu_parent_project(
 		distance in nautical miles. Balloons (both inflated and deflated) should be recording within the transect. 
 		[summary snippets copied from internal confluence site]',
 		'http://www.nefsc.noaa.gov/psb/AMAPPS/'),
-	(2, 'AMAPPS boat',
-		NULL,
-		'http://www.nefsc.noaa.gov/psb/AMAPPS/'),
+	(2,'AMAPPS NOAA',NULL,'http://www.nefsc.noaa.gov/psb/AMAPPS/'),
 	(3,'Audubon CBC (Christmas Bird Count)',NULL,NULL),
 	(4,'Bar Harbor Whale Watching Cruises',NULL,NULL),
 	(5,'BOEM HighDef NC 2011',NULL,NULL),
@@ -1145,6 +1143,14 @@ INSERT INTO lu_parent_project(
 	study of potential impacts will facilitate a more efficient track to energy production offshore New 
 	York by providing the necessary information to meet the U.S. Bureau of Ocean Energy Management''s (BOEM''s) 
 	regulatory requirements for environmental review of WEAs.','https://remote.normandeau.com/nys_overview.php');
+
+/*  update lu_parent_project table */
+/*  update lu_parent_project
+	set
+	project_name = 'AMAPPS NOAA'
+	where project_id = 2
+*/
+
 -- select * from lu_parent_project
  
 ------------------------
@@ -1589,14 +1595,21 @@ INSERT INTO dataset(
 	(406,24,'NYSERDA_APEM_10','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
 	(407,24,'NYSERDA_APEM_11','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
 	(408,24,'NYSERDA_APEM_12','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
-	(409,NULL,'AMAPPS_NOAA/NMFS_NEFSCAerial2010','a','cts','ot',NULL,NULL,0,'no',NULL,NULL,'BOEM,USFWS,NOAA,NAVY',NULL,NULL),
-	(410,NULL,'AMAPPS_NOAA/NMFS_NEFSCAerial2012','a','cts','ot',NULL,NULL,0,'no',NULL,NULL,'BOEM,USFWS,NOAA,NAVY',NULL,NULL);
+	(409,2,'AMAPPS_NOAA/NMFS_NEFSCAerial2010','a','cts','ot',NULL,NULL,0,'no',NULL,NULL,'BOEM,USFWS,NOAA,NAVY',NULL,NULL),
+	(410,2,'AMAPPS_NOAA/NMFS_NEFSCAerial2012','a','cts','ot',NULL,NULL,0,'no',NULL,NULL,'BOEM,USFWS,NOAA,NAVY',NULL,NULL);
 
 -- 	( ,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2017','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
 
 -- 	(,21,'DeepwaterWindBlockIsland_bats',NULL,NULL,NULL,NULL,NULL,9,'no',NULL,65,'BOEM,TetraTech,Deepwater Wind RI',NULL,1),
 --	(,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2018','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
 --	(,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2019','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
+
+/*  update dataset table */
+/*    update dataset
+	set
+	parent_project = 2
+	where dataset_id = 410
+*/
 
 -- select * from dataset
 
