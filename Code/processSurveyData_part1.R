@@ -31,7 +31,7 @@ require(ggplot2) #ggplot
 # ----------------------------- #
 # DEFINE SURVEY, CHANGE THIS!!!
 # ----------------------------- #
-surveyFolder = "AMAPPS/"
+surveyFolder = "AMAPPS"
 yearLabel = "AMAPPS_2017_08"
 # ----------------------------- #
 
@@ -39,16 +39,14 @@ yearLabel = "AMAPPS_2017_08"
 # ----------------------------- #
 # SET INPUT/OUTPUT DIRECTORY PATHS
 # ----------------------------- #
-dir <- "//ifw-hqfs1/MB SeaDuck/NewCodeFromJeff_20150720/Jeff_Working_Folder/"
+dir <- paste("//ifw-hqfs1/MB SeaDuck/", surveyFolder, sep="")
 setwd(dir)
-dbpath <- gsub("Jeff_Working_Folder", "DataBase", dir)
-dir.in <- paste(gsub("Jeff_Working_Folder", "SurveyData/", dir), surveyFolder, yearLabel, sep = "") 
-dir.out <- paste(dir,"DataProcessing/Surveys/", surveyFolder, yearLabel, sep = "") 
-speciesPath <- paste(dir,"DataProcessing/",sep="")
+dir.in <- paste(dir, "raw_data", yearLabel, sep = "/") 
+dir.out <- paste(dir, "clean_data", yearLabel, sep = "/") 
 
 # SOURCE R FUNCTIONS
-source(file.path(dir, "_Rfunctions/sourceDir.R"))
-sourceDir(file.path(dir, "_Rfunctions"))
+source(file.path(dir, "code/cleaning_raw_data/Rfunctions/sourceDir.R"))
+sourceDir(file.path(dir, "code/cleaning_raw_data/Rfunctions"))
 
 # SET PATH TO R FILE THAT FIXES DATA ERRORS
 errfix.file <- file.path(dir.out, paste(yearLabel, "_ObsFilesFix.R", sep = ""))
