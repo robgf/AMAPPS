@@ -92,10 +92,11 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
     summarise(n = n()) %>% filter(n %% 2 != 0)
   message("Found ", dim(tmp)[1], " additional errors in CONDITION column where there are an odd number of COCHs.")
   if(dim(tmp)[1]>0){print(tmp)}
-######  need to add data output where this occurrs
-  
+
   # CONDITION CODE IS ONLY LISTED WHEN THERE WAS AN ACTUAL CHANGE
-  tmp <- dat[c(which(dat$type %in% 'COCH'),which(dat$type %in% 'COCH')+1,which(dat$type %in% 'COCH')-1),] %>% 
+  tmp <- dat[c(which(dat$type %in% 'COCH'),
+               which(dat$type %in% 'COCH')+1,
+               which(dat$type %in% 'COCH')-1),] %>% 
     select(year,month,day,obs,transect,sec,condition,type,index) %>% 
     arrange(month,day,obs,transect,sec,index) %>% group_by(obs,transect,day) %>% 
     filter(!duplicated(index)) %>% 
@@ -107,7 +108,8 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
                                                                    sum.lead.condition %in% 0 |
                                                                    sum.lag.condition %in% 0)
   message("Found ", dim(tmp)[1], " additional errors in CONDITION column where COCH doesn't reflect a change in condition.")
-######  need to add data output where this occurrs
+  if(dim(tmp)[1]>0){filter(dat,obs %in% tmp$obs, transect %in% tmp$transect, day %in% tmp$day, type %in% 'COCH') %>% 
+      arrange(obs,transect,day,sec)}
   # ---------------#
    
   # ---------------#
