@@ -108,6 +108,9 @@ obs$type[obs$type %in% c("NOGAA", "NOGAI")] = "NOGA"
 obs$type[obs$type %in% "BSTP"] = "BRSP" #band rumped storm petrel 
 obs$type[obs$type %in% "GRST"] = "GRTU"# green sea turtle
 obs$type[obs$type %in% "UISP"] = "UNSP"# unid. ??
+obs$type[obs$type %in% "GREA"] = "GREG"
+obs$type[obs$type %in% "AGWT"] = "GWTE"
+obs$type[obs$type %in% "HBST"] = "HATU"
 
 tmp = obs$type != obs$original.spp.codes
 obs$dataChange[tmp] = paste(obs$dataChange[tmp], "; changed TYPE from ", obs$original.spp.codes[tmp], sep = "")
@@ -308,9 +311,10 @@ if(any(!is.na(obs$transect[obs$offline %in% 1]))){
 obs$transect[obs$transect %in% "null"] = NA
 obs$transect[is.na(obs$transect) & obs$type %in% c("BEGCNT","ENDCNT")] = obs$count[is.na(obs$transect) & obs$type %in% c("BEGCNT","ENDCNT")]
 
+# fill in transects where NA
 obs = arrange(obs,month,day,obs,sec, index)
-obs$transect[obs$obs %in% c('sde','jfv')] = na.locf(obs$transect[obs$obs %in% c('sde','jfv')])
-obs$transect[obs$obs %in% c('sde','jfv') & obs$offline %in% 1] = NA
+obs$transect[obs$obs %in% c('sde','jfv','mtj')] = na.locf(obs$transect[obs$obs %in% c('sde','jfv','mtj')])
+obs$transect[obs$obs %in% c('sde','jfv','mtj') & obs$offline %in% 1] = NA
 
 #385600		26 Aug pilot did not record end of the line; use observer's location	
 to.add = obs[obs$transect %in% 385600 & obs$type %in% "ENDCNT" & obs$obs %in% 'jfv',]
@@ -421,6 +425,20 @@ obs$distance.to.obs[obs$obs %in% c("tpw","mdk")] = obs$distance.to.obs[obs$obs %
 # ---------- # 
 # condition
 # ---------- # 
+
+#### still need to address
+# obs transect     n
+# <chr>    <chr> <int>
+# 1   mtj   293600     1
+# 2   mtj   302600     1
+# 3   mtj   312600     1
+# 4   mtj   320100     1
+# 5   mtj   324100     1
+# 6   mtj   325100     1
+# 7   mtj   330600     1
+# 8   mtj   332100     1
+# 9   mtj   350100     1
+
 # "343600"
 to.add = obs[obs$transect %in% 343600 & obs$sec %in% 59640.68,]
 obs$count[obs$transect %in% 343600 & obs$sec %in% 59640.68]=2
