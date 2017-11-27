@@ -87,11 +87,11 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
   if(sum(tmp[tmp %in% TRUE])>0){dat[tmp,]}
   dat$dataError[tmp %in% TRUE] <- paste(dat$dataError[tmp %in% TRUE], "; CONDITION != COUNT", sep = "")
  
-  # THERE ARE TWO (What the condition was and what it became - this is the protocol)
+  # THERE ARE TWO COCHs (What the condition was and what it became - this is the protocol)
   tmp <- dat %>% filter(type %in% 'COCH',!is.na(transect)) %>% group_by(obs,transect) %>% 
     summarise(n = n()) %>% filter(n %% 2 != 0)
   message("Found ", dim(tmp)[1], " additional errors in CONDITION column where there are an odd number of COCHs.")
-  if(dim(tmp)[1]>0){tmp}
+  if(dim(tmp)[1]>0){print(tmp)}
 ######  need to add data output where this occurrs
   
   # CONDITION CODE IS ONLY LISTED WHEN THERE WAS AN ACTUAL CHANGE
@@ -107,7 +107,7 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
                                                                    sum.lead.condition %in% 0 |
                                                                    sum.lag.condition %in% 0)
   message("Found ", dim(tmp)[1], " additional errors in CONDITION column where COCH doesn't reflect a change in condition.")
-  ######  need to add data output where this occurrs
+######  need to add data output where this occurrs
   # ---------------#
    
   # ---------------#
@@ -188,6 +188,18 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
   dat$dataChange[tmp] <- paste(dat$dataChange[tmp], "; changed OFFLINE from ", 
                                dat$offline[tmp], sep = "")
   dat$offline[tmp] <- "0"
+  # ---------------#
+  
+  # ---------------#
+  # DISTANCE COLUMN 
+  # ---------------#
+  # distance should in in nautical miles
+  # so if there are observations above 2, these are most likely in another unit. 
+  # flag for investigation
+  tmp <- which(dat$distance.to.obs > 2)
+  message("Found ", length(tmp), " error(s) in DISTANCE column.")
+  if(length(tmp)>0){dat[tmp,]}
+  dat$dataError[tmp] <- paste(dat$dataError[tmp], "; Possibly an incorrectly coded DISTANCE unit", sep = "")
   # ---------------#
    
   # ---------------#
