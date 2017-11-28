@@ -91,7 +91,27 @@ p = ggplot(gom_data,aes(coords.x1,coords.x2))+geom_point()+
 p
 ggsave(filename = "Z:/seabird_database/data_sent/MeghanSadlowski_iPac_AKN_GoMex_Nov2017/observations.png",plot=p)
 # 
-#ggplot(gom_data[gom_data$source_dataset_id %in% 'CSAP',],aes(coords.x1,coords.x2))+geom_point()+
-#   geom_polygon(data = world, aes(x=long, y = lat,group=group), fill="forestgreen")+
-#   coord_fixed(xlim = c(-100,-79), ylim = c(20,35), ratio = 1.3)
+ggplot(gom_data[gom_data$source_dataset_id %in% 'CSAP',],aes(coords.x1,coords.x2))+geom_point()+
+   geom_polygon(data = world, aes(x=long, y = lat,group=group), fill="forestgreen")+
+   coord_fixed(xlim = c(-100,-79), ylim = c(20,35), ratio = 1.3)
+
+# and all the data
+all_data = as.data.frame(fc)
+
+db <- odbcConnectAccess2007("//ifw-hqfs1/MB SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
+datalist <- sqlFetch(db, "dataset")
+obs <- sqlFetch(db, "observation")
+odbcClose(db)
+
+all_data = filter(all_data, dataset_id %in% datalist$dataset_id[datalist$share_level %in% c(2,3,4,5)])
+obs = filter(obs, dataset_id %in% datalist$dataset_id[datalist$share_level %in% c(2,3,4,5)])
+
+p = ggplot(all_data,aes(coords.x1,coords.x2))+geom_point()+
+  geom_point(data = obs,aes(x=temp_lon,y=temp_lat))+
+  geom_polygon(data = world, aes(x=long, y = lat,group=group), fill="forestgreen")+
+  coord_fixed(xlim = c(-100,-0), ylim = c(20,70), ratio = 1.3)+
+  xlab("Longitude")+ ylab("Latitude")+ ggtitle("All Observations")
+p
+ggsave(filename = "Z:/seabird_database/data_sent/MeghanSadlowski_iPac_AKN_GoMex_Nov2017/all_observations.png",plot=p)
+
 # ------------------ #
