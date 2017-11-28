@@ -425,19 +425,87 @@ obs$distance.to.obs[obs$obs %in% c("tpw","mdk")] = obs$distance.to.obs[obs$obs %
 # ---------- # 
 # condition
 # ---------- # 
+# 350100 
+to.add = obs[obs$transect %in% 350100 & obs$sec %in% 39841.16,]
+obs$count[obs$transect %in% 350100 & obs$sec %in% 39841.16]=4
+to.add = mutate(to.add,
+                condition = 3,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
 
-#### still need to address
-# obs transect     n
-# <chr>    <chr> <int>
-# 1   mtj   293600     1
-# 2   mtj   302600     1
-# 3   mtj   312600     1
-# 4   mtj   320100     1
-# 5   mtj   324100     1
-# 6   mtj   325100     1
-# 7   mtj   330600     1
-# 8   mtj   332100     1
-# 9   mtj   350100     1
+# 332100
+to.add = obs[obs$transect %in% 332100 & obs$sec %in% 39418.99,]
+obs$count[obs$transect %in% 332100 & obs$sec %in% 39418.99]=4
+to.add = mutate(to.add,
+                condition = 3,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+# 330600
+to.add = obs[obs$transect %in% 330600 & obs$sec %in% 62500.39,]
+obs$count[obs$transect %in% 330600 & obs$sec %in% 62500.39]=3
+to.add = mutate(to.add,
+                condition = 4,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#325100
+to.add = obs[obs$transect %in% 325100 & obs$sec %in% 57246.51,]
+obs$count[obs$transect %in% 325100 & obs$sec %in% 57246.51]=5
+to.add = mutate(to.add,
+                condition = 4,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#324100 
+to.add = obs[obs$transect %in% 324100 & obs$sec %in% 50757.27,]
+obs$count[obs$transect %in% 324100 & obs$sec %in% 50757.27]=4
+to.add = mutate(to.add,
+                condition = 3,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#320100 
+to.add = obs[obs$transect %in% 320100 & obs$sec %in% 39460.09,]
+obs$count[obs$transect %in% 320100 & obs$sec %in% 39460.09]=4
+to.add = mutate(to.add,
+                condition = 5,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+
+#293600
+to.add = obs[obs$transect %in% 293600 & obs$sec %in% 45053.45,]
+obs$count[obs$transect %in% 293600 & obs$sec %in% 45053.45]=4
+to.add = mutate(to.add,
+                condition = 3,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#302600 
+to.add = obs[obs$transect %in% 302600 & obs$sec %in% 35983.72,]
+obs$count[obs$transect %in% 302600 & obs$sec %in% 35983.72]=4
+to.add = mutate(to.add,
+                condition = 3,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
+
+# 312600 
+to.add = obs[obs$transect %in% 312600 & obs$sec %in% 39785.95,]
+obs$count[obs$transect %in% 312600 & obs$sec %in% 39785.95]=4
+to.add = mutate(to.add,
+                condition = 3,
+                index=index+0.1)
+obs = rbind(obs,to.add)
+rm(to.add)
 
 # "343600"
 to.add = obs[obs$transect %in% 343600 & obs$sec %in% 59640.68,]
@@ -447,6 +515,7 @@ to.add = mutate(to.add,
                 index=index+0.1)
 obs = rbind(obs,to.add)
 rm(to.add)
+
 
 # "404601"
 to.add = obs[obs$transect %in% 404601 & obs$sec %in% 29965.11,]
@@ -647,6 +716,9 @@ to.add = mutate(to.add,
                 index=index-0.1)
 obs = rbind(obs,to.add)
 rm(to.add)
+
+# change mtj condition codes after the COCH
+
 # ---------- # 
 
 
