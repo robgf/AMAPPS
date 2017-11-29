@@ -57,7 +57,11 @@
 #370600		26 Aug stopped count for land, no lost distance			
 #365601/00		26 Aug did not record break between these two transects			
 #355100		27 Aug stopped count for land, no lost distance			
-#354600		27 Aug stopped count for land, no lost distance			
+#354600		27 Aug stopped count for land, no lost distance		
+
+# data notes
+# manually removed 303600 duplicated data from mtj's 8-20-2017 file
+# created removed text document for record in folder
 ##--------------------------##
 
 
@@ -284,7 +288,16 @@ obs$type[obs$transect %in% 444600 & obs$obs %in% "tpw" &
 obs$type[obs$transect %in% 411601 & obs$obs %in% "mdk" & obs$type %in% "ENDCNT"]="ENDSEG" 
 
 # change offline obs transects to NA
-obs = mutate(obs, offline = ifelse(offline %in% "y", 1, 0),
+tmp <- tolower(obs$offline) %in% c("na", "no", "n", "", " ")
+obs$obsaChange[tmp] <- paste(obs$obsaChange[tmp], "; changed OFFLINE from ", 
+                             obs$offline[tmp], sep = "")
+obs$offline[tmp] <- "0"
+tmp <- tolower(obs$offline) %in% c("yes", "y")
+obs$obsaChange[tmp] <- paste(obs$obsaChange[tmp], "; changed OFFLINE from ", 
+                             obs$offline[tmp], sep = "")
+obs$offline[tmp] <- "1"
+
+obs = mutate(obs, 
              transect = replace(transect, transect %in% c("0","000000"),NA),
              transect = ifelse(offline %in% 1, NA, transect))
 
@@ -430,7 +443,8 @@ to.add = obs[obs$transect %in% 350100 & obs$sec %in% 39841.16,]
 obs$count[obs$transect %in% 350100 & obs$sec %in% 39841.16]=4
 to.add = mutate(to.add,
                 condition = 3,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -439,7 +453,8 @@ to.add = obs[obs$transect %in% 332100 & obs$sec %in% 39418.99,]
 obs$count[obs$transect %in% 332100 & obs$sec %in% 39418.99]=4
 to.add = mutate(to.add,
                 condition = 3,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -448,7 +463,8 @@ to.add = obs[obs$transect %in% 330600 & obs$sec %in% 62500.39,]
 obs$count[obs$transect %in% 330600 & obs$sec %in% 62500.39]=3
 to.add = mutate(to.add,
                 condition = 4,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -457,7 +473,8 @@ to.add = obs[obs$transect %in% 325100 & obs$sec %in% 57246.51,]
 obs$count[obs$transect %in% 325100 & obs$sec %in% 57246.51]=5
 to.add = mutate(to.add,
                 condition = 4,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -466,7 +483,8 @@ to.add = obs[obs$transect %in% 324100 & obs$sec %in% 50757.27,]
 obs$count[obs$transect %in% 324100 & obs$sec %in% 50757.27]=4
 to.add = mutate(to.add,
                 condition = 3,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -475,7 +493,8 @@ to.add = obs[obs$transect %in% 320100 & obs$sec %in% 39460.09,]
 obs$count[obs$transect %in% 320100 & obs$sec %in% 39460.09]=4
 to.add = mutate(to.add,
                 condition = 5,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -485,7 +504,8 @@ to.add = obs[obs$transect %in% 293600 & obs$sec %in% 45053.45,]
 obs$count[obs$transect %in% 293600 & obs$sec %in% 45053.45]=4
 to.add = mutate(to.add,
                 condition = 3,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -494,7 +514,8 @@ to.add = obs[obs$transect %in% 302600 & obs$sec %in% 35983.72,]
 obs$count[obs$transect %in% 302600 & obs$sec %in% 35983.72]=4
 to.add = mutate(to.add,
                 condition = 3,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -503,7 +524,8 @@ to.add = obs[obs$transect %in% 312600 & obs$sec %in% 39785.95,]
 obs$count[obs$transect %in% 312600 & obs$sec %in% 39785.95]=4
 to.add = mutate(to.add,
                 condition = 3,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -512,7 +534,8 @@ to.add = obs[obs$transect %in% 343600 & obs$sec %in% 59640.68,]
 obs$count[obs$transect %in% 343600 & obs$sec %in% 59640.68]=2
 to.add = mutate(to.add,
                 condition = 3,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -523,7 +546,8 @@ obs$count[obs$transect %in% 404601 & obs$sec %in% 29965.11]=5
 obs$condition[obs$transect %in% 404601 & obs$sec %in% 29965.11]=5
 to.add = mutate(to.add,
                 count = 3,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -531,7 +555,8 @@ to.add = obs[obs$transect %in% 404601 & obs$sec %in% 30759.10,]
 to.add = mutate(to.add,
                 count = 4,
                 condition = 4,
-                index=index-0.1)
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -540,7 +565,8 @@ obs$count[obs$transect %in% 404601 & obs$sec %in% 30680.55]=5
 to.add = mutate(to.add,
                 count = 3,
                 condition = 3,
-                index=index-0.1)
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -550,7 +576,8 @@ obs$count[obs$transect %in% 405602 & obs$sec %in% 33769.26]=3
 to.add = mutate(to.add,
                 count = 5,
                 condition = 5,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -560,7 +587,8 @@ obs$count[obs$transect %in% 410601 & obs$sec %in% 38026.63]=4
 to.add = mutate(to.add,
                 count = 3,
                 condition = 3,
-                index=index-0.1)
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -570,7 +598,8 @@ obs$count[obs$transect %in% 412601 & obs$sec %in% 48016.08]=4
 to.add = mutate(to.add,
                 count = 5,
                 condition = 5,
-                index=index-0.1)
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -580,7 +609,8 @@ obs$count[obs$transect %in% 413102 & obs$sec %in% 45292.94 & obs$type %in% "COCH
 to.add = mutate(to.add,
                 count = 3,
                 condition = 3,
-                index=index-0.1)
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -590,7 +620,8 @@ obs$count[obs$transect %in% 413601 & obs$sec %in% 37927.10 & obs$type %in% "COCH
 to.add = mutate(to.add,
                 count = 3,
                 condition = 3,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -600,7 +631,8 @@ obs$count[obs$transect %in% 413602 & obs$sec %in% 38578.08 & obs$type %in% "COCH
 to.add = mutate(to.add,
                 count = 4,
                 condition = 4,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -609,7 +641,8 @@ obs$count[obs$transect %in% 413602 & obs$sec %in% 38871.09 & obs$type %in% "COCH
 to.add = mutate(to.add,
                 count = 3,
                 condition = 3,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -619,7 +652,8 @@ obs$count[obs$transect %in% 415100 & obs$sec %in% 33634.87 & obs$type %in% "COCH
 to.add = mutate(to.add,
                 count = 5,
                 condition = 5,
-                index=index-0.1)
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -629,7 +663,8 @@ obs$count[obs$transect %in% 415601 & obs$sec %in% 32316.91 & obs$type %in% "COCH
 to.add = mutate(to.add,
                 count = 4,
                 condition = 4,
-                index=index-0.1)
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -639,7 +674,8 @@ obs$count[obs$transect %in% 420100 & obs$sec %in% 31304.51 & obs$type %in% "COCH
 to.add = mutate(to.add,
                 count = 5,
                 condition = 5,
-                index=index-0.1)
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -652,7 +688,8 @@ obs$count[obs$transect %in% 424100 & obs$sec %in% 46147.42 & obs$type %in% "COCH
 to.add = mutate(to.add,
                 count = 5,
                 condition = 5,
-                index=index-0.1)
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -661,7 +698,8 @@ obs$count[obs$transect %in% 424100 & obs$sec %in% 46585.13 & obs$type %in% "COCH
 to.add = mutate(to.add,
                 count = 3,
                 condition = 3,
-                index=index-0.1)
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -675,7 +713,8 @@ obs$count[obs$transect %in% 424600 & obs$sec %in% 45211.66 & obs$type %in% "COCH
 to.add = mutate(to.add,
                 count = 5,
                 condition = 5,
-                index=index+0.1)
+                index=index+0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -693,7 +732,8 @@ obs$count[obs$transect %in% 431100 & obs$sec %in% 41274.03 & obs$type %in% "COCH
 to.add = mutate(to.add,
                 count = 3,
                 condition = 3,
-                index=index-0.1)
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -703,7 +743,8 @@ obs$count[obs$transect %in% 433600 & obs$sec %in% 46112.60 & obs$type %in% "COCH
 to.add = mutate(to.add,
                 count = 4,
                 condition = 4,
-                index=index-0.1)
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
@@ -713,12 +754,56 @@ obs$count[obs$transect %in% 434100 & obs$sec %in% 43170.57 & obs$type %in% "COCH
 to.add = mutate(to.add,
                 count = 3,
                 condition = 3,
-                index=index-0.1)
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
 
-# change mtj condition codes after the COCH
+# 303600 
+to.add = obs[obs$transect %in% 303600 & obs$sec %in% 38752.68 & obs$type %in% "COCH",]
+to.add = mutate(to.add,
+                count = 4,
+                condition = 4,
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
+obs = rbind(obs,to.add)
+rm(to.add)
 
+# 311600 
+to.add = obs[obs$transect %in% 311600 & obs$sec %in% 36107.16 & obs$type %in% "COCH",]
+to.add = mutate(to.add,
+                count = 5,
+                condition = 5,
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
+obs = rbind(obs,to.add)
+rm(to.add)
+to.add = obs[obs$transect %in% 311600 & obs$sec %in% 36425.16 & obs$type %in% "COCH",]
+to.add = mutate(to.add,
+                count = 4,
+                condition = 4,
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
+obs = rbind(obs,to.add)
+rm(to.add)
+to.add = obs[obs$transect %in% 311600 & obs$sec %in% 36778.79 & obs$type %in% "COCH",]
+to.add = mutate(to.add,
+                count = 3,
+                condition = 3,
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
+obs = rbind(obs,to.add)
+rm(to.add)
+
+# change mtj condition codes since they are wrong after all COCHs
+# fix remaining errors before filling in the NAs
+obs$dataChange[obs$obs %in% 'mtj' & obs$type %in% 'BEGCNT' & obs$transect %in% 305600] = "Change CONDITION from 3"
+obs$condition[obs$obs %in% 'mtj' & obs$type %in% 'BEGCNT' & obs$transect %in% 305600] = 4
+
+obs$condition[obs$obs %in% 'mtj' & !obs$type %in% c('BEGCNT')] = NA
+obs$condition[obs$obs %in% 'mtj' & obs$type %in% c('COCH')] = obs$count[obs$obs %in% 'mtj' & obs$type %in% c('COCH')]
+obs = arrange(obs,obs,transect,sec,index)
+obs$condition[obs$obs %in% 'mtj'] = na.locf(obs$condition[obs$obs %in% 'mtj'] )
 # ---------- # 
 
 
