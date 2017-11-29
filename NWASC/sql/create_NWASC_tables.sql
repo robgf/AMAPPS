@@ -121,7 +121,9 @@ INSERT INTO lu_people([user_id], name, affiliation, active_status,work_email_onl
 	(70,'Jim Paruk','BRILOON','active','jim.paruk@briloon.org'),
 	(71,'Tony Diamond','University of New Brunswick','active',NULL),
 	(72,'Tom White','USFWS','active','thomas_white@fws.gov'),
-	(73,'Rob Serafini','Point Blue','active','rserafini@pointblue.org');
+	(73,'Rob Serafini','Point Blue','active','rserafini@pointblue.org'),
+	(74,'Caleb Spiegel','USFWS','active','caleb_spiegel@fws.gov'),
+	(75,'Meghan Sadlowski','USFWS','active','meghan_sadlowski@fws.gov');
 --
 
 --create and populate share level table
@@ -2001,7 +2003,9 @@ INSERT INTO requests(
 	(11,'data',72, 'Ecological Services BCPE data', CAST('2017-8-15' AS DATE), 'filled', CAST('2017-8-25' AS DATE), NULL),
 	(12,'service',72, 'Ecological Services analysis for BCPE data', CAST('2017-8-15' AS DATE), 'filled', CAST('2017-9-15' AS DATE), NULL),
 	(13,'data',73, 'AKN request, data and information', CAST('2017-7-28' AS DATE), 'patially filled',NULL, 'back and forth with Rob on details and info'),
-	(14,'data',59,'official survey name for each dataset listed in the source_dataset_id column', CAST('2017-09-8' AS DATE), 'filled', CAST('2017-09-11' AS DATE), NULL);
+	(14,'data',59,'official survey name for each dataset listed in the source_dataset_id column', CAST('2017-09-8' AS DATE), 'filled', CAST('2017-09-11' AS DATE), NULL),
+	(15,'service',74,'summary of species and surveys within the new seamount & canyon marine national monuments - request from refuges, Caleb relayed', CAST('2017-11-20' AS DATE), 'filled', CAST('2017-11-29' AS DATE), NULL),
+	(16,'service',75,'NWASC boundaries', CAST('2017-11-20' AS DATE), 'filled', CAST('2017-11-29' AS DATE), 'Meghan is looking to create a polygon for pulling AKN data for ECOS for Atlantic birds');
 
 -- example: (id, type, person, description, CAST('req. date' AS DATE), status, CAST('date filled' AS DATE), notes);
 /*  update data_requests script template */  	
