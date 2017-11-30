@@ -794,6 +794,105 @@ to.add = mutate(to.add,
                 dataChange = "Added COCH based on other COCH")
 obs = rbind(obs,to.add)
 rm(to.add)
+to.add = obs[obs$transect %in% 311600 & obs$sec %in% 36971.03 & obs$type %in% "COCH",]
+to.add = mutate(to.add,
+                count = 4,
+                condition = 4,
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
+obs = rbind(obs,to.add)
+rm(to.add)
+
+# 325600
+to.add = obs[obs$transect %in% 325600 & obs$sec %in% 58809.05 & obs$type %in% "COCH",]
+to.add = mutate(to.add,
+                count = 3,
+                condition = 3,
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
+obs = rbind(obs,to.add)
+rm(to.add)
+to.add = obs[obs$transect %in% 325600 & obs$sec %in% 57726.00 & obs$type %in% "COCH",]
+to.add = mutate(to.add,
+                count = 4,
+                condition = 4,
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
+obs = rbind(obs,to.add)
+rm(to.add)
+
+# 331100 
+to.add = obs[obs$transect %in% 331100 & obs$sec %in% 34472.23 & obs$type %in% "COCH",]
+to.add = mutate(to.add,
+                count = 4,
+                condition = 4,
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
+obs = rbind(obs,to.add)
+rm(to.add)
+to.add = obs[obs$transect %in% 331100 & obs$sec %in% 35142.17 & obs$type %in% "COCH",]
+to.add = mutate(to.add,
+                count = 3,
+                condition = 3,
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
+obs = rbind(obs,to.add)
+rm(to.add)
+
+# 341100
+to.add = obs[obs$transect %in% 341100 & obs$sec %in% 43746.21 & obs$type %in% "COCH",]
+to.add = mutate(to.add,
+                count = 4,
+                condition = 4,
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
+obs = rbind(obs,to.add)
+rm(to.add)
+to.add = obs[obs$transect %in% 341100  & obs$sec %in% 43219.85 & obs$type %in% "COCH",]
+to.add = mutate(to.add,
+                count = 3,
+                condition = 3,
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
+obs = rbind(obs,to.add)
+rm(to.add)
+
+# 351101
+to.add = obs[obs$transect %in% 351101 & obs$sec %in% 43492.25 & obs$type %in% "COCH",]
+to.add = mutate(to.add,
+                count = 4,
+                condition = 4,
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
+obs = rbind(obs,to.add)
+rm(to.add)
+to.add = obs[obs$transect %in% 351101  & obs$sec %in% 43400.56 & obs$type %in% "COCH",]
+to.add = mutate(to.add,
+                count = 3,
+                condition = 3,
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
+obs = rbind(obs,to.add)
+rm(to.add)
+
+#425100
+to.add = obs[obs$transect %in% 425100 & obs$sec %in% 43549.45 & obs$type %in% "COCH",]
+to.add = mutate(to.add,
+                count = 5,
+                condition = 5,
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
+obs = rbind(obs,to.add)
+rm(to.add)
+to.add = obs[obs$transect %in% 425100  & obs$sec %in% 43632.28 & obs$type %in% "COCH",]
+to.add = mutate(to.add,
+                count = 3,
+                condition = 3,
+                index=index-0.1,
+                dataChange = "Added COCH based on other COCH")
+obs = rbind(obs,to.add)
+rm(to.add)
+
 
 # change mtj condition codes since they are wrong after all COCHs
 # fix remaining errors before filling in the NAs
@@ -813,6 +912,10 @@ obs$condition[obs$obs %in% 'mtj'] = na.locf(obs$condition[obs$obs %in% 'mtj'] )
 obs$offline[is.na(obs$transect) & 
               obs$comment %in% c("counting on transit leg","counting on transit transect","transit transect") & 
               obs$offline %in% 0] = 1
+
+# fix offline for tpw
+obs$transect[obs$obs %in% 'tpw' & obs$transect %in% 0] = NA
+obs$offline[obs$obs %in% 'tpw' & is.na(obs$transect)] = 1
 # ---------- #
 
 message("Fixed other errors")
