@@ -87,7 +87,7 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
   if(sum(tmp[tmp %in% TRUE])>0){dat[tmp,]}
   dat$dataError[tmp %in% TRUE] <- paste(dat$dataError[tmp %in% TRUE], "; CONDITION != COUNT", sep = "")
  
-  # THERE ARE TWO COCHs (What the condition was and what it became - this is the protocol)
+  # ARE THERE TWO COCHs (What the condition was and what it became - this is the protocol)
   tmp <- dat %>% filter(type %in% 'COCH',!is.na(transect)) %>% group_by(obs,transect) %>% 
     summarise(n = n()) %>% filter(n %% 2 != 0)
   message("Found ", dim(tmp)[1], " additional errors in CONDITION column where there are an odd number of COCHs.")
@@ -96,7 +96,7 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
   # CONDITION CODE IS ONLY LISTED WHEN THERE WAS AN ACTUAL CHANGE
   tmp <- dat[c(which(dat$type %in% 'COCH'),
                which(dat$type %in% 'COCH')+1,
-               which(dat$type %in% 'COCH')-1),] %>% 
+               which(dat$type %in% 'COCH')-1),] %>% filter(offline %in% 0) %>% 
     select(year,month,day,obs,transect,sec,condition,type,index) %>% 
     arrange(month,day,obs,transect,sec,index) %>% group_by(obs,transect,day) %>% 
     filter(!duplicated(index)) %>% 
@@ -104,9 +104,9 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
            lead.condition = lead(condition)-condition,
            lag.condition = lag(condition)-condition) %>% filter(type %in% 'COCH') %>% 
     summarise(sum.lead.condition = sum(lead.condition),
-              sum.lag.condition = sum(lag.condition)) %>% filter(sum.lead.condition != sum.lag.condition*-1 |
-                                                                   sum.lead.condition %in% 0 |
-                                                                   sum.lag.condition %in% 0)
+              sum.lag.condition = sum(lag.condition)) %>% 
+    mutate(diff.in.conditions = sum.lead.condition+sum.lag.condition) %>% 
+    filter(!diff.in.conditions %in% 0)
   message("Found ", dim(tmp)[1], " additional errors in CONDITION column where COCH doesn't reflect a change in condition.")
   if(dim(tmp)[1]>0){filter(dat,obs %in% tmp$obs, transect %in% tmp$transect, day %in% tmp$day, type %in% 'COCH') %>% 
       arrange(obs,transect,day,sec)}
@@ -231,13 +231,14 @@ errorCheckObsFiles <- function(dat, dir.out, error.flag = FALSE) {
   
   # PRINT HOW MANY TIMES COUNT IS MISSING
   tmp <- is.na(dat$count) & dat$offline == 0 & 
-    !(dat$type %in% c("BEGSEG", "ENDSEG", "BEGCNT", "ENDCNT", "COCH", "BOTD")) #### added boat (trawler)
-  if (sum(tmp) > 0) message("(missing COUNT for ", sum(tmp), " non-offline observations)")
+    !(dat$type %in% c("BEGSEG", "ENDSEG", "BEGCNT", "ENDCNT", "COCH", "BOTD","COMMENT")) #### added boat (trawler)
+  if (sum(tmp) > 0) message("Missing COUNT for ", sum(tmp), " non-offline observations")
   
   # PRINT HOW MANY TIMES COUNT >= 10,000
-  tmp <- !is.na(dat$count) & dat$count >= 10000 & dat$offline == 0 & 
-    !(dat$type %in% c("BEGSEG", "ENDSEG", "BEGCNT", "ENDCNT", "COCH"))
-  if (sum(tmp) > 0) message("(there are ", sum(tmp), " observations with count >= 10,000)")
+  tmp <- dat %>% mutate(count = as.numeric(as.factor(count))) %>% 
+    filter(!type %in% c("BEGSEG", "ENDSEG", "BEGCNT", "ENDCNT", "COCH","COMMENT"),
+           count >= 10000)
+  if (dim(tmp)[1] > 0) message("There are ", dim(tmp)[1], " observations with count >= 10,000")
   # ---------------#
   
   # ---------------#
