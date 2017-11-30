@@ -43,7 +43,8 @@ dir <- paste("//ifw-hqfs1/MB SeaDuck/", surveyFolder, sep="")
 setwd(dir)
 dir.in <- paste(dir, "raw_data", yearLabel, sep = "/") 
 dir.out <- paste(dir, "clean_data", yearLabel, sep = "/") 
-
+gis.path = paste(dir, "amapps_gis", sep = "/") 
+  
 # SOURCE R FUNCTIONS
 source(file.path(dir, "code/cleaning_raw_data/Rfunctions/sourceDir.R"))
 sourceDir(file.path(dir, "code/cleaning_raw_data/Rfunctions"))
@@ -101,7 +102,8 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   trackfiles <- list.files(dir.in, pattern = "_track", recursive = TRUE, #changed from "_track.txt"
                            full.names = TRUE)
   track <- lapply(setNames(trackfiles, basename(trackfiles)), getTrackFiles)
-  track <- lapply(track, function(x) data.frame(cbind(x, "crew" = unlist(strsplit(basename(dirname(dirname(x$file))), "_"))[1])))
+  #track <- lapply(track, function(x) data.frame(cbind(x, "crew" = unlist(strsplit(basename(dirname(dirname(x$file))), "_"))[1])))
+  track <- lapply(track, function(x) data.frame(cbind(x, "crew" = unlist(strsplit(basename(dirname(x$file)), "_"))[1])))
   
   # SHOW WHICH TRACK FILES ARE AVAILABLE
   out.trackfiles <- gsub(dir.in, "", trackfiles)
@@ -232,8 +234,21 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   # ---------------------------------------------------------------------------- #
   # STEP 9: RELABEL TRANSECTS
   # ---------------------------------------------------------------------------- #
+  # fix transect points first that have NA for transect due to how the data now comes to us
+  # cut track lines before BEGCNT for this process
+  obstrack = obstrack %>% group_by(day,seat) %>% arrange(sec,index) %>% 
+    mutate(newID = 1:n(),
+           transit = ifelse(newID<newID[which(type %in% 'BEGCNT')[1]] | 
+                              newID>newID[type %in% 'ENDCNT'][length(newID[type %in% 'ENDCNT'])],1,0))
+  transit = filter(obstrack, transit %in% 1) %>% dplyr::select(-transit) %>% mutate(offline = 1)
+  obstrack = obstrack %>% filter(transit %in% 0) %>%
+    mutate(transect = na.locf(transect),
+           transect = ifelse(offline %in% 1,NA,transect)) %>% 
+    dplyr::select(-transit)
+  
+  
   #trans <- readOGR(dsn = file.path(paste(dbpath, "GIS", sep="")), layer = "tempPointsLineClip") # -1, +1 method
-  trans <- readOGR(dsn = file.path(paste(dbpath, "GIS", sep="")), layer = "amapps_transects_new2014")
+  trans <- readOGR(dsn = gis.path, layer = "amapps_transects_new2014")
   if (proj4string(trans) != "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0") {
     trans <- spTransform(trans, CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
   }
@@ -244,20 +259,27 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   # CALCULATE DISTANCE FROM EACH POINT TO MASTER TRANSECT FILE
   # THIS PROCESS EMPLOYS PARALLEL COMPUTING TO DECREASE PROCESSING TIME
   
-  # find closest point to line (where data would be the bird data without transect info)
+  # find closest point to line 
+  # (where data would be the bird data without transect info)
   obstrack = obstrack[,c("lat", "long", "transect", 
                          colnames(obstrack)[!colnames(obstrack) %in% c("lat", "long", "transect")])]
   strt<-Sys.time(); 
-  cl <- makeCluster(as.numeric(detectCores()))
+  cl <- makeCluster(as.numeric(detectCores()-1))
   clusterExport(cl, "trans", envir = environment())
   invisible(clusterEvalQ(cl, c(library(geosphere),
                                subFunc <- function(lat, lon, code) {
                                  a = which(trans$latidext == code)
-                                 subTrans = trans[a,]
-                                 ab = dist2Line(p = cbind(as.numeric(lon),as.numeric(lat)), 
-                                                line = subTrans, distfun = distVincentyEllipsoid)
-                                 out = c(ab, a)
-                                 return(out)
+                                 if(length(a)>0) {
+                                   subTrans = trans[a,]
+                                   ab = dist2Line(p = cbind(as.numeric(lon),as.numeric(lat)), 
+                                                  line = subTrans, distfun = distVincentyEllipsoid)
+                                   out = c(ab, a)
+                                   return(out)}
+                                 # } else {
+                                 #   ab = dist2Line(p = cbind(as.numeric(lon),as.numeric(lat)), 
+                                 #                       line = trans, distfun = distVincentyEllipsoid)
+                                 #   out = c(ab, NA)
+                                 #   return(out)}
                                })))
     
   d <- parRapply(cl, obstrack, function(x) subFunc(x[1],x[2],x[3]))
@@ -270,6 +292,8 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   obstrack$transLat <- trans$latid[d[,5]] 
   obstrack$transLong <- trans$label[d[,5]]
   obstrack$flag1 <- ifelse(d[, 1] > 2000, 1, 0)
+  
+
   
   # FOR THOSE FLAGGED TRANSECTS, FIND WHICH LINE THEY ARE CLOSET TO AND CHANGE THAT TRANSECT CODE
   strt<-Sys.time(); 
