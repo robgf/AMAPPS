@@ -392,6 +392,7 @@ message("Fixed transect errors")
 
 #ggplot(filter(obs,obs %in% "mdk", type %in% c("BEGCNT","ENDCNT","BEGSEG","ENDSEG")), 
 #       aes(long,lat,col=type))+geom_point()+geom_text(aes(label=transect),hjust=0, vjust=0)
+
 ##--------------------------##
 
 
@@ -924,6 +925,12 @@ obs$offline[obs$obs %in% 'tpw' & is.na(obs$transect)] = 1
 
 # there are others who listed offline BEG and END records which screw up some things later on
 obs$type[obs$offline %in% 1 & obs$type %in% c('BEGCNT','ENDCNT')] = 'COMMENT'
+
+#
+obs$dataChange[obs$day %in% 20 & obs$obs %in% 'tpw' & obs$sec %in% c(40287.65,40287.65,40327.38,40480.69,40535.10)]= paste(obs$dataChange[obs$day %in% 20 & obs$obs %in% 'tpw' & obs$sec %in% c(40287.65,40287.65,40327.38,40480.69,40535.10)],
+                                                                                                                           " changed to offline", sep = "; ")
+obs$transect[obs$day %in% 20 & obs$obs %in% 'tpw' & obs$sec %in% c(40287.65,40287.65,40327.38,40480.69,40535.10)]=NA
+obs$offline[obs$day %in% 20 & obs$obs %in% 'tpw' & obs$sec %in% c(40287.65,40287.65,40327.38,40480.69,40535.10)]=1
 # ---------- #
 
 message("Fixed other errors")
