@@ -235,32 +235,55 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   # STEP 9: RELABEL TRANSECTS
   # ---------------------------------------------------------------------------- #
   # fix transect points first that have NA for transect due to how the data now comes to us
-  # cut track lines before BEGCNT for this process
-  obstrack = obstrack %>% group_by(day,seat) %>% arrange(sec,index) %>% 
-    mutate(newID = 1:n(),
-           transit = ifelse(newID<newID[which(type %in% 'BEGCNT')[1]] | 
-                              newID>newID[type %in% 'ENDCNT'][length(newID[type %in% 'ENDCNT'])],1,0))
-  transit = filter(obstrack, transit %in% 1) %>% dplyr::select(-transit) %>% mutate(offline = 1)
-  obstrack = obstrack %>% filter(transit %in% 0) %>%
-    mutate(transect = na.locf(transect),
-           transect = ifelse(offline %in% 1,NA,transect)) %>% 
-    dplyr::select(-transit)
+  # cut track lines before BEGCNT and after ENDCNT for this process (all transit data)
+  # and cut offline obs since we don't need to check their transect
+  # both can be added back later
+  starts = filter(obstrack, type %in% c("BEGCNT"), offline %in% 0) %>%
+    group_by(key,transect) %>% 
+    arrange(sec) %>%
+    mutate(start.stop.index = seq(1:n())) %>% 
+    ungroup() %>% 
+    select(key, sec, type, start.stop.index,transect) %>% 
+    arrange(key,transect,sec,start.stop.index)
+  stops = filter(obstrack, type %in% c("ENDCNT"), offline %in% 0) %>%
+    group_by(key,transect) %>% 
+    arrange(sec) %>%
+    mutate(start.stop.index = seq(1:n())) %>% 
+    ungroup() %>% 
+    select(key, sec, type, start.stop.index, transect) %>% 
+    arrange(key,transect,sec,start.stop.index)
+  breaks = bind_rows(starts,stops) %>% arrange(key,transect,sec,start.stop.index) %>% 
+    mutate(break.key = paste(key,transect,start.stop.index,sep="_")) %>% group_by(break.key) %>%
+    summarise(start.sec = first(sec), stop.sec=last(sec), 
+              transect=first(transect), key=first(key))
+
+  cl <- makeCluster(as.numeric(detectCores()-1))
+   clusterExport(cl, "breaks", envir = environment())
+   invisible(clusterEvalQ(cl, c(fill.trans <- function(k, s) {
+     y = breaks$transect[breaks$key %in% k & breaks$start.sec <= s & breaks$stop.sec >= s]
+     if(!length(y) %in% 1){y = NA}
+     return(y)
+   })))
+   obstrack$transect2 = parRapply(cl, obstrack, function(x) fill.trans(x[30],x[12]))
+   stopCluster(cl)
+   
+   obstrack$dataChange[is.na(obstrack$obs)] = "Added transect based on observers BEG/END times"
+   obstrack$transect[is.na(obstrack$obs)] = obstrack$transect2[is.na(obstrack$obs)] 
+   
+  transit = filter(obstrack, is.na(transect) | offline %in% 1) %>% 
+    mutate(offline = 1)%>% dplyr::select(-transect2)
+  obstrack = obstrack %>% filter(!is.na(transect) & offline %in% 0) %>%
+    group_by(key) %>% arrange(sec, index) %>% 
+    mutate(transect = na.locf(transect)) %>% dplyr::select(-transect2)
   
-  
-  #trans <- readOGR(dsn = file.path(paste(dbpath, "GIS", sep="")), layer = "tempPointsLineClip") # -1, +1 method
   trans <- readOGR(dsn = gis.path, layer = "amapps_transects_new2014")
   if (proj4string(trans) != "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0") {
     trans <- spTransform(trans, CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
   }
 
-  ## define which transect the point is on
-  #obstrack$transect = na.locf(obstrack$transect)
-
   # CALCULATE DISTANCE FROM EACH POINT TO MASTER TRANSECT FILE
   # THIS PROCESS EMPLOYS PARALLEL COMPUTING TO DECREASE PROCESSING TIME
-  
   # find closest point to line 
-  # (where data would be the bird data without transect info)
   obstrack = obstrack[,c("lat", "long", "transect", 
                          colnames(obstrack)[!colnames(obstrack) %in% c("lat", "long", "transect")])]
   strt<-Sys.time(); 
@@ -268,70 +291,61 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   clusterExport(cl, "trans", envir = environment())
   invisible(clusterEvalQ(cl, c(library(geosphere),
                                subFunc <- function(lat, lon, code) {
-                                 a = which(trans$latidext == code)
+                                 a = which(trans$latidext %in% code)
                                  if(length(a)>0) {
                                    subTrans = trans[a,]
                                    ab = dist2Line(p = cbind(as.numeric(lon),as.numeric(lat)), 
                                                   line = subTrans, distfun = distVincentyEllipsoid)
                                    out = c(ab, a)
-                                   return(out)}
-                                 # } else {
-                                 #   ab = dist2Line(p = cbind(as.numeric(lon),as.numeric(lat)), 
-                                 #                       line = trans, distfun = distVincentyEllipsoid)
-                                 #   out = c(ab, NA)
-                                 #   return(out)}
+                                   } else out = c(NA,NA,NA,NA,NA)
+                                  return(out)
                                })))
     
   d <- parRapply(cl, obstrack, function(x) subFunc(x[1],x[2],x[3]))
   stopCluster(cl)
-  d <- matrix(d, ncol = 5, byrow = TRUE) # distance(m), long, lat, code
+  d <- matrix(unlist(d), ncol = 5, byrow = TRUE) # distance(m), long, lat, code
   print(Sys.time()-strt)
      
   # POINTS GREATER THAN 2km FROM DEFINED TRANSECT ON MASTER TRANSECT FILE ARE FLAGGED
   # THESE ARE MOST LIKELY TYPOS OR MISIDENTIFIED TRANSECTS
   obstrack$transLat <- trans$latid[d[,5]] 
   obstrack$transLong <- trans$label[d[,5]]
-  obstrack$flag1 <- ifelse(d[, 1] > 2000, 1, 0)
-  
-
+  obstrack$transTransect <- as.character(trans$latidext[d[,5]])
+  obstrack$transDist <- d[,1]
+  obstrack$flag1 <- ifelse(d[, 1] > 2000 | is.na(d[, 1]), 1, 0)
   
   # FOR THOSE FLAGGED TRANSECTS, FIND WHICH LINE THEY ARE CLOSET TO AND CHANGE THAT TRANSECT CODE
   strt<-Sys.time(); 
   cl <- makeCluster(as.numeric(detectCores()))
   clusterExport(cl, "trans", envir = environment())
   invisible(clusterEvalQ(cl, c(library(geosphere),
-                               subFunc <- function(lat, lon, code) {
-                                 b = which(trans$latidext == paste(substr(code,1,5),"0", sep="") | 
-                                                 trans$latidext == paste(substr(code,1,5),"1", sep="") |
-                                                 trans$latidext == paste(substr(code,1,5),"2", sep="") |
-                                                 trans$latidext == paste(as.numeric(substr(code,1,4))+5, "00", sep="") |
-                                                 trans$latidext == paste(as.numeric(substr(code,1,4))-5, "00", sep="") |
-                                                 trans$latidext == paste(as.numeric(substr(code,1,4))+5, "01", sep="") |
-                                                 trans$latidext == paste(as.numeric(substr(code,1,4))-5, "01", sep="") |
-                                                 trans$latidext == paste(as.numeric(substr(code,1,4))+5, "02", sep="") |
-                                                 trans$latidext == paste(as.numeric(substr(code,1,4))-5, "02", sep=""))
-                                     subTrans = trans[b,]
+                               subFunc <- function(lat, lon) {
                                  ab = dist2Line(p = cbind(as.numeric(lon),as.numeric(lat)), 
-                                                line = subTrans, distfun = distVincentyEllipsoid)
-                                 out = c(ab, b[ab[4]]) #b[ab[4]] grabs which transect was the closest one returned
+                                                 line = trans, distfun = distVincentyEllipsoid)
+                                 out = ab
                                  return(out)})))
   
-  d <- parRapply(cl, obstrack[obstrack$flag1==1,], function(x) subFunc(x[1],x[2],x[3]))
+  d <- parRapply(cl, obstrack[obstrack$flag1 %in% 1,], function(x) subFunc(x[1],x[2]))
   stopCluster(cl)
-  d <- matrix(d, ncol = 5, byrow = TRUE) # distance(m), long, lat, code
+  d <- matrix(d, ncol = 4, byrow = TRUE) # distance(m), long, lat, code
   print(Sys.time()-strt)
+  
+  obstrack$transLat[obstrack$flag1 %in% 1] <- trans$latid[d[,4]] 
+  obstrack$transLong[obstrack$flag1 %in% 1] <- trans$label[d[,4]]
+  obstrack$transTransect[obstrack$flag1 %in% 1] <- as.character(trans$latidext[d[,4]])
+  obstrack$transDist[obstrack$flag1 %in% 1] <- d[,1]
+  obstrack$flag1b=NA
+  obstrack$flag1b[obstrack$flag1 %in% 1] <- ifelse(d[, 1] > 2000, 1, 0) #check if it's still too far
   
   # FIND CLOSEST LINE FOR FLAGGED TRANSECT POINT AND 
   # RELABEL TRANSECTS ACCORDING TO MASTER TRANSECT FILE
   # RECORD CHANGE
   obstrack$dataChange = as.character(obstrack$dataChange)
-  if(any(obstrack$transect[obstrack$flag1==1] != as.character(trans$latidext[d[,5]]))) {
-    obstrack$transLat[obstrack$flag1==1] <- trans$latid[d[,5]] 
-    obstrack$transLong[obstrack$flag1==1] <- trans$label[d[,5]]
-    obstrack$dataChange[obstrack$flag1==1] <-  paste(obstrack$dataChange[obstrack$flag1==1],
+  if(any(obstrack$transect[obstrack$flag1 %in% 1 & obstrack$flag1b %in% 0] != as.character(trans$latidext[d[,4]]))) {
+    obstrack$dataChange[obstrack$flag1 %in% 1 & obstrack$flag1b %in% 0] <-  paste(obstrack$dataChange[obstrack$flag1 %in% 1 & obstrack$flag1b %in% 0],
                                                      "; Changed TRANSECT from ", 
                                                      obstrack$transect[obstrack$flag1==1], sep="")
-    obstrack$transect[obstrack$flag1==1] <- as.character(trans$latidext[d[,5]])
+    obstrack$transect[obstrack$flag1 %in% 1 & obstrack$flag1b %in% 0] <- obstrack$transTransect[obstrack$flag1 %in% 1 & obstrack$flag1b %in% 0]
   }
   rm(d,trans)
  
@@ -351,10 +365,18 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
     group_by(transect,obs) %>% filter(row_number()==1) %>% group_by(transect) %>%
     summarise(numberObs = length(transect)) %>% arrange(transect)
   if(any(numObs$numberObs==1)) {
-      paste("Transect",numObs$transect[numObs$numberObs==1],"only has one obsever... this needs to be checked")}
+      paste("Transect ", numObs$transect[numObs$numberObs==1], " only has one obsever and needs to be checked")}
   rm(checkChange, numObs)
   # If there is only one observer and you solve how/why this occurred it is recommended to add edits to the 
   # postObstrackEdits.R and rerun from that step foward (if the error was not due to an earlier step)
+  
+  # check that there are still an even number of BEG/END
+  obstrack %>% filter(type %in% c('BEGCNT','ENDCNT')) %>% group_by(key,transect) %>%
+    summarize(n=n()) %>% filter(n %% 2 != 0)
+  
+  # remove if points were investigated and fixed
+  obstrack = dplyr::select(obstrack,-transLat,-transLong,-transTransect,-transDist,-flag1) %>% 
+    rename(flag1=flag1b)
   # ---------------------------------------------------------------------------- #
   
   
