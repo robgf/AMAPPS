@@ -239,6 +239,10 @@ obs$distance.to.obs[obs$comment %in% c("700")] = 700
 ##--------------------------##
 # fix transects errors
 ##--------------------------##
+#390600
+obs$dataChange[obs$transect %in% 393600 & obs$day %in% 26] = "Changed TRANSECT from 393600"
+obs$transect[obs$transect %in% 393600 & obs$day %in% 26] = 390600
+  
 # MDK had no BEGSEG for 444100
 obs$type[obs$transect %in% 444100 & obs$obs %in% "tpw" & obs$type %in% "BEGCNT" & obs$sec %in% 31483.70]="BEGSEG"
 to.add = obs[obs$transect %in% 444100 & obs$obs %in% "tpw" & obs$type %in% "BEGSEG",]
@@ -914,8 +918,12 @@ obs$offline[is.na(obs$transect) &
               obs$offline %in% 0] = 1
 
 # fix offline for tpw
+obs$type[obs$obs %in% 'tpw' & obs$transect %in% 0 & obs$type %in% c('BEGCNT','ENDCNT')] = 'COMMENT'
 obs$transect[obs$obs %in% 'tpw' & obs$transect %in% 0] = NA
 obs$offline[obs$obs %in% 'tpw' & is.na(obs$transect)] = 1
+
+# there are others who listed offline BEG and END records which screw up some things later on
+obs$type[obs$offline %in% 1 & obs$type %in% c('BEGCNT','ENDCNT')] = 'COMMENT'
 # ---------- #
 
 message("Fixed other errors")
