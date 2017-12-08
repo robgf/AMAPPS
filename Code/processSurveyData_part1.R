@@ -238,14 +238,14 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   # cut track lines before BEGCNT and after ENDCNT for this process (all transit data)
   # and cut offline obs since we don't need to check their transect
   # both can be added back later
-  starts = filter(obstrack, type %in% c("BEGCNT"), offline %in% 0) %>%
+  starts = filter(obstrack, type %in% c("BEGCNT"), !offline %in% 1) %>%
     group_by(key,transect) %>% 
     arrange(sec) %>%
     mutate(start.stop.index = seq(1:n())) %>% 
     ungroup() %>% 
     select(key, sec, type, start.stop.index,transect) %>% 
     arrange(key,transect,sec,start.stop.index)
-  stops = filter(obstrack, type %in% c("ENDCNT"), offline %in% 0) %>%
+  stops = filter(obstrack, type %in% c("ENDCNT"), !offline %in% 1) %>%
     group_by(key,transect) %>% 
     arrange(sec) %>%
     mutate(start.stop.index = seq(1:n())) %>% 
@@ -256,6 +256,7 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
     mutate(break.key = paste(key,transect,start.stop.index,sep="_")) %>% group_by(break.key) %>%
     summarise(start.sec = first(sec), stop.sec=last(sec), 
               transect=first(transect), key=first(key))
+rm(starts, stops)
 
   cl <- makeCluster(as.numeric(detectCores()-1))
    clusterExport(cl, "breaks", envir = environment())
@@ -267,12 +268,12 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
    obstrack$transect2 = parRapply(cl, obstrack, function(x) fill.trans(x[30],x[12]))
    stopCluster(cl)
    
-   obstrack$dataChange[is.na(obstrack$obs)] = "Added transect based on observers BEG/END times"
-   obstrack$transect[is.na(obstrack$obs)] = obstrack$transect2[is.na(obstrack$obs)] 
+   obstrack$transect[is.na(obstrack$obs) & !obstrack$offline %in% 1] = obstrack$transect2[is.na(obstrack$obs) & !obstrack$offline %in% 1] 
+   obstrack$dataChange[is.na(obstrack$obs) & !is.na(obstrack$transect)] = "Added TRANSECT based on observers BEG/END times"
    
   transit = filter(obstrack, is.na(transect) | offline %in% 1) %>% 
     mutate(offline = 1)%>% dplyr::select(-transect2)
-  obstrack = obstrack %>% filter(!is.na(transect) & offline %in% 0) %>%
+  obstrack = obstrack %>% filter(!is.na(transect) & !offline %in% 1) %>%
     group_by(key) %>% arrange(sec, index) %>% 
     mutate(transect = na.locf(transect)) %>% dplyr::select(-transect2)
   
@@ -365,7 +366,7 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
     group_by(transect,obs) %>% filter(row_number()==1) %>% group_by(transect) %>%
     summarise(numberObs = length(transect)) %>% arrange(transect)
   if(any(numObs$numberObs==1)) {
-      paste("Transect ", numObs$transect[numObs$numberObs==1], " only has one obsever and needs to be checked")}
+      paste("Transect ", numObs$transect[numObs$numberObs==1], " only has one observer and needs to be checked")}
   rm(checkChange, numObs)
   # If there is only one observer and you solve how/why this occurred it is recommended to add edits to the 
   # postObstrackEdits.R and rerun from that step foward (if the error was not due to an earlier step)
@@ -415,7 +416,7 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   # ---------------------------------------------------------------------------- #
   # STEP 11: FLAG POINTS ON LAND FOR REMOVAL
   # ---------------------------------------------------------------------------- #
-  geodat <- obstrack
+  geodat <- as.data.frame(obstrack)
   coordinates(geodat) <- ~ long + lat
   proj4string(geodat) <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
   
