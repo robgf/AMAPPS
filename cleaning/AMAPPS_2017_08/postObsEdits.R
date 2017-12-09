@@ -64,9 +64,10 @@ obstrack$transect[obstrack$key %in% 'Crew4126_lf_2017_8_27' & is.na(obstrack$obs
 obstrack$comment[obstrack$key %in% 'Crew4126_lf_2017_8_27' & is.na(obstrack$obs) & obstrack$sec %in% 33440.51]= "Added BEGCNT"
 obstrack$offline[obstrack$key %in% 'Crew4126_lf_2017_8_27' & is.na(obstrack$obs) & obstrack$sec %in% 33440.51]= 0
 
-
-#obstrack$offline[obstrack$key %in% 'Crew4126_lf_2017_8_27' & obstrack$transect %in% 363100 & obstrack$sec < 33440.51] = 1
-#obstrack$transect[obstrack$key %in% 'Crew4126_lf_2017_8_27' & obstrack$transect %in% 363100 & obstrack$sec < 33440.51] = NA
+# obstrack$type[obstrack$key %in% 'Crew4126_lf_2017_8_27' & obstrack$transect %in% 363100 & obstrack$sec %in% 33445.42]="BEGCNT"
+# obstrack$type[obstrack$key %in% 'Crew4126_lf_2017_8_27' & obstrack$transect %in% 363100 & obstrack$sec %in% 33445.42]="BEGCNT"
+# obstrack$offline[obstrack$key %in% 'Crew4126_lf_2017_8_27' & obstrack$transect %in% 363100 & obstrack$sec < 33445.42] = 1
+# obstrack$transect[obstrack$key %in% 'Crew4126_lf_2017_8_27' & obstrack$transect %in% 363100 & obstrack$sec < 33445.42] = NA
 
 # Crew4446_rf_2017_8_20
 # missing BEG for 434600
@@ -86,8 +87,10 @@ obstrack$offline[obstrack$key %in% 'Crew4446_rf_2017_8_21' &
 obstrack$transect[obstrack$key %in% 'Crew4446_rf_2017_8_21' & 
                    obstrack$sec %in% c(41274.03,41287.88,41393.98,41406.21,41411.22,41459.11)] = NA
 # 424100 add end?
-#obstrack$type[obstrack$key %in% 'Crew4446_rf_2017_8_21'] 
-                   
+# obstrack$type[obstrack$key %in% 'Crew4446_rf_2017_8_21'] 
+# obstrack$type[obstrack$key %in% 'Crew4446_rf_2017_8_21' & obstrack$transect %in% 424100 & obstrack$sec %in%  46038.06]='ENDCNT'
+# obstrack$comment[obstrack$key %in% 'Crew4446_rf_2017_8_21' & obstrack$transect %in% 424100 & obstrack$sec %in%  46038.06]='Added ENDCNT'
+         
 #Crew4446_rf_2017_8_24'
 obstrack$offline[obstrack$key %in% 'Crew4446_rf_2017_8_24' & 
                    obstrack$sec %in% 45292.94 & 
@@ -95,3 +98,10 @@ obstrack$offline[obstrack$key %in% 'Crew4446_rf_2017_8_24' &
 obstrack$transect[obstrack$key %in% 'Crew4446_rf_2017_8_24' & 
                    obstrack$sec %in% 45292.94 & 
                    obstrack$type %in% 'ENDCNT'] = NA
+
+#Crew4446_rf_2017_8_21  430600
+# add BEG
+to.add = obstrack[obstrack$key %in% 'Crew4446_rf_2017_8_21' & obstrack$transect %in% 430600,][1,]
+to.add = to.add %>% mutate(type = 'BEGCNT',comment = 'Added BEGCNT',index=index-0.1,count=NA)
+obstrack = bind_rows(obstrack, to.add) %>% arrange(key,sec,index)
+rm(to.add)
