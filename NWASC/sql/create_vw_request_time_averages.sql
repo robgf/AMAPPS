@@ -1,4 +1,4 @@
-* find the average number of days it takes to fill a request */
+/* find the average number of days it takes to fill a request */
 
 -- set database
 use NWASC;
