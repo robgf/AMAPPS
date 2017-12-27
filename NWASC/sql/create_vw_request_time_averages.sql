@@ -1,4 +1,8 @@
-/* find the average number of days it takes to fill a request */
+/* 
+find the average number of days it takes to fill a request 
+create by: K. Coleman
+date: 12/2017
+*/
 
 -- set database
 use NWASC;
