@@ -214,6 +214,7 @@ INSERT INTO lu_species(
 	(1,'BAOW','Barred Owl','Strix varia',177921),
 	(1,'BARS','Barn Swallow','Hirundo rustica',178448),
 	(1,'BASA','Baird''s Sandpiper','Calidris bairdii',176655),
+	(1,'BARO','Barolo Shearwater','Puffinus baroli',824117),
 	(1,'BAWW','Black-and-white Warbler','Mniotilta varia',178844),
 	(1,'BBCU','Black-billed Cuckoo','Coccyzus erythropthalmus',177834),
 	(1,'BBPL','Black-bellied Plover','Pluvialis squatarola',176567),
@@ -334,6 +335,7 @@ INSERT INTO lu_species(
 	(1,'GBHE','Great Blue Heron','Ardea herodias',174773),
 	(1,'GBHG','Unidentified Great Black-backed/Herring Gull','Larus marinus/argentatus',NULL),
 	(1,'GBTE','Gull-billed Tern','Sterna nilotica',176926),
+	(1,'GCFC','Great Crested Flycatcher','Myiarchus crinitus',178309),
 	(1,'GCKI','Golden-crowned Kinglet','Regulus satrapa',179865),
 	(1,'GHGH','Glaucous Gull X Herring Gull (hybrid)','Larus hyperboreus X argentatus',NULL),
 	(1,'GHOW','Great Horned Owl','Bubo virginianus',177884),
@@ -599,7 +601,7 @@ INSERT INTO lu_species(
 	(1,'UNLS','Unidentified Large Shearwater',NULL,NULL),
 	(1,'UNLT','Unidentified large Tern',NULL,NULL),
 	(1,'UNME','Unidentified Merganser',NULL,NULL),
-	(1,'UNMT','Unidentified medium tern','Sterna spp.',NULL),
+	(1,'UNMT','Unidentified medium tern',NULL,NULL),
 	(1,'UNMU','Unidentified Murre','Uria spp.',176973),
 	(1,'UNNH','Unidentified Night Heron',NULL,NULL),
 	(1,'UNNI','Unidentified Nighthawk',NULL,NULL),
@@ -619,11 +621,11 @@ INSERT INTO lu_species(
 	(1,'UNSK','Unidentified Skua','Stercorarius spp.',176791),
 	(1,'UNSP','Unidentified Storm-petrel',NULL,NULL),
 	(1,'UNSS','Unidentified Small Shearwater (Audubon''s, Manx, or Little)','Puffinus lherminieri , P. puffinus, or P. assimilis',NULL),
-	(1,'UNST','Unidentified small Tern','Sterna spp.',176885),
+	(1,'UNST','Unidentified small Tern',NULL,NULL),
 	(1,'UNSU','Unidentified Sulid','Sulidae spp.',174696),
 	(1,'UNTA','Unidentified Tanager',NULL,NULL),
 	(1,'UNTB','Unidentified Tropicbird','Phaethon spp.',174672),
-	(1,'UNTE','Unidentified Tern','Sterna spp.',176885),
+	(1,'UNTE','Unidentified Tern',NULL,NULL),
 	(1,'UNTH','Unidentified Thrush','Turdidae spp.',179751),
 	(1,'UNTL','Unidentified Teal',NULL,NULL),
 	(1,'UNVI','Unidentified Vireo',NULL,NULL),
@@ -879,6 +881,14 @@ INSERT INTO lu_species(
 	(7,'BOWW','Boat-Whale watch',NULL,NULL),
 	(7,'BOYA','Boat-Yacht',NULL,NULL);
 --select * from lu_species
+
+/*
+ update lu_species
+ set
+ ITIS_id = NULL,
+ scientific_name = NULL
+ where spp_cd in ('UNLT','UNMT','UNST','UNTE')
+*/
 --
 
 -- create and populate survey type table
