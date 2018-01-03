@@ -47,9 +47,9 @@ message("Found ", sum(tmp), " entries with non-matching AOU codes")
 sort(unique(obs$SPECIES[tmp]))
 
 obs$SPECIES[obs$SPECIES %in% "AGPL"] = "AMGP" 
-obs$SPECIES[obs$SPECIES %in% "AMRS"] = "" 
-obs$SPECIES[obs$SPECIES %in% "CEWA"] = "" 
-obs$SPECIES[obs$SPECIES %in% "GCFC"] = "" #Myiarchus crinitus
+obs$SPECIES[obs$SPECIES %in% "AMRS"] = "AMRE" # American Redstart,
+obs$SPECIES[obs$SPECIES %in% "CEWA"] = "CEDW" # Cedar Waxwing
+#obs$SPECIES[obs$SPECIES %in% "GCFC"] = "" # added Great Crested Flycatcher, Myiarchus crinitus
 
 obs$SPECIES[obs$SPECIES %in% "PLOV" & obs$COMMENTS %in% c("likely semipalmated plover")] = "SEPL" 
 obs$SPECIES[obs$SPECIES %in% "PLOV" & obs$COMMENTS %in% c("possibly PIPL")] = "PIPL" 
@@ -64,10 +64,16 @@ obs$SPECIES[obs$SPECIES %in% "PASS"] = "UNPA"
 # fix time
 # ------- #
 # split time and 
-obs = mutate(obs, data = SIGHTTIMEDATELOCAL, time = data = SIGHTTIMEDATELOCAL) %>% 
-  dplyr::select(-SIGHTTIMEDATELOCAL)
-track = mutate(track, data = TIMEDATELOCAL, time = data = TIMEDATELOCAL) %>% 
-  dplyr::select(-TIMEDATELOCAL)
+obs = mutate(obs, 
+             date = as.Date(sapply(strsplit(SIGHTDATETIMELOCAL," "),head,1),format="%d-%b-%y"), 
+             time = sapply(strsplit(SIGHTDATETIMELOCAL," "),tail,1)) %>% 
+  dplyr::select(-SIGHTDATETIMELOCAL)
+track = track %>% rowwise %>% 
+  mutate(date = as.Date(sapply(strsplit(DATETIMELOCAL," "),head,1), format="%d-%b-%y"),
+         time = paste(date, 
+                      substring(sapply(strsplit(DATETIMELOCAL," "),tail,2)[1],1,8), 
+                      sapply(strsplit(DATETIMELOCAL," "),tail,1), sep=".")) %>% 
+  dplyr::select(-DATETIMELOCAL,-ampm)
 # ------- #
 
 # ------- #
