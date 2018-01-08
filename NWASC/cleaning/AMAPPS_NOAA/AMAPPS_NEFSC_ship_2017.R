@@ -68,12 +68,16 @@ obs = mutate(obs,
              date = as.Date(sapply(strsplit(SIGHTDATETIMELOCAL," "),head,1),format="%d-%b-%y"), 
              time = sapply(strsplit(SIGHTDATETIMELOCAL," "),tail,1)) %>% 
   dplyr::select(-SIGHTDATETIMELOCAL)
+
 track = track %>% rowwise %>% 
   mutate(date = as.Date(sapply(strsplit(DATETIMELOCAL," "),head,1), format="%d-%b-%y"),
-         time = paste(date, 
-                      substring(sapply(strsplit(DATETIMELOCAL," "),tail,2)[1],1,8), 
-                      sapply(strsplit(DATETIMELOCAL," "),tail,1), sep=".")) %>% 
-  dplyr::select(-DATETIMELOCAL,-ampm)
+         hour = substring(sapply(strsplit(DATETIMELOCAL," "),tail,2)[1],1,2),
+           min = substring(sapply(strsplit(DATETIMELOCAL," "),tail,2)[1],4,5),
+           sec = substring(sapply(strsplit(DATETIMELOCAL," "),tail,2)[1],7,8),
+           p = sapply(strsplit(DATETIMELOCAL," "),tail,1),
+         hour = replace(hour,p %in% "PM" & !hour %in% "12",as.numeric(hour)+12),
+         time = paste(hour,min,sec,sep=":")) %>% 
+  dplyr::select(-DATETIMELOCAL,-hour,-min,-sec,-p)
 # ------- #
 
 # ------- #
@@ -83,9 +87,14 @@ track = track %>% rowwise %>%
 names(obs)=tolower(names(obs))
 obs = obs %>% rename(type = species)
 names(track)=tolower(names(track))
-track$type = "WAYPNT"
+track = mutate(track,
+               type = "WAYPNT",
+               type = replace(type, eventdesc %in% "begin transect","BEGCNT"),
+               type = replace(type, eventdesc %in% "end transect","ENDCNT"))
 
-obstrack = bind.rows(obs,track) %>% mutate(transect = na.locf(transect))
+obstrack = bind_rows(obs,track) %>% 
+  arrange(date,time) %>% 
+  mutate(transect2 = na.locf(transect))
 # ------- #
 
 # plots
