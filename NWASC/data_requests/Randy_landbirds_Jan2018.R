@@ -76,7 +76,8 @@ dataset = sqlFetch(db, "dataset")
 odbcClose(db)
 
 obs = dplyr::rename(obs, Lat = temp_lat, Long = temp_lon) %>% 
-  mutate(obs_dt = as.Date(obs_dt,format="m%/%d/%Y")) %>% 
+  mutate(obs_dt = as.Date(obs_dt,format="m%/%d/%Y"),
+         observation_id = observation_id + 804175) %>% 
   filter(spp_cd %in% landbirds$spp_cd) %>% rowwise %>% 
   mutate(obs_count_general_nb = replace(obs_count_general_nb,obs_count_general_nb==obs_count_intrans_nb,NA))
 
