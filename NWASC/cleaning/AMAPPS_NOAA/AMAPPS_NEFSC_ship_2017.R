@@ -140,8 +140,12 @@ transects = obstrack %>% filter(type %in% c('BEGCNT','ENDCNT')) %>%
   dplyr::select(type,lat,lon,date,time,beaufort,windspeed,transect) %>%
   summarize(av_beaufort = mean(beaufort),
          av_windspeed = mean(windspeed),
-         starttime = first(time),
-         endtime=last(time))
+         start_time = first(time),
+         end_time=last(time),
+         start_lon = first(lon),
+         end_lon=last(lon),
+         start_lat = first(lat),
+         end_lat=last(lat))
 rm(obstrack)
 # ------- #
 
