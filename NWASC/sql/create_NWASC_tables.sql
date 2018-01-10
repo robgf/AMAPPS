@@ -124,7 +124,8 @@ INSERT INTO lu_people([user_id], name, affiliation, active_status,work_email_onl
 	(73,'Rob Serafini','Point Blue','active','rserafini@pointblue.org'),
 	(74,'Caleb Spiegel','USFWS','active','caleb_spiegel@fws.gov'),
 	(75,'Meghan Sadlowski','USFWS','active','meghan_sadlowski@fws.gov'),
-	(76, 'Scott Johnston','USFWS','active','scott_johnston@fws.gov');
+	(76, 'Scott Johnston','USFWS','active','scott_johnston@fws.gov'),
+	(77, 'Randy Dettmers','USFWS','active','randy_dettmers@fws.gov');
 --
 
 --create and populate share level table
@@ -2042,6 +2043,8 @@ INSERT INTO requests(
 	(16,'service',75,'NWASC boundaries', CAST('2017-11-20' AS DATE), 'filled', CAST('2017-11-29' AS DATE), 'Meghan is looking to create a polygon for pulling AKN data for ECOS for Atlantic birds'),
 	(17,'service', 76 ,'Bug data summary for a RI reporter', CAST('2017-12-20' AS DATE),'not filled', NULL, NULL),
 	(18,'data', 3 ,'all tern data', CAST('2017-12-04' AS DATE),'filled', CAST('2017-12-08' AS DATE), NULL);
+	(19,'data', 77 ,'all landbird data', CAST('2018-01-08' AS DATE),'filled', CAST('2018-01-08' AS DATE), NULL),
+	(20,'data', 3 ,'all RISAMP boat data', CAST('2018-01-10' AS DATE),'filled', CAST('2018-01-10' AS DATE), NULL);
 
 -- example: (id, type, person, description, CAST('req. date' AS DATE), status, CAST('date filled' AS DATE), notes);
 /*  update data_requests script template */  	
