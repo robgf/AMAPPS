@@ -39,6 +39,7 @@ obs = obs %>% rename(lon = temp_lon, lat = temp_lat) %>% rowwise %>%
          source_obs_id = as.character(source_obs_id),
          wind_speed_tx = as.character(wind_speed_tx),
          wind_dir_tx = as.character(wind_dir_tx),
+         heading_tx = as.character(heading_tx),
          observation_id = observation_id + 804175) %>% 
   filter(spp_cd %in% c('ROST','COTE','UNTE','UNST','UNMT','UNLT','UCAT','UCRT'))
 
@@ -58,4 +59,8 @@ db <- dbConnect(odbc::odbc(), driver='SQL Server',server='ifw-dbcsqlcl1', databa
 datasets = dbGetQuery(db,"select * from dataset")
 
 datasets = filter(datasets, dataset_id %in% as.data.frame(distinct(all_data,dataset_id)))
+
+# are any datasets not public?
+
+# might have to pull effort lines in GIS
 # -------------- #
