@@ -46,6 +46,15 @@ obs = obs %>% rename(lon = temp_lon, lat = temp_lat) %>% rowwise %>%
 # combine
 all_data = bind_rows(terns, obs)
 
+# are any datasets not public?
+# datasets
+db <- dbConnect(odbc::odbc(), driver='SQL Server',server='ifw-dbcsqlcl1', database='NWASC')
+datasets = dbGetQuery(db,"select * from dataset")
+datalist = as.data.frame(distinct(all_data,dataset_id))
+datasets = datasets %>% filter(share_level_id %in% 5,
+                               dataset_id %in% datalist)
+all_data = all_data %>% filter(dataset_id %in% datasets$dataset_id)
+
 # write csv
 write.csv(all_data, file = "Z:/seabird_database/data_sent/AndrewGilbert_terns_Dec2017/tern_observations.csv")
 # -------------- #
@@ -54,13 +63,7 @@ write.csv(all_data, file = "Z:/seabird_database/data_sent/AndrewGilbert_terns_De
 # -------------- #
 # find which datasets are in obs and get transect and track data for those
 # -------------- #
-# datasets
-db <- dbConnect(odbc::odbc(), driver='SQL Server',server='ifw-dbcsqlcl1', database='NWASC')
-datasets = dbGetQuery(db,"select * from dataset")
 
-datasets = filter(datasets, dataset_id %in% as.data.frame(distinct(all_data,dataset_id)))
-
-# are any datasets not public?
 
 # might have to pull effort lines in GIS
 # -------------- #
