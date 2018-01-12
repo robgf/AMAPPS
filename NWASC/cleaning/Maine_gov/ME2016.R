@@ -6,6 +6,9 @@
 # ------------- #
 
 
+### change altitude mean to remove negatives and zeros
+
+
 # ------------- #
 # packages
 # ------------- #
@@ -52,18 +55,28 @@ colnames(data)[37]="GPSAltitude_m" #"GPSAltitude(m)"
 # ------------- #
 # summarize estimated transect info
 # ------------- #
-t1 = data %>% dplyr::select(TransectID,TransectStarted,TransectEnded,TransectComments,TransectName,
-                                   GPSLongitude,GPSLatitude,ObservationTimestamp) %>% 
-  group_by(TransectID) %>% filter(row_number()==1) %>% 
-  arrange(ObservationTimestamp) %>% rename(startLon=GPSLongitude,
-                                      startLat=GPSLatitude,
-                                      firstObservation = ObservationTimestamp)
-tn = data %>% dplyr::select(TransectID,TransectStarted,TransectEnded,TransectComments,TransectName,
-                            GPSLongitude,GPSLatitude,ObservationTimestamp) %>% 
-  group_by(TransectID) %>% filter(row_number()==n()) %>% 
-  arrange(ObservationTimestamp) %>% rename(endLon=GPSLongitude,
-                                      endLat=GPSLatitude,
-                                      lastObservation = ObservationTimestamp)
+t1 = data %>% 
+  dplyr::select(TransectID,TransectStarted,TransectEnded,
+                TransectComments,TransectName,
+                GPSLongitude,GPSLatitude,ObservationTimestamp) %>% 
+  group_by(TransectID) %>% 
+  filter(row_number()==1) %>% 
+  arrange(ObservationTimestamp) %>% 
+  rename(startLon=GPSLongitude,
+         startLat=GPSLatitude,
+         firstObservation = ObservationTimestamp)
+
+tn = data %>% 
+  dplyr::select(TransectID,TransectStarted,TransectEnded,
+                TransectComments,TransectName,
+                GPSLongitude,GPSLatitude,ObservationTimestamp) %>% 
+  group_by(TransectID) %>% 
+  filter(row_number()==n()) %>% 
+  arrange(ObservationTimestamp) %>% 
+  rename(endLon=GPSLongitude,
+         endLat=GPSLatitude,
+         lastObservation = ObservationTimestamp)
+
 # estimated transect start and end locations
 est.transects = full_join(t1,dplyr::select(tn,TransectID,endLat,endLon,lastObservation),by="TransectID")
 rm(t1,tn)
@@ -194,7 +207,7 @@ data = mutate(data, sex_id = as.character(Sex),
 # ------------- #
 # rename
 # ------------- #
-data = data %>% 
+data = data %>% distinct(ObservationID,.keep_all = TRUE) %>% 
   mutate(obs_dt=sapply(strsplit(as.character(ObservationTimestamp)," "),head,1),
          obs_tm=sapply(strsplit(as.character(ObservationTimestamp)," "),tail,1),
          original_species_tx = paste(SpeciesCode,SpeciesCommonName,SpeciesITISNumber,sep=" ; "),
@@ -215,9 +228,9 @@ data = data %>%
          visibility_tx = Visibility,
          seastate_beaufort_nb = BeaufortID,
          cloud_cover_tx = Weather,
-         original_age_tx = Age,
-         original_behavior_tx = Behavior,
-         original_sex_tx = Sex,
+         age_tx = Age,
+         behavior_tx = Behavior,
+         sex_tx = Sex,
          glare_tx = Glare,
          travel_direction_tx = Direction) %>%
   dplyr::select(-TransectStarted,-TransectEnded,-TransectComments,
