@@ -15,6 +15,7 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   # ------------------------ #
   # load packages
   # ------------------------ #
+  library(odbc)
   library(RODBC)
   library(dplyr)
   library(geosphere) # distance
