@@ -1233,12 +1233,12 @@ CREATE TABLE dataset2 (
 	FOREIGN KEY(dataset_type_cd) REFERENCES lu_dataset_type(dataset_type_cd),
 	FOREIGN KEY(survey_type_cd) REFERENCES lu_survey_type(survey_type_cd),
 	FOREIGN KEY(share_level_id) REFERENCES lu_share_level(share_level_id),
-	FOREIGN KEY(dataset_id, version_nb) REFERENCES lu_revision_details(dataset_id, revision_nb),
+	--FOREIGN KEY(dataset_id, version_nb) REFERENCES lu_revision_details(dataset_id, version_nb),
 	FOREIGN KEY(responsible_party) REFERENCES lu_people([user_id]),
 	FOREIGN KEY(parent_project) REFERENCES lu_parent_project(project_id)
 );
 GO
---
+-- select * from lu_revision_details
 
 --select * from dataset --order by share_level_id --order by in_database
 INSERT INTO dataset2(
@@ -1863,6 +1863,17 @@ INSERT INTO links_and_literature(
 	-ECOMON Dec 2011 we might have this data listed as Nov? Tim White on boat. Not the same as Nov 2011, finish stations not hit in Nov https://www.nefsc.noaa.gov/HydroAtlas/2011/DEC_ECOMON_DEL1110/CRUISE_REPORT_2011010DE.pdf
 */
 
+update dataset2
+set
+  data_url = links_and_literature.data_url, 
+  report = links_and_literature.report, 
+  data_citation = links_and_literature.data_citation, 
+  publications = links_and_literature.publications, 
+  publication_url = links_and_literature.publication_url, 
+  publication_DOI = links_and_literature.publication_DOI
+from dataset2 join links_and_literature on links_and_literature.dataset_id = dataset2.dataset_id
+-- select * from dataset2
+
 --create and populate progress_table table
 CREATE TABLE progress_table (
 	dataset_id smallint not null,
@@ -1905,7 +1916,6 @@ INSERT INTO progress_table(
 	(166,0,'BarHarborWW09','requested multiple times',CAST('2017-10-17' as date),'KC',0,0,0,NULL),
 	(167,0,'BarHarborWW010','requested multiple times',CAST('2017-10-17' as date),'KC',0,0,0,NULL),
 	(169,99,'BOEMHighDef_NC2011Camera','need to finish QA/QC',NULL,'KC',1,0,1,'There were issues with the gps and time'),
-	(172,99,'BRIMaine2016','QA/QC in progress',NULL,'KC',1,0,0,NULL),
 	(95,99,'StellwagenBankNMS_Jun2012','QA/QC in progress',NULL,'KC',1,1,0,'Script from Arliss as guide'),	
 	(182,99,'StellwagenBankNMS_Aug2012','QA/QC in progress',NULL,'KC',1,1,0,'Script from Arliss as guide'),
 	(183,99,'StellwagenBankNMS_Oct2012','QA/QC in progress',NULL,'KC',1,1,0,'Script from Arliss as guide'),
@@ -1999,6 +2009,13 @@ INSERT INTO progress_table(
     share_level_id = 9
  	where dataset_id = 119
 */
+
+/*
+-- remove dataset that was uploaded
+delete from progress_table
+where dataset_id = 172
+*/
+
 
 /* select progress table script template */ 
 --  select * from progress_table
