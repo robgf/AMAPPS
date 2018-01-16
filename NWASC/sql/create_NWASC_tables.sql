@@ -48,7 +48,7 @@ CREATE TABLE lu_people (
 GO
 
 INSERT INTO lu_people([user_id], name, affiliation, active_status,work_email_only)
-	VALUES
+	VALUES 
 	(1,'Mark Wimer','USGS','active','mwimer@usgs.gov'),
 	(2,'Allison Sussman','USGS','not active',NULL),
 	(3,'Andrew Gilbert','BRILOON','active','andrew.gilbert@briloon.org'),
@@ -125,9 +125,15 @@ INSERT INTO lu_people([user_id], name, affiliation, active_status,work_email_onl
 	(74,'Caleb Spiegel','USFWS','active','caleb_spiegel@fws.gov'),
 	(75,'Meghan Sadlowski','USFWS','active','meghan_sadlowski@fws.gov'),
 	(76, 'Scott Johnston','USFWS','active','scott_johnston@fws.gov'),
-	(77, 'Randy Dettmers','USFWS','active','randy_dettmers@fws.gov');
---
-
+	(77, 'Randy Dettmers','USFWS','active','randy_dettmers@fws.gov'),
+	(78,'Jo Ann Lutmerding','USFWS','active','jo_lutmerding@fws.gov');
+/* 
+update lu_people
+set name = 'Jo Ann Lutmerding'
+where [user_id] = 78
+*/
+-- select * from lu_people where active_status = 'active'
+select * from lu_species2
 --create and populate share level table
 CREATE TABLE lu_share_level (
 	share_level_id tinyint not null,
@@ -1195,7 +1201,7 @@ INSERT INTO lu_parent_project(
 ------------------------
 
 -- create dataset table
-CREATE TABLE dataset (
+CREATE TABLE dataset2 (
 	dataset_id smallint not null,
 	dataset_name nvarchar(50) not null,
 	survey_type_cd nchar(1) null,
@@ -1216,6 +1222,12 @@ CREATE TABLE dataset (
 	dataset_processing nvarchar(3000) null,
 	version_nb tinyint null, 
 	additional_info nvarchar(1000) null,
+	data_url nvarchar(2083) null,
+	report nvarchar(2083) null,
+	data_citation nvarchar(2000) null,
+	publications nvarchar(2000) null,
+	publication_url nvarchar(2000) null,
+	publication_DOI nvarchar(2000) null,
 	PRIMARY KEY(dataset_id),
 	FOREIGN KEY(survey_method_cd) REFERENCES lu_survey_method(survey_method_cd),
 	FOREIGN KEY(dataset_type_cd) REFERENCES lu_dataset_type(dataset_type_cd),
@@ -1229,7 +1241,7 @@ GO
 --
 
 --select * from dataset --order by share_level_id --order by in_database
-INSERT INTO dataset(
+INSERT INTO dataset2(
 	dataset_id, 
 	parent_project, 
 	dataset_name, 
@@ -1633,9 +1645,8 @@ INSERT INTO dataset(
 	(407,24,'NYSERDA_APEM_11','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
 	(408,24,'NYSERDA_APEM_12','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
 	(409,2,'AMAPPS_NOAA/NMFS_NEFSCAerial2010','a','cts','ot',NULL,NULL,0,'no',NULL,NULL,'BOEM,USFWS,NOAA,NAVY',NULL,NULL),
-	(410,2,'AMAPPS_NOAA/NMFS_NEFSCAerial2012','a','cts','ot',NULL,NULL,0,'no',NULL,NULL,'BOEM,USFWS,NOAA,NAVY',NULL,NULL);
-
--- 	( ,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2017','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
+	(410,2,'AMAPPS_NOAA/NMFS_NEFSCAerial2012','a','cts','ot',NULL,NULL,0,'no',NULL,NULL,'BOEM,USFWS,NOAA,NAVY',NULL,NULL),
+	(411,2,'AMAPPS_NOAA/NMFS_NEFSC_2017','b','cts','ot',300,300,5,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1);
 
 -- 	(,21,'DeepwaterWindBlockIsland_bats',NULL,NULL,NULL,NULL,NULL,9,'no',NULL,65,'BOEM,TetraTech,Deepwater Wind RI',NULL,1),
 --	(,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2018','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
@@ -1835,6 +1846,8 @@ INSERT INTO links_and_literature(
 	(52,409,NULL,'https://www.nefsc.noaa.gov/psb/AMAPPS/docs/Final_2010AnnualReportAMAPPS_19Apr2011.pdf',NULL,NULL,NULL,NULL),
 	(53,410,NULL,'https://www.nefsc.noaa.gov/psb/AMAPPS/docs/NMFS_AMAPPS_2012_annual_report_FINAL.pdf',NULL,NULL,NULL,NULL);
 
+--join(dataset2, links_and_liturature, by = dataset_id)
+
 /*  update links_and_literature script template*/
 /*  update links_and_literature
 	set
@@ -2017,7 +2030,7 @@ GO
 INSERT INTO requests(
 	request_id,request_type,requester,request_info,date_requested,
 	request_status,date_filled,additional_notes)
-	VALUES
+	VALUES 
 	(1,'data',68,'Segmentation product of all datasets used in Phase 1 of NOAA modeling and additional data for phase 2, see share google spreadsheet for details',
 		CAST('2014-01-01' AS DATE),'filled',CAST('2017-04-04' AS DATE),
 		'NOAA will need additional datasets to quality control their model in late 2017'),
@@ -2042,9 +2055,10 @@ INSERT INTO requests(
 	(15,'service',74,'summary of species and surveys within the new seamount & canyon marine national monuments - request from refuges, Caleb relayed', CAST('2017-11-20' AS DATE), 'filled', CAST('2017-11-29' AS DATE), NULL),
 	(16,'service',75,'NWASC boundaries', CAST('2017-11-20' AS DATE), 'filled', CAST('2017-11-29' AS DATE), 'Meghan is looking to create a polygon for pulling AKN data for ECOS for Atlantic birds'),
 	(17,'service', 76 ,'Bug data summary for a RI reporter', CAST('2017-12-20' AS DATE),'not filled', NULL, NULL),
-	(18,'data', 3 ,'all tern data', CAST('2017-12-04' AS DATE),'filled', CAST('2017-12-08' AS DATE), NULL);
+	(18,'data', 3 ,'all tern data', CAST('2017-12-04' AS DATE),'filled', CAST('2017-12-08' AS DATE), NULL),
 	(19,'data', 77 ,'all landbird data', CAST('2018-01-08' AS DATE),'filled', CAST('2018-01-08' AS DATE), NULL),
-	(20,'data', 3 ,'all RISAMP boat data', CAST('2018-01-10' AS DATE),'filled', CAST('2018-01-10' AS DATE), NULL);
+	(20,'data', 3 ,'all RISAMP boat data', CAST('2018-01-10' AS DATE),'filled', CAST('2018-01-10' AS DATE), NULL),
+	(21,'data',78,'all metadata on surveys',CAST('2018-01-16' AS DATE), 'not filled',NULL,NULL);
 
 -- example: (id, type, person, description, CAST('req. date' AS DATE), status, CAST('date filled' AS DATE), notes);
 /*  update data_requests script template */  	
