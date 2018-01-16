@@ -1,9 +1,3 @@
-/* 
-find the average number of days it takes to fill a request 
-create by: K. Coleman
-date: 12/2017
-*/
-
 -- set database
 use NWASC;
 
@@ -14,9 +8,12 @@ use NWASC;
 create view [request_time_averages] as
 select DATEDIFF(day, date_requested, date_filled) as 'duration',
 request_type from requests
-where request_status = 'filled' 
+where request_status in ('filled','partially filled') 
 and request_id <> 1
 
 -- determine the average days per type
 select request_type, avg(duration) as 'days' from [request_time_averages]
 group by request_type
+
+-- remove request_time_averages
+drop view request_time_averages
