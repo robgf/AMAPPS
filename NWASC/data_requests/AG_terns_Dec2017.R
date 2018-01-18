@@ -25,10 +25,13 @@ terns_geom = dbGetQuery(db,"select observation_id, [Geometry].STY as lat, [Geome
 terns = left_join(terns, terns_geom, by="observation_id")
 terns = terns %>% mutate(obs_dt = as.character(as.Date(obs_dt, format = "%Y-%m-%d"))) %>%
   dplyr::select(-Geometry)
+rm(terns_geom)
 
 # load new data
 db <- odbcConnectAccess2007("//ifw-hqfs1/MB SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
 obs <- sqlFetch(db, "observation")
+track <- sqlFetch(db, "track")
+transect <- sqlFetch(db, "transect")
 odbcClose(db)
 
 obs = obs %>% rename(lon = temp_lon, lat = temp_lat) %>% rowwise %>% 
@@ -50,7 +53,7 @@ all_data = bind_rows(terns, obs)
 # datasets
 db <- dbConnect(odbc::odbc(), driver='SQL Server',server='ifw-dbcsqlcl1', database='NWASC')
 datasets = dbGetQuery(db,"select * from dataset")
-datalist = as.data.frame(distinct(all_data,dataset_id))
+datalist = as.integer(unlist(distinct(all_data,dataset_id)))
 datasets = datasets %>% filter(share_level_id %in% 5,
                                dataset_id %in% datalist)
 all_data = all_data %>% filter(dataset_id %in% datasets$dataset_id)
@@ -61,9 +64,22 @@ write.csv(all_data, file = "Z:/seabird_database/data_sent/AndrewGilbert_terns_De
 
 
 # -------------- #
-# find which datasets are in obs and get transect and track data for those
+# transect and track data
 # -------------- #
+track = track %>% filter(dataset_id %in% datalist)
+transect = transect %>% filter(dataset_id %in% datalist)
 
-
-# might have to pull effort lines in GIS
+db <- dbConnect(odbc::odbc(),driver='SQL Server',server='ifw9mbmsvr008',database='SeabirdCatalog')
+terns_transect = dbGetQuery(db,"select * from transect")
+terns_transect_points = dbGetQuery(db,"select transect_id, 
+                                 [Geometry].STY as lat, 
+                                 [Geometry].STX as lon,
+                                 [geography].Lat as lat, 
+                                 [geography].Long as lon 
+                                 from transect_points")
+terns_transect = left_join(terns_transect, 
+                           terns_transect_geom, by="transect_id") %>%
+  dplyr::select(-Geometry) %>% 
+  filter(dataset_id %in% datalist)
+rm(terns_transect_geom)
 # -------------- #
