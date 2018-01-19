@@ -933,6 +933,12 @@ obs$transect[obs$day %in% 20 & obs$obs %in% 'tpw' & obs$sec %in% c(40287.65,4028
 obs$offline[obs$day %in% 20 & obs$obs %in% 'tpw' & obs$sec %in% c(40287.65,40287.65,40327.38,40480.69,40535.10)]=1
 # ---------- #
 
+# ---------- # 
+# bad data
+# ---------- # 
+track$lat[track$lat<20] = 40.7210
+# ---------- # 
+
 message("Fixed other errors")
 ##--------------------------##
 
