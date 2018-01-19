@@ -9,6 +9,8 @@ Jan. 2018
 -----------------------------------------------------
 */
 
+Use SeabirdCatalog
+Go;
 
 /*
 -----------------------------------------------------
@@ -41,8 +43,7 @@ Update transect
 set newGeometry = [Geometry];
 --
 --
-create view geographyTest 
-as 
+create view geographyTest as
 select 
 transect_id,
 dataset_id,
@@ -54,19 +55,14 @@ Geometry.STStartPoint().STAsText() as point1b,
 Geometry.STEndPoint().STAsText() as point2b,
 Geometry.STNumPoints() as numpoints
 from transect;
-/*
-select 
-transect_id
-from geographyTest 
-where point1b = point2b  and numpoints = 2 and pointType <> 'Point'
-or point1a.STAsText() = point2a.STAsText() and numpoints = 2 and pointType <> 'Point'
-*/
-
+--
+--
 Update transect
 set newGeometry = Geometry.STStartPoint()
-where transect_id in (select transect_id from geographyTest 
-where point1a.STAsText() = point2a.STAsText() and numpoints = 2 and pointType <> 'Point'
-or point1b = point2b  and numpoints = 2 and pointType <> 'Point');
+where transect_id in (select 
+transect_id
+from geographyTest
+where Geometry.STLength() = 0 and numpoints in (2,3) and pointType <> 'Point');
 
 -- add geography column
 alter table transect 
@@ -75,15 +71,20 @@ GO;
 
 -- create geography column from geometry
 update transect
-	set [geography] = GEOGRAPHY::STGeomFromText(Geometry.MakeValid().STAsText(),4269)
-	where transect_id between 9572 and 9573;
-	GO;
+	set [geography] = GEOGRAPHY::STGeomFromText(newGeometry.MakeValid().STAsText(),4269)
+	where transect_id between 70192 and 70194;
+/*	where dataset_id in (5,6,7,12,15,20,21,22,23,24,25,28,29,30,31,32,33,34,35,39,42,57,
+ 69,70,71,75,77,78,80,82,84,85,89,90,91,112,113,116,117,118,120,121,122,123,
+ 137,138,140,141,146,147,158) --tern request*/
 --
 
 -- select * from geographyTest
 -- drop view geographyTest
--- select dataset_id,[geometry].STAsText() from transect where transect_id in (9574)
+select dataset_id,geometry.STSrid, [geometry].STAsText() from transect where transect_id in (70194)
 
+select * from transect where transect_id in (70193)
+
+select * from transect where dataset_id in (8)
 /*
 Points with known errors for linestrings with only two points which are the same
 (7159,7330,7543,7800,7801,7806,8752,8983,
@@ -91,6 +92,12 @@ Points with known errors for linestrings with only two points which are the same
 9484,9487,9489,9493,9499,9550,9553,9554,
 9555,9556,9557,9558,9560,9561,9562,9564,
 9566,9567,9568,9569,9570,9571,9573,9574)
+
+Points with known errors for linestrings with only 3 points which are the same
+(63754)
+
+Points with known errors for linestrings with the same longitude but different latitudes
+(62487,62488,62489,62490,62491) -- skipped to 63472 to test for other errors
 */
 
 /* having issues with invalid geography, need MakeValid to work */ 
