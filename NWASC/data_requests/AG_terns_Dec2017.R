@@ -14,6 +14,18 @@ library(lubridate)
 
 
 # -------------- #
+# functions
+# -------------- #
+fix_proj <- function(x) {
+  coordinates(x) <- ~ lon + lat
+  proj4string(x) <- CRS("+init=epsg:4269")
+  x = as.data.frame(spTransform(x, CRS("+init=epsg:4326")))
+  return(x)
+}
+# -------------- #
+
+
+# -------------- #
 # load observation data
 # -------------- #
 # get old data
@@ -26,6 +38,7 @@ terns = left_join(terns, terns_geom, by="observation_id")
 terns = terns %>% mutate(obs_dt = as.character(as.Date(obs_dt, format = "%Y-%m-%d"))) %>%
   dplyr::select(-Geometry)
 rm(terns_geom)
+terns = fix_proj(terns)
 
 # load new data
 db <- odbcConnectAccess2007("//ifw-hqfs1/MB SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
@@ -71,14 +84,22 @@ transect = transect %>% filter(dataset_id %in% datalist)
 
 db <- dbConnect(odbc::odbc(),driver='SQL Server',server='ifw9mbmsvr008',database='SeabirdCatalog')
 terns_transect = dbGetQuery(db,"select * from transect")
+
 terns_transect_points = dbGetQuery(db,"select transect_id, 
                                  [Geometry].STY as lat, 
-                                 [Geometry].STX as lon,
-                                 [geography].Lat as lat, 
-                                 [geography].Long as lon 
+                                 [Geometry].STX as lon
                                  from transect_points")
-terns_transect = left_join(terns_transect, 
-                           terns_transect_geom, by="transect_id") %>%
+terns_transect_points = fix_proj(terns_transect_points)
+
+terns_transect_lines = dbGetQuery(db,"select transect_id, 
+                                 [Geometry].STAsText() as ShapeWKT
+                                 from transect_lines")
+terns_transect_lines$step1 = apply(terns_transect_lines, 1, function(x) new = readWKT(x[2])) # read spatial lines list -> tried to keep id
+terns_transect_lines$step2 = apply(terns_transect_lines, 1, function(x) {as.data.frame(as(x[3], "SpatialPointsDataFrame"))}) #change to points and df
+
+fix_proj()
+
+terns_transect = left_join(terns_transect, terns_transect_points, terns_transect_lines, by="transect_id") %>%
   dplyr::select(-Geometry) %>% 
   filter(dataset_id %in% datalist)
 rm(terns_transect_geom)
