@@ -9,8 +9,7 @@ Jan. 2018
 -----------------------------------------------------
 */
 
-Use SeabirdCatalog
-Go;
+Use SeabirdCatalog;
 
 /*
 -----------------------------------------------------
@@ -82,7 +81,7 @@ update transect
 -- drop view geographyTest
 select dataset_id,geometry.STSrid, [geometry].STAsText() from transect where transect_id in (70194)
 
-select * from transect where transect_id in (70193)
+select * from transect where transect_id in (70194)
 
 select * from transect where dataset_id in (8)
 /*
