@@ -9,7 +9,8 @@ library(maps)
 library(ggmap)
 library(maps)
 library(dplyr)
-library(lubridate)
+library(lubridate) 
+library(rgeos) #readWKT
 # -------------- #
 
 
@@ -73,6 +74,7 @@ all_data = all_data %>% filter(dataset_id %in% datasets$dataset_id)
 
 # write csv
 write.csv(all_data, file = "Z:/seabird_database/data_sent/AndrewGilbert_terns_Dec2017/tern_observations.csv")
+rm(obs,terns)
 # -------------- #
 
 
@@ -94,13 +96,39 @@ terns_transect_points = fix_proj(terns_transect_points)
 terns_transect_lines = dbGetQuery(db,"select transect_id, 
                                  [Geometry].STAsText() as ShapeWKT
                                  from transect_lines")
-terns_transect_lines$step1 = apply(terns_transect_lines, 1, function(x) new = readWKT(x[2])) # read spatial lines list -> tried to keep id
-terns_transect_lines$step2 = apply(terns_transect_lines, 1, function(x) {as.data.frame(as(x[3], "SpatialPointsDataFrame"))}) #change to points and df
+new_df = as.data.frame(matrix(nrow=0,ncol=3))
+names(new_df) = c("x","y","transect_id")
+for (z in 1:length(terns_transect_lines$transect_id)) {
+  a = as.data.frame(as(readWKT(terns_transect_lines$ShapeWKT[z]),"SpatialPointsDataFrame"))
+  b = rep(terns_transect_lines$transect_id[z],length(a$y))
+  a$transect_id = b
+  a$source_id = seq(1:length(a$transect_id))
+  new_df = rbind(new_df,dplyr::select(a,x,y,transect_id,source_id))
+}
+new_df = rename(new_df, lat=x, lon=y)
+new_df = fix_proj(new_df)
+# this is a horrible loop... 
+#write.csv(new_df, file = "Z:/seabird_database/data_sent/AndrewGilbert_terns_Dec2017/transect_lines_as_points.csv")
 
-fix_proj()
-
-terns_transect = left_join(terns_transect, terns_transect_points, terns_transect_lines, by="transect_id") %>%
-  dplyr::select(-Geometry) %>% 
+new_terns_transect_points = left_join(terns_transect_points, terns_transect, by="transect_id") %>%
+  dplyr::select(-Geometry,-geography,-newGeometry) %>% 
+  filter(dataset_id %in% datalist) %>% mutate(source_id = NA)
+new_terns_transect_lines = left_join(new_df,terns_transect, by="transect_id") %>%
+  dplyr::select(-Geometry,-geography,-newGeometry) %>% 
   filter(dataset_id %in% datalist)
-rm(terns_transect_geom)
+rm(new_df)
+
+old_track = bind_rows(new_terns_transect_points, new_terns_transect_lines) %>% 
+  group_by(transect_id) %>% 
+  mutate(start = ifelse(row_number()==1, 1, NA),
+         stop = ifelse(row_number()==n(), 1, NA)) %>%
+  ungroup %>% 
+  mutate(time = NA,
+         time = ifelse(start==1, start_tm, NA),
+         time = ifelse(stop==1, end_tm, NA))
+old_transect = old_track %>% group_by(dataset_id, transect_id) %>% 
+  filter(row_number()==1 | row_number()==n())
+  
+all_track = rbind(track, old_track) %>% arrange(dataset_id,date,time)
+all_track = rbind(transect, old_transect) %>% arrange(dataset_id,date,time)
 # -------------- #
