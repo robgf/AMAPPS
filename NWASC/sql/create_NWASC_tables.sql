@@ -1631,8 +1631,8 @@ INSERT INTO dataset2(
 	(390,10,'EcoMonAug2016','b','cts','ot',300,300,0,'no',NULL,16,'NOAA',NULL,1),--PC 1607
 	(391,10,'EcoMonMay2016','b','cts','ot',300,300,0,'no',NULL,16,'NOAA',NULL,1),--GU 1608
 	(392,10,'EcoMonOct2016','b','cts','ot',300,300,0,'no',NULL,16,'NOAA',NULL,1),--PC 1609 no bird observer 
-	(393,10,'EcoMonFeb2017','b','cts','ot',300,300,0,'no',NULL,16,'NOAA',NULL,1),--HB 1701
-	(394,10,'EcoMonJune2017','b','cts','ot',300,300,0,'no',NULL,16,'NOAA',NULL,1),--GU 1706
+	(393,10,'EcoMonMay2017_GU1701','b','cts','ot',300,300,0,'no',NULL,16,'NOAA',NULL,1),
+	(394,10,'EcoMonJune2017_GU1702','b','cts','ot',300,300,0,'no',NULL,16,'NOAA',NULL,1),
 	(395,1,'AMAPPS_FWS_Aerial_Summer2017','a','cts','ot',400,200,5,'no','no',50,'BOEM,USFWS,NOAA,NAVY',110,1),
 	(173,24,'NYSERDA_APEM_1','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
 	(396,1,'AMAPPS_FWS_Aerial_2018','a','cts','ot',400,200,5,'no','no',50,'BOEM,USFWS,NOAA,NAVY',110,1),
@@ -1650,17 +1650,19 @@ INSERT INTO dataset2(
 	(408,24,'NYSERDA_APEM_12','c','cts','ot',NULL,NULL,0,'no',NULL,61,'BOEM,APEM,Normandeau',NULL,1),
 	(409,2,'AMAPPS_NOAA/NMFS_NEFSCAerial2010','a','cts','ot',NULL,NULL,0,'no',NULL,NULL,'BOEM,USFWS,NOAA,NAVY',NULL,NULL),
 	(410,2,'AMAPPS_NOAA/NMFS_NEFSCAerial2012','a','cts','ot',NULL,NULL,0,'no',NULL,NULL,'BOEM,USFWS,NOAA,NAVY',NULL,NULL),
-	(411,2,'AMAPPS_NOAA/NMFS_NEFSC_2017','b','cts','ot',300,300,5,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1);
-
+	(411,2,'AMAPPS_NOAA/NMFS_NEFSC_2017','b','cts','ot',300,300,5,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
+	(412,10,'EcoMonOct2017_GU1706','b','cts','ot',300,300,0,'no',NULL,16,'NOAA',NULL,1)
 -- 	(,21,'DeepwaterWindBlockIsland_bats',NULL,NULL,NULL,NULL,NULL,9,'no',NULL,65,'BOEM,TetraTech,Deepwater Wind RI',NULL,1),
 --	(,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2018','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
 --	(,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2019','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
 
 /*  update dataset table */
-/*    update dataset
-	set
-	parent_project = 2
-	where dataset_id = 410
+/*    
+update dataset2
+set
+dataset_name = 'EcoMonJune2017_GU1702'
+where dataset_id = 394
+	
 */
 
 -- select * from dataset
