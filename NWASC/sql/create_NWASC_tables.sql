@@ -308,7 +308,7 @@ INSERT INTO lu_species2(
 	(1,'GWTE','Green-winged Teal',NULL,'Anas','crecca',175081, NULL),
 	(1,'HADU','Harlequin Duck',NULL,'Histrionicus','histrionicus',175149,'Monotypic. Howard and Moore (2003) list subspecies H. h. histionicus and H. h. pacificus but validity doubtful'),
 	(1,'HAPE','Hawaiian Petrel',NULL,'Pterodroma','sandwichensis',562561, NULL),
-	(1,'HEPE','Herald Petrel',NULL,'Pterodroma','arminjoniana',174570, NULL),
+	(1,'HEPE','Herald/Trinidad Petrel','heraldica and arminjoniana subspecies','Pterodroma','arminjoniana',NULL, NULL),
 	(1,'HERG','Herring Gull',NULL,'Larus','argentatus',176824, NULL),
 	(1,'HOGR','Horned Grebe',NULL,'Podiceps','auritus',174482, NULL),
 	(1,'HOME','Hooded Merganser',NULL,'Lophodytes','cucullatus',175183, NULL),
@@ -759,6 +759,7 @@ INSERT INTO lu_species2(
 	(8,'EAPH','Eastern Phoebe',NULL,'Sayornis','phoebe',178329, NULL),
 	(8,'EASO','Eastern Screech-Owl',NULL,'Megascops','asio',686658, NULL),
 	(8,'EATO','Eastern Towhee',NULL,'Pipilo','erythrophthalmus',179276, NULL),
+	(8,'EAWP','Eastern Wood-Pewee',NULL,'Contopus','virens',178359,NULL),
 	(8,'EUCD','Eurasian Collared-Dove',NULL,'Streptopelia','decaocto',177139, NULL),
 	(8,'EUST','European Starling',NULL,'Sturnus','vulgaris',179637,NULL),
 	(8,'EVGR','Evening Grosbeak',NULL,'Coccothraustes','vespertinus',179173, NULL),
@@ -846,7 +847,7 @@ INSERT INTO lu_species2(
 	(8,'RUGR','Ruffed Grouse',NULL,'Bonasa','umbellus',175790,NULL),
 	(8,'RWBL','Red-winged Blackbird',NULL,'Agelaius','phoeniceus',179045,NULL),
 	(8,'SAVS','Savannah Sparrow',NULL,'Passerculus','sandwichensis',179314,NULL),
-	(8,'SCRE','Eastern Screech Owl',NULL,'Megascops','asio',686658,NULL),
+	--(8,'SCRE','Eastern Screech Owl',NULL,'Megascops','asio',686658,NULL), -- change all records to EASO
 	(8,'SCTA','Scarlet Tanager',NULL,'Piranga','olivacea',179883,NULL),
 	(8,'SEOW','Short-eared Owl',NULL,'Asio','flammeus',177935,NULL),
 	(8,'SEWR','Sedge Wren',NULL,'Cistothorus','platensis',178605,NULL),
@@ -907,9 +908,12 @@ INSERT INTO lu_species2(
 --select * from lu_species2 order by species_type_id,spp_cd
 
 /*
-update lu_species
-set species_type_id = 8
-where spp_cd = 'AMRE'
+update lu_species2
+set
+common_name  = 'Herald/Trinidad Petrel',
+[group] = 'heraldica and arminjoniana subspecies',
+ITIS_id = NULL
+where spp_cd = 'HEPE'
 
 select * from lu_species order by species_type_id, spp_cd
 
@@ -1845,9 +1849,6 @@ INSERT INTO links_and_literature(
 	(51,116,NULL,'https://www.nefsc.noaa.gov/psb/AMAPPS/docs/NMFS_AMAPPS_2013_annual_report_FINAL3.pdf',NULL,NULL,NULL,NULL),
 	(52,409,NULL,'https://www.nefsc.noaa.gov/psb/AMAPPS/docs/Final_2010AnnualReportAMAPPS_19Apr2011.pdf',NULL,NULL,NULL,NULL),
 	(53,410,NULL,'https://www.nefsc.noaa.gov/psb/AMAPPS/docs/NMFS_AMAPPS_2012_annual_report_FINAL.pdf',NULL,NULL,NULL,NULL);
-
---join(dataset2, links_and_liturature, by = dataset_id)
-
 /*  update links_and_literature script template*/
 /*  update links_and_literature
 	set
@@ -1873,6 +1874,7 @@ set
   publication_DOI = links_and_literature.publication_DOI
 from dataset2 join links_and_literature on links_and_literature.dataset_id = dataset2.dataset_id
 -- select * from dataset2
+drop table links_and_literature
 
 --create and populate progress_table table
 CREATE TABLE progress_table (
@@ -2001,13 +2003,8 @@ INSERT INTO progress_table(
 /* update progress table script template */  	
 /*	update progress_table
   	set 
- 	date_of_action=CAST('2017-11-08' as date),
- 	action_required_or_taken = 'downloaded from OBIS, need to request effort data',
- 	additional_info='Arliss has full dataset',
- 	data_acquired=1,
- 	metadata_acquired=1,
-    share_level_id = 9
- 	where dataset_id = 119
+ 	date_of_action=CAST('2018-01-16' as date)
+ 	where dataset_id in (173,398,399,400,401)
 */
 
 /*
@@ -2018,7 +2015,7 @@ where dataset_id = 172
 
 
 /* select progress table script template */ 
---  select * from progress_table
+--  select * from progress_table order by dataset_name
 
 --create boem lease block table
 CREATE TABLE boem_lease_blocks (
