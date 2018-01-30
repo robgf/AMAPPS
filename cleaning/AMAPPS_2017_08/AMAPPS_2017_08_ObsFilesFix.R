@@ -293,11 +293,11 @@ obs$type[obs$transect %in% 411601 & obs$obs %in% "mdk" & obs$type %in% "ENDCNT"]
 
 # change offline obs transects to NA
 tmp <- tolower(obs$offline) %in% c("na", "no", "n", "", " ")
-obs$obsaChange[tmp] <- paste(obs$obsaChange[tmp], "; changed OFFLINE from ", 
+obs$dataChange[tmp] <- paste(obs$dataChange[tmp], "; changed OFFLINE from ", 
                              obs$offline[tmp], sep = "")
 obs$offline[tmp] <- "0"
 tmp <- tolower(obs$offline) %in% c("yes", "y")
-obs$obsaChange[tmp] <- paste(obs$obsaChange[tmp], "; changed OFFLINE from ", 
+obs$dataChange[tmp] <- paste(obs$dataChange[tmp], "; changed OFFLINE from ", 
                              obs$offline[tmp], sep = "")
 obs$offline[tmp] <- "1"
 
@@ -366,16 +366,6 @@ obs$transect[obs$transect %in% 374100  & obs$sec %in% 40083.59 & obs$type %in% "
 # 375600 neither SDE or JFV has an END
 obs$transect[obs$transect %in% 375601 & obs$sec %in% c(38548.45, 38538.71)] = 375600
 
-# 381101  sde missing BEG
-to.add = obs[obs$transect %in% 381101 & obs$type %in% "BEGCNT" & obs$obs %in% 'jfv',]
-to.add = mutate(to.add, 
-                seat = "lf",
-                obs = "sde",
-                comment = "pilot did not record beginning of the line; used observer's location",
-                index = NA)
-obs = rbind(obs, to.add)
-rm(to.add)
-
 # 410100       
 obs$type[obs$transect %in% 410100 & obs$sec %in% 31459.01] = "COMMENT" #not sure whats up here
 
@@ -383,6 +373,10 @@ obs$type[obs$transect %in% 410100 & obs$sec %in% 31459.01] = "COMMENT" #not sure
 obs$type[obs$transect %in% 444600 & obs$sec %in% 31075.00] = "COMMENT" #not sure whats up here
 
 message("Fixed transect errors")
+
+# 381101
+obs$dataChange[obs$transect %in% 381101] = paste(obs$dataChange[obs$transect %in% 381101],"Changed from 381101",sep="; ")
+obs$transect[obs$transect %in% 381101] = 381100
 
 ## descriptive plots
 #ggplot(filter(obs,obs %in% "mdk"), aes(long,lat,col=transect))+geom_point()
@@ -933,12 +927,6 @@ obs$transect[obs$day %in% 20 & obs$obs %in% 'tpw' & obs$sec %in% c(40287.65,4028
 obs$offline[obs$day %in% 20 & obs$obs %in% 'tpw' & obs$sec %in% c(40287.65,40287.65,40327.38,40480.69,40535.10)]=1
 # ---------- #
 
-# ---------- # 
-# bad data
-# ---------- # 
-track$lat[track$lat<20] = 40.7210
-# ---------- # 
-
 message("Fixed other errors")
 ##--------------------------##
 
@@ -952,11 +940,12 @@ message("Fixed other errors")
 #x = obs[obs$transect %in% 381100,]
 #x = obs[obs$transect %in% 365100,]
 #x = obs[obs$transect %in% 365101,]
+
 # 26 Aug did not record break between these two transects			
 # 365100  no BEG for either
 # NEED TO ADDRESS
 # 365101  no END for either
-#371601		24 Aug circled to look at debris, no lost distance	
+# 371601		24 Aug circled to look at debris, no lost distance	
 # Note: Called the end of 415101 about 1/2 mile late.
 # missing transects (NAs)
 # tpw 434100
