@@ -201,7 +201,8 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
     
         track = do.call(rbind.data.frame, track)
         obs = do.call(rbind.data.frame, obs)
-        obstrack = bind_rows(obs, track, alt.tracks) %>% arrange(key, sec)}
+        obstrack = bind_rows(obs, track, alt.tracks) %>% arrange(key, sec)
+        rm(alt.tracks)}
     } else {
       track = do.call(rbind.data.frame, track)
       obs = do.call(rbind.data.frame, obs)
@@ -219,7 +220,7 @@ py.exe = "C:/Python27/ArcGISx6410.3/python.exe" #64 bit
   obstrack <- arrange(obstrack, crew, seat, year, month, day, sec, index)
   row.names(obstrack) <- NULL
   obstrack$ID <- as.numeric(row.names(obstrack))
-  rm(obs, track, trackfiles, obsfiles, alt.tracks)
+  rm(obs, track, trackfiles, obsfiles)
 
   # This file is for obvious track errors that should not be included in GIS file
   # or transects where no observations occurred but only one observer recoreded the BEG and END
