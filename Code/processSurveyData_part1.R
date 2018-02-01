@@ -376,7 +376,11 @@ rm(starts, stops)
   obstrack %>% filter(type %in% c('BEGCNT','ENDCNT')) %>% group_by(key,transect) %>%
     summarize(n=n()) %>% filter(n %% 2 != 0)
   
-  # remove if points were investigated and fixed
+  # This file is for obvious transect errors 
+  if (file.exists(paste(dir.out,"postTransEdits.R",sep="/"))) {
+    source(paste(dir.out,"postTransEdits.R",sep="/"))}
+  
+    # remove if points were investigated and fixed
   obstrack = dplyr::select(obstrack,-transLat,-transLong,-transTransect,-transDist,-flag1) %>% 
     rename(flag1=flag1b)
   # ---------------------------------------------------------------------------- #
@@ -387,30 +391,36 @@ rm(starts, stops)
   # ---------------------------------------------------------------------------- #
   obstrack <- arrange(obstrack,ID)
   obstrack$key <- paste(obstrack$crew, obstrack$seat, obstrack$year, obstrack$month, 
-                        obstrack$day, obstrack$transLat, obstrack$transLong, sep = "_")
-  allkeys <- unique(obstrack$key[as.numeric(obstrack$transLat) > 0])
+                        obstrack$day, obstrack$transect, sep = "_")
+  allkeys <- unique(obstrack$key[!is.na(obstrack$transect)])
   obstrack$bearing <- NA
   obstrack$sbearing <- NA
   obstrack$flag2 <- 0
+  #
   for (i in seq(along = allkeys)) {
-    tmp <- obstrack$key == allkeys[i]
+    tmp <- obstrack$key %in% allkeys[i]
     obs.i <- obstrack[tmp, ]
-    if (nrow(obs.i) > 1 & min(obs.i$sec) < max(obs.i$sec)) {
+    if (nrow(obs.i) > 1 & 
+        min(obs.i$sec, na.rm = TRUE) < max(obs.i$sec, na.rm = TRUE)) {
       for (j in 1:(nrow(obs.i)-1)) {
         obs.i$bearing[j] <- bearing(c(obs.i$long[j], obs.i$lat[j]), 
                                     c(obs.i$long[j+1], obs.i$lat[j+1]))
         if (is.na(obs.i$bearing[j])) next
         if (j > 1) {
-          if (!(is.na(obs.i$bearing[j-1])) & abs(obs.i$bearing[j] - obs.i$bearing[j-1]) > 100) 
+          if (!(is.na(obs.i$bearing[j-1])) & 
+              abs(obs.i$bearing[j] - obs.i$bearing[j-1]) > 100) 
             obs.i$flag2[j] <- 1
         }
       }
       obs.i$sbearing[!is.na(obs.i$bearing)] <- smooth(obs.i$bearing[!is.na(obs.i$bearing)])
     }
     obstrack[tmp, ] <- obs.i
-  }
-  obstrack$flag3 <- ifelse(obstrack$transLat == 0 | obstrack$sbearing < 70 | 
-                             (obstrack$sbearing > 110 & obstrack$sbearing < 250) | obstrack$sbearing > 290, 1, 0)
+  } 
+  rm(obs.i)
+  #
+  obstrack$flag3 <- ifelse(obstrack$sbearing < 70 | 
+                             (obstrack$sbearing > 110 & obstrack$sbearing < 250) | 
+                             obstrack$sbearing > 290, 1, 0)
   # ---------------------------------------------------------------------------- #
   
   
@@ -422,7 +432,7 @@ rm(starts, stops)
   proj4string(geodat) <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
   
   # READ IN ATLANTIC COASTLINE SHAPEFILE
-  land <- readOGR(dsn = file.path(paste(dir,"DataProcessing/ArcGIS",sep=""), "data"),
+  land <- readOGR(dsn = paste(dir,"/amapps_gis",sep=""),
                   layer = "atlanticCoastline_buffer_halfNM")
   
   # FLAG POINTS THAT ARE ON LAND
@@ -451,14 +461,20 @@ rm(starts, stops)
   # ---------------------------------------------------------------------------- #
   # STEP 12: REMOVE POINTS THAT ARE OBVIOUS TRANSIT POINTS
   # ---------------------------------------------------------------------------- #
-  to.remove = obstrack[obstrack$flag1==1 & obstrack$onLand==1,]
+  to.remove = obstrack[obstrack$flag1 %in% 1 & obstrack$onLand %in% 1,]
+  if(dim(to.remove)[1]>1) {
+    to.remove #display errors
+    transit = bind_rows(transit, to.remove)}
+  rm(to.remove)
+  obstrack = filter(obstrack, !obstrack$flag1 %in% 1 && !obstrack$onLand %in% 1)
   # ---------------------------------------------------------------------------- #  
   
   
   # ---------------------------------------------------------------------------- #
   # STEP 12: OUTPUT DATA 
   # ---------------------------------------------------------------------------- #
-  obstrack$key <- paste(obstrack$crew, obstrack$seat, obstrack$year, obstrack$month, obstrack$day, sep = "_")
+  obstrack$key <- paste(obstrack$crew, obstrack$seat, obstrack$year, 
+                        obstrack$month, obstrack$day, sep = "_")
   obstrack$begend <- ifelse(obstrack$type %in% c("BEGCNT", "ENDCNT"), 1, 0)
   
   save.image(paste(dir.out,"obstrack_part1.Rdata",sep="/"))
@@ -475,21 +491,31 @@ rm(starts, stops)
   }
   
   # SAVE DATA FOR ArcGIS PROCESSING
-  geodat <- obstrack
+  geodat <- as.data.frame(obstrack)
   coordinates(geodat) <- ~ long + lat
   proj4string(geodat) <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
-  writeOGR(geodat, dsn = file.path(dir.out, "temp_shapefiles"), 
-           layer = "temp_obsTrack_10_2014", driver = "ESRI Shapefile", morphToESRI = TRUE)
+  writeOGR(geodat, 
+           dsn = file.path(dir.out, "temp_shapefiles"), 
+           layer = "temp_obsTrack", 
+           driver = "ESRI Shapefile", 
+           morphToESRI = TRUE)
   
   # READ IN GENERIC GISeditObsTrack.py FILE, CHANGE NECESSARY DIRECTORIES, & SAVE 
   # NEW .py FILE
-  py <- readLines(file.path(dir, "DataProcessing/Code/GISeditObsTrack.py"))
-  py[grep("^sdpath = ", py)] <- paste("sdpath = '", "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/'", sep = "")
-  py[grep("^projpath = ", py)] <- paste("projpath = '", dir.out, "/'", sep = "")
+  py <- readLines(file.path(dir, "code/cleaning_raw_data/GISeditObsTrack_NZ.py"))
+  #py[grep("^sdpath = ", py)] <- paste("sdpath = '", "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/'", sep = "")
+  #py[grep("^sdpath = ", py)] <- paste("sdpath = '", "//IFW9mbm-fs1/MB SeaDuck/AMAPPS/'", sep = "")
+  #py[grep("^path = ", py)] <- paste("path = '", "//IFW9mbm-fs1/MB SeaDuck/AMAPPS/amapps_gis/'", sep = "")
+  #py[grep("^projpath = ", py)] <- paste("projpath = '", dir.out, "/'", sep = "")
+  #py[grep("^import cv2", py)] <- paste("")
+  #py[grep("^mtemplate = ",py)] <- paste("mtemplate = '","//IFW9mbm-fs1/MB SeaDuck/AMAPPS/amapps_gis/GISeditObsTrack_template.mxd'", sep="")
+  
+  py[grep("^TemplatePath = ", py)] <- paste("TemplatePath = '","//IFW9mbm-fs1/MB SeaDuck/AMAPPS/amapps_gis/'", sep = "")
   writeLines(py, file.path(dir.out, "GISeditObsTrack.py"))
   
   # RUN GISeditObsTrack.py PROGRAM IN ArcGIS, DELETE PROGRAM WHEN FINISHED
-  system(paste(py.exe, file.path(dir.out, "GISeditObsTrack.py")))
+  #system(paste(py.exe, file.path(dir.out, "GISeditObsTrack.py"))) # trouble with space in new 'MB Seaduck' name
+  system(paste(py.exe, '"//ifw-hqfs1/MB SeaDuck/AMAPPS/clean_data/AMAPPS_2017_08/GISeditObsTrack.py"'))
   unlink(file.path(dir.out, "GISeditObsTrack.py"))
   # ---------------------------------------------------------------------------- #
   
