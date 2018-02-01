@@ -74,3 +74,8 @@ rm(to.add)
 # extra BEGCNT, no clue where the END break on the line would've happened so removed
 obstrack$type[obstrack$seat %in% "rf" & obstrack$transect %in% 424100 & obstrack$sec %in% 46124.84] = "COMMENT"
 #-----------------------#
+
+#-----------------------#
+# missing crew
+obstrack$crew[obstrack$transect %in% c(365101,365100)] = "Crew4126"
+#-----------------------#
