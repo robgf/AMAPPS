@@ -3,33 +3,28 @@
 # Date Created: 2014-10-17
 # Author: JBL
 #
-# Description: 
+# updated by K. Coleman, Jan. 2018
+#
+# Description: This file takes the shapefiles with the observations and the tracks
+# and color codes the errors as well as the transects for visual inspection in ArcGIS
 # ---------------------------------------------------------------------------
 
 # Import arcpy module
-import arcpy
+import arcpy, os, string     
 
 # Allow ArcGIS to overwrite existing files
 arcpy.env.overwriteOutput = True
 
-# SET PATH TO SEA DUCK SURVEY DIRECTORY
-sdpath = "P:/USFWS/"
-
-# SET PATH TO DATA PROCESSING GIS FOLDER
-path = sdpath + "Jeff_Working_Folder/DataProcessing/GIS/"
-
-# SET PATH TO MAP TEMPLATE
-mtemplate = path + "GISeditObsTrack_template.mxd"
-
 # SET PATH TO PROJECT FOLDER
-projpath = path
+projpath = "//ifw-hqfs1/MB SeaDuck/AMAPPS/clean_data/AMAPPS_2017_08/"
 
 # Input files
 obsTrack = projpath + "temp_shapefiles/temp_obsTrack.shp"
 
-
 # Get map document template
-mxd = arcpy.mapping.MapDocument(mtemplate)
+gispath = "//ifw-hqfs1/MB SeaDuck/AMAPPS/amapps_gis/"
+mxdpath = os.path.join(gispath,"GISeditObsTrack_template.mxd")
+mxd = arcpy.mapping.MapDocument(mxdpath)
 
 # Loop through 'key' variable
 allkeys = set()
@@ -42,9 +37,11 @@ for i in allkeys:
   sqlSelect = "\"key\" = '" + str(i) + "'"
   arcpy.Select_analysis(obsTrack, projpath + "temp_shapefiles/temp_obsTrack_" + str(i) + ".shp", sqlSelect)
   templayer = arcpy.mapping.Layer(projpath + "temp_shapefiles/temp_obsTrack_" + str(i) + ".shp")
-  sourcelayer = arcpy.mapping.Layer(path + "GISeditObsTrack_symbology.lyr")
+  
+  lyrpath = os.path.join(gispath,"GISeditObsTrack_symbology.lyr")
+  sourcelayer = arcpy.mapping.Layer(lyrpath)
   arcpy.mapping.UpdateLayer(arcpy.mapping.ListDataFrames(mxd)[0], templayer, sourcelayer, True)
   arcpy.mapping.AddLayer(arcpy.mapping.ListDataFrames(mxd)[0], templayer)
 
 # Save map document
-mxd.saveACopy(projpath + "GISeditObsTrack.mxd")
+mxd.saveACopy(projpath + "temp_shapefiles/GISeditObsTrack.mxd")
