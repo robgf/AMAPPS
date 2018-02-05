@@ -108,10 +108,12 @@ whoi.data = as.data.frame(all_dat[!is.na(x),])
 nodata = as.data.frame(all_dat[is.na(x),])
 
 whoi.data = as.data.frame(whoi.data)
+whoi.data = left_join(whoi.data,dplyr::select(spp,spp_cd,common_name,scientific_name),by="spp_cd") %>%
+  dplyr::select(-month)
 write.csv(whoi.data,"Z:/seabird_database/data_sent/Scott_WHOI_oil_spill_Jan2018/observations.csv")
 
 dataset = filter(dataset, dataset_id %in% whoi.data$dataset_id)
-write.csv(whoi.data,"Z:/seabird_database/data_sent/Scott_WHOI_oil_spill_Jan2018/datasets.csv")
+write.csv(dataset,"Z:/seabird_database/data_sent/Scott_WHOI_oil_spill_Jan2018/datasets.csv")
 # ------------- #
 
 
