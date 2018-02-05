@@ -272,9 +272,21 @@ rm(starts, stops)
    obstrack$transect[is.na(obstrack$obs) & !obstrack$offline %in% 1] = obstrack$transect2[is.na(obstrack$obs) & !obstrack$offline %in% 1] 
    obstrack$dataChange[is.na(obstrack$obs) & !is.na(obstrack$transect)] = "Added TRANSECT based on observers BEG/END times"
    
-  transit = filter(obstrack, is.na(transect) | offline %in% 1) %>% 
-    mutate(offline = 1)%>% dplyr::select(-transect2)
-  obstrack = obstrack %>% filter(!is.na(transect) & !offline %in% 1) %>%
+#  transit = filter(obstrack, is.na(transect) | offline %in% 1) %>% 
+#    mutate(offline = 1)%>% dplyr::select(-transect2)
+#  obstrack = obstrack %>% filter(!is.na(transect) & !offline %in% 1) %>%
+   obstrack = obstrack %>% arrange(ID, key, sec) %>%
+     mutate(ss = NA, 
+            ss = replace(ss, type %in% "BEGCNT" & !offline %in% 1,1),
+            ss = replace(ss, type %in% "ENCNT" & !offline %in% 1,2),
+            ss = replace(ss, ID < ID[type %in% "BEGCNT" & !offline %in% 1][1], 2),
+            ss = na.locf(ss),
+            ss = replace(ss, type %in% "ENDCNT",1)) 
+   transit = obstrack %>% filter(ss %in% 2 | offline %in% 1) %>% dplyr::select(-ss)
+   obstrack = obstrack %>% filter(ss %in% 1 & !offline %in% 1) %>% dplyr::select(-ss)
+  
+   
+   obstrack = obstrack %>% filter(!offline %in% 1) %>%
     group_by(key) %>% arrange(sec, index) %>% 
     mutate(transect = na.locf(transect)) %>% dplyr::select(-transect2)
   
@@ -502,15 +514,8 @@ rm(starts, stops)
   
   # READ IN GENERIC GISeditObsTrack.py FILE, CHANGE NECESSARY DIRECTORIES, & SAVE 
   # NEW .py FILE
-  py <- readLines(file.path(dir, "code/cleaning_raw_data/GISeditObsTrack_NZ.py"))
-  #py[grep("^sdpath = ", py)] <- paste("sdpath = '", "//IFW9mbm-fs1/SeaDuck/NewCodeFromJeff_20150720/'", sep = "")
-  #py[grep("^sdpath = ", py)] <- paste("sdpath = '", "//IFW9mbm-fs1/MB SeaDuck/AMAPPS/'", sep = "")
-  #py[grep("^path = ", py)] <- paste("path = '", "//IFW9mbm-fs1/MB SeaDuck/AMAPPS/amapps_gis/'", sep = "")
-  #py[grep("^projpath = ", py)] <- paste("projpath = '", dir.out, "/'", sep = "")
-  #py[grep("^import cv2", py)] <- paste("")
-  #py[grep("^mtemplate = ",py)] <- paste("mtemplate = '","//IFW9mbm-fs1/MB SeaDuck/AMAPPS/amapps_gis/GISeditObsTrack_template.mxd'", sep="")
-  
-  py[grep("^TemplatePath = ", py)] <- paste("TemplatePath = '","//IFW9mbm-fs1/MB SeaDuck/AMAPPS/amapps_gis/'", sep = "")
+  py <- readLines(file.path(dir, "code/cleaning_raw_data/test.py"))
+  py[grep("^projpath = ", py)] <- paste("projpath = '", dir.out, "/'", sep = "")
   writeLines(py, file.path(dir.out, "GISeditObsTrack.py"))
   
   # RUN GISeditObsTrack.py PROGRAM IN ArcGIS, DELETE PROGRAM WHEN FINISHED
