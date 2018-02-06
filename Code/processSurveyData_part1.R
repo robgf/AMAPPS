@@ -272,9 +272,6 @@ rm(starts, stops)
    obstrack$transect[is.na(obstrack$obs) & !obstrack$offline %in% 1] = obstrack$transect2[is.na(obstrack$obs) & !obstrack$offline %in% 1] 
    obstrack$dataChange[is.na(obstrack$obs) & !is.na(obstrack$transect)] = "Added TRANSECT based on observers BEG/END times"
    
-#  transit = filter(obstrack, is.na(transect) | offline %in% 1) %>% 
-#    mutate(offline = 1)%>% dplyr::select(-transect2)
-#  obstrack = obstrack %>% filter(!is.na(transect) & !offline %in% 1) %>%
    obstrack = obstrack %>% arrange(ID, key, sec) %>%
      mutate(ss = NA, 
             ss = replace(ss, type %in% "BEGCNT" & !offline %in% 1,1),
@@ -285,12 +282,19 @@ rm(starts, stops)
    transit = obstrack %>% filter(ss %in% 2 | offline %in% 1) %>% dplyr::select(-ss)
    obstrack = obstrack %>% filter(ss %in% 1 & !offline %in% 1) %>% dplyr::select(-ss)
   
+   # group by key to remove obvious transit info
+   obstrack = obstrack %>% 
+    group_by(key) %>% arrange(ID) %>% 
+     mutate(offline = replace(offline, ID < ID[type %in% "BEGCNT" & !offline %in% 1][1], 1),
+            offline = replace(offline, ID > ID[type %in% "ENDCNT" & !offline %in% 1][length(ID[type %in% "ENDCNT" & !offline %in% 1])], 1)) %>% 
+            #transect = ifelse(!offline %in% 1,na.locf(transect),NA)) %>% 
+     dplyr::select(-transect2)
+   transit = bind_rows(transit,filter(obstrack, offline %in% 1)) %>% arrange(ID)
+   undefinedTracks = obstrack %>% filter(is.na(transect)) 
+   obstrack = obstrack %>% filter(!is.na(transect) & !offline %in% 1) 
    
-   obstrack = obstrack %>% filter(!offline %in% 1) %>%
-    group_by(key) %>% arrange(sec, index) %>% 
-    mutate(transect = na.locf(transect)) %>% dplyr::select(-transect2)
-  
-  trans <- readOGR(dsn = gis.path, layer = "amapps_transects_new2014")
+  # load known transects
+   trans <- readOGR(dsn = gis.path, layer = "amapps_transects_new2014")
   if (proj4string(trans) != "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0") {
     trans <- spTransform(trans, CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
   }
@@ -373,7 +377,7 @@ rm(starts, stops)
     
   ifelse(!is.na(checkChange[1,1]),
     list(checkChange),"No Transects were changed in this check")
-  
+
   # MAKE SURE THERE ARE STILL 2 OBSERVERS ONCE THE TRANSECT HAS BEEN CORRECTED (AND IN GENERAL)
   numObs = select(obstrack,transect,obs) %>% 
     group_by(transect,obs) %>% filter(row_number()==1) %>% group_by(transect) %>%
@@ -391,6 +395,26 @@ rm(starts, stops)
   # This file is for obvious transect errors 
   if (file.exists(paste(dir.out,"postTransEdits.R",sep="/"))) {
     source(paste(dir.out,"postTransEdits.R",sep="/"))}
+  
+  # group by transect and remove transit and add transect to track points
+  transit = bind_rows(transit,filter(obstrack,offline %in% 1))
+  obstrack = bind_rows(obstrack, undefinedTracks) %>%
+    arrange(key,sec, index,ID) %>%
+    filter(!offline %in% 1) %>%
+    mutate(transect = ifelse(is.na(transect),na.locf(transect),transect),
+           transect.temp = transect) %>%
+    group_by(key,transect.temp) %>% arrange(ID) %>%
+    mutate(offline = replace(offline, ID < ID[type %in% "BEGCNT" & !offline %in% 1][1], 1),
+           offline = replace(offline, ID > ID[type %in% "ENDCNT" & !offline %in% 1][length(ID[type %in% "ENDCNT" & !offline %in% 1])], 1),
+           transect = ifelse(!offline %in% 1,na.locf(transect),transect),
+           transect = ifelse(offline %in% 1,NA,transect)) %>% 
+    dplyr::select(-transect.temp)
+ 
+  # This file is for obvious transect errors 
+  if (file.exists(paste(dir.out,"postComboEdits.R",sep="/"))) {
+    source(paste(dir.out,"postComboEdits.R",sep="/"))}
+  transit = bind_rows(transit,filter(obstrack, offline %in% 1)) %>% arrange(ID)
+  obstrack = obstrack %>% filter(!offline %in% 1)
   
     # remove if points were investigated and fixed
   obstrack = dplyr::select(obstrack,-transLat,-transLong,-transTransect,-transDist,-flag1) %>% 
