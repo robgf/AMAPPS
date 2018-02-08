@@ -415,6 +415,23 @@ rm(starts, stops)
     source(paste(dir.out,"postComboEdits.R",sep="/"))}
   transit = bind_rows(transit,filter(obstrack, offline %in% 1)) %>% arrange(ID)
   obstrack = obstrack %>% filter(!offline %in% 1)
+  rm(undefinedTracks)
+  
+  # group by segments and remove transit and add transect to track points
+  break.at.each.stop = filter(obstrack, type %in% c("BEGCNT")) %>%
+    group_by(key,transect) %>% 
+    mutate(start.stop.index = seq(1:n())) %>% ungroup() %>% 
+    select(ID, key, start.stop.index)
+  test = left_join(obstrack,break.at.each.stop,by = c("key","ID")) %>%
+    arrange(key,sec) %>%
+    muatate(transect.temp = paste(transect, break.at.each.stop,sep="_"),
+            transect.temp = na.locf(transect.temp)) %>% 
+    group_by(key,transect.temp) %>% arrange(ID) %>%
+    mutate(offline = replace(offline, ID < ID[type %in% "BEGCNT" & !offline %in% 1][1], 1),
+           offline = replace(offline, ID > ID[type %in% "ENDCNT" & !offline %in% 1][length(ID[type %in% "ENDCNT" & !offline %in% 1])], 1),
+           transect = ifelse(!offline %in% 1,na.locf(transect),transect),
+           transect = ifelse(offline %in% 1,NA,transect)) %>% 
+    dplyr::select(-transect.temp)
   
     # remove if points were investigated and fixed
   obstrack = dplyr::select(obstrack,-transLat,-transLong,-transTransect,-transDist,-flag1) %>% 
@@ -497,12 +514,12 @@ rm(starts, stops)
   # ---------------------------------------------------------------------------- #
   # STEP 12: REMOVE POINTS THAT ARE OBVIOUS TRANSIT POINTS
   # ---------------------------------------------------------------------------- #
-  to.remove = obstrack[obstrack$flag1 %in% 1 & obstrack$onLand %in% 1,]
-  if(dim(to.remove)[1]>1) {
-    to.remove #display errors
-    transit = bind_rows(transit, to.remove)}
-  rm(to.remove)
-  obstrack = filter(obstrack, !obstrack$flag1 %in% 1 && !obstrack$onLand %in% 1)
+  # to.remove = obstrack[obstrack$flag1 %in% 1 & obstrack$onLand %in% 1,]
+  # if(dim(to.remove)[1]>1) {
+  #   to.remove #display errors
+  #   transit = bind_rows(transit, to.remove)}
+  # rm(to.remove)
+  # obstrack = filter(obstrack, !obstrack$flag1 %in% 1 && !obstrack$onLand %in% 1)
   # ---------------------------------------------------------------------------- #  
   
   
@@ -515,6 +532,7 @@ rm(starts, stops)
   
   save.image(paste(dir.out,"obstrack_part1.Rdata",sep="/"))
   write.csv(obstrack, file=paste(dir.out,"obstrack_part1.csv",sep="/"), row.names = FALSE)
+  write.csv(transit, file=paste(dir.out,"transit_or_offline_part1.csv",sep="/"), row.names = FALSE)
   # ---------------------------------------------------------------------------- #
 
 
