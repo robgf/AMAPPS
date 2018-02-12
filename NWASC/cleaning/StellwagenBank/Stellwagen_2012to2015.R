@@ -11,6 +11,10 @@ require(RODBC) # odbcConnect
 require(dplyr)
 require(geosphere)
 require(measurements)
+library(sp)
+library(rgeos)
+require(parallel)
+require(ggplot2)
 # -------------------------------- #
 
 
@@ -437,18 +441,6 @@ to.add = obs %>% filter(Association_tx %in% c("Fishing vessel"),
 obs = rbind(obs, to.add) %>% arrange(ID)
 rm(to.add)
 
-# add balloons
-to.add = obs %>% filter(Comments %in% c("Off Effort, balloon pick-up (2)",
-                                        "off effort, balloon retrieval",
-                                        "off effort, balloon",
-                                        "off effort, 2 balloon",
-                                        "off effort for balloon",
-                                        "get balloon, off effort") & spp %in% "ENDCNT") %>% 
-  mutate(spp = "BALN", ID=ID+0.1,N_Individuals = 1,
-         N_Individuals = replace(N_Individuals,
-                                 Comments %in% c("Off Effort, balloon pick-up (2)","off effort, 2 balloon"),2))
-obs = rbind(obs, to.add) %>% arrange(ID)
-rm(to.add)
 
 # effort 
 # on == 1
@@ -478,6 +470,28 @@ rm(track)
 
 
 #---------------------#
+# add transect points to track to better define start stops
+# for standard and second side protocols only 
+#---------------------#
+# transects
+trans = as.data.frame(matrix(nrow=16, ncol=3, data=NA))
+names(trans)=c("id","Latitude","Longitude")
+trans = trans %>% mutate(id = c(1:16),
+                         Latitude = c(42.442064,42.442114,42.400128,42.400195,42.358987,
+                                      42.359006,42.316885,42.316856,42.275407,42.275291,42.233551,
+                                      42.233512,42.191654,42.191532,42.15019,42.150184),
+                         Longitude = c(-70.479151,-70.398143,-70.467651,-70.336545,-70.351623,
+                                       -70.267848,-70.317331,-70.233612,-70.31024,-70.210123,
+                                       -70.311017,-70.189543,-70.33466,-70.165411,-70.334833,-70.190561))
+# add point to track
+
+  
+#---------------------#
+
+
+
+
+#---------------------#
 # split by survey and QA/QC start/stops
 #---------------------#
 # transects
@@ -490,7 +504,6 @@ trans = trans %>% mutate(id = c(1:16),
                          Longitude = c(-70.479151,-70.398143,-70.467651,-70.336545,-70.351623,
                                        -70.267848,-70.317331,-70.233612,-70.31024,-70.210123,
                                        -70.311017,-70.189543,-70.33466,-70.165411,-70.334833,-70.190561))
-
 #  id# Longitude Latitude 
 p1=cbind(-70.479151,42.442064)
 p2=cbind(-70.398143,42.442114)
@@ -509,21 +522,21 @@ p14=cbind(-70.165411,42.191532)
 p15=cbind(-70.334833,42.15019)
 p16=cbind(-70.190561,42.150184)
 
-l12=Lines(list(Line(rbind(p1,p2))),ID="12")
-l24=Lines(list(Line(rbind(p2,p4))),ID="24")
-l43=Lines(list(Line(rbind(p4,p3))),ID="43")
-l35=Lines(list(Line(rbind(p3,p5))),ID="35")
-l56=Lines(list(Line(rbind(p5,p6))),ID="56")
-l68=Lines(list(Line(rbind(p6,p8))),ID="68")
-l87=Lines(list(Line(rbind(p8,p7))),ID="87")
-l79=Lines(list(Line(rbind(p7,p9))),ID="79")
-l910=Lines(list(Line(rbind(p9,p10))),ID="910")
-l1012=Lines(list(Line(rbind(p10,p12))),ID="1012")
-l1211=Lines(list(Line(rbind(p12,p11))),ID="1211")
-l1113=Lines(list(Line(rbind(p11,p13))),ID="1113")
-l1314=Lines(list(Line(rbind(p13,p14))),ID="1314")
-l1416=Lines(list(Line(rbind(p14,p16))),ID="1416")
-l1615=Lines(list(Line(rbind(p16,p15))),ID="1615")
+l12=Lines(list(Line(rbind(p1,p2))),ID="1to2")
+l24=Lines(list(Line(rbind(p2,p4))),ID="2to4")
+l43=Lines(list(Line(rbind(p4,p3))),ID="4to3")
+l35=Lines(list(Line(rbind(p3,p5))),ID="3to5")
+l56=Lines(list(Line(rbind(p5,p6))),ID="5to6")
+l68=Lines(list(Line(rbind(p6,p8))),ID="6to8")
+l87=Lines(list(Line(rbind(p8,p7))),ID="8to7")
+l79=Lines(list(Line(rbind(p7,p9))),ID="7to9")
+l910=Lines(list(Line(rbind(p9,p10))),ID="9to10")
+l1012=Lines(list(Line(rbind(p10,p12))),ID="10to12")
+l1211=Lines(list(Line(rbind(p12,p11))),ID="12to11")
+l1113=Lines(list(Line(rbind(p11,p13))),ID="11to13")
+l1314=Lines(list(Line(rbind(p13,p14))),ID="13to14")
+l1416=Lines(list(Line(rbind(p14,p16))),ID="14to16")
+l1615=Lines(list(Line(rbind(p16,p15))),ID="16to15")
 
 SL = SpatialLines(list(l12,l24,l43,l35,l56,l68,l87,l79,l910,l1012,
                        l1211,l1113,l1314,l1416,l1615))
@@ -531,13 +544,44 @@ proj4string(SL) <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs8
 rm(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,
    l12,l24,l43,l35,l56,l68,l87,l79,l910,l1012,l1211,l1113,l1314,l1416,l1615)
 
+# match to transects
+strt<-Sys.time(); 
+cl <- makeCluster(as.numeric(detectCores()-1))
+clusterExport(cl, "SL", envir = environment())
+invisible(clusterEvalQ(cl, c(library(geosphere),
+                             library(dplyr),
+                             subFunc <- function(lat, lon) {
+                               ab = as.data.frame(dist2Line(p = cbind(as.numeric(lon),as.numeric(lat)), 
+                                                            line = SL, distfun = distVincentyEllipsoid))
+                               ab = mutate(ab,distance=replace(distance,distance>100,NA))
+                               return(ab)
+                             })))
+
+d <- parRapply(cl, aa, function(x) subFunc(x[24],x[25]))
+stopCluster(cl)
+d <- as.data.frame(matrix(unlist(d), ncol = 4, byrow = TRUE)) # distance(m), long, lat, line ID
+names(d) = c("distance","lon","lat","transect")
+d = mutate(d, transect = names(SL)[transect])
+print(Sys.time()-strt)
+
+
+
+# ------------------ #
 # split by date
 x = sort(unique(obs_standard$date))
-a = bind_rows(filter(obs_standard, date %in% x[1]),
-              filter(track_standard, date %in% x[1])) %>% 
+
+ind = 2
+a = bind_rows(filter(obs_standard, date %in% x[ind]),
+              filter(track_standard, date %in% x[ind])) %>% 
   arrange(date_time)
-b = filter(obs_standard, date %in% x[1])
-d = filter(track_standard, date %in% x[1])
+b = filter(obs_standard, date %in% x[ind])
+d = filter(track_standard, date %in% x[ind])
+
+plot(a$Longitude, a$Latitude,col="tan")
+points(a$Longitude[a$offline %in% 1], a$Latitude[a$offline %in% 1],col="black", pch=5)
+points(a$Longitude[a$offline %in% 0], a$Latitude[a$offline %in% 0],col="blue", pch=0)
+points(a$Longitude[!is.na(a$spp) & a$offline %in% 0],a$Latitude[!is.na(a$spp) & a$offline %in% 0],col="red", pch=16)
+points(a$Longitude[!is.na(a$spp) & a$offline %in% 1],a$Latitude[!is.na(a$spp) & a$offline %in% 1],col="green", pch=20)
 
 
 new.df = b %>% filter(is.na(spp))  %>% rowwise %>% 
@@ -554,13 +598,6 @@ ddd=rgeos::gIntersection(sp.mydata,SL)
 
 dd <- distm(sp.mydata,sp.mydata)  
   
-plot(a$Longitude, a$Latitude,col="grey")
-points(a$Longitude[a$offline %in% 1], a$Latitude[a$offline %in% 1],col="yellow")
-points(a$Longitude[a$offline %in% 0], a$Latitude[a$offline %in% 0],col="blue")
-
-points(a$Longitude[!is.na(a$spp) & a$offline %in% 0],a$Latitude[!is.na(a$spp) & a$offline %in% 0],col="red")
-points(a$Longitude[!is.na(a$spp) & a$offline %in% 1],a$Latitude[!is.na(a$spp) & a$offline %in% 1],col="pink")
-
 
 # add points for ss and standardized tracks
 obs_standard = obs_standard %>% group_by(date) %>% 
