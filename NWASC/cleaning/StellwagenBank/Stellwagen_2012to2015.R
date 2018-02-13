@@ -445,7 +445,7 @@ rm(to.add)
 # effort 
 # on == 1
 # off == 2 OR 0?
-obs = obs %>% mutate(offline = ifelse(Effort %in% 1,0,1)) 
+obs = obs %>% mutate(offline = ifelse(Effort %in% 1,0,NA)) 
 #---------------------#
 
 
@@ -483,28 +483,11 @@ trans = trans %>% mutate(id = c(1:16),
                          Longitude = c(-70.479151,-70.398143,-70.467651,-70.336545,-70.351623,
                                        -70.267848,-70.317331,-70.233612,-70.31024,-70.210123,
                                        -70.311017,-70.189543,-70.33466,-70.165411,-70.334833,-70.190561))
-# add point to track
 
-  
-#---------------------#
-
-
-
-
-#---------------------#
-# split by survey and QA/QC start/stops
-#---------------------#
-# transects
-trans = as.data.frame(matrix(nrow=16, ncol=3, data=NA))
-names(trans)=c("id","Latitude","Longitude")
-trans = trans %>% mutate(id = c(1:16),
-                         Latitude = c(42.442064,42.442114,42.400128,42.400195,42.358987,
-                                     42.359006,42.316885,42.316856,42.275407,42.275291,42.233551,
-                                     42.233512,42.191654,42.191532,42.15019,42.150184),
-                         Longitude = c(-70.479151,-70.398143,-70.467651,-70.336545,-70.351623,
-                                       -70.267848,-70.317331,-70.233612,-70.31024,-70.210123,
-                                       -70.311017,-70.189543,-70.33466,-70.165411,-70.334833,-70.190561))
-#  id# Longitude Latitude 
+#-----------# 
+# create lines shapefile for transects 
+#-----------# 
+#  id Longitude Latitude 
 p1=cbind(-70.479151,42.442064)
 p2=cbind(-70.398143,42.442114)
 p3=cbind(-70.467651,42.400128)
@@ -543,65 +526,131 @@ SL = SpatialLines(list(l12,l24,l43,l35,l56,l68,l87,l79,l910,l1012,
 proj4string(SL) <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
 rm(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,
    l12,l24,l43,l35,l56,l68,l87,l79,l910,l1012,l1211,l1113,l1314,l1416,l1615)
+#-----------# 
 
+
+#-----------# 
 # match to transects
-strt<-Sys.time(); 
+#-----------# 
+#
+# obs standard
+#
 cl <- makeCluster(as.numeric(detectCores()-1))
 clusterExport(cl, "SL", envir = environment())
 invisible(clusterEvalQ(cl, c(library(geosphere),
                              library(dplyr),
                              subFunc <- function(lat, lon) {
-                               ab = as.data.frame(dist2Line(p = cbind(as.numeric(lon),as.numeric(lat)), 
-                                                            line = SL, distfun = distVincentyEllipsoid))
-                               ab = mutate(ab,distance=replace(distance,distance>100,NA))
+                               ab = as.data.frame(dist2Line(p = cbind(as.numeric(lon),as.numeric(lat)), line = SL, distfun = distVincentyEllipsoid))
+                               ab = mutate(ab, distance = replace(distance, distance>500, NA), ID = replace(ID, is.na(distance), NA))
                                return(ab)
                              })))
 
-d <- parRapply(cl, aa, function(x) subFunc(x[24],x[25]))
+d <- parRapply(cl, obs_standard, function(x) subFunc(x[24],x[25]))
 stopCluster(cl)
+  
 d <- as.data.frame(matrix(unlist(d), ncol = 4, byrow = TRUE)) # distance(m), long, lat, line ID
 names(d) = c("distance","lon","lat","transect")
 d = mutate(d, transect = names(SL)[transect])
-print(Sys.time()-strt)
-
-
-
-# ------------------ #
-# split by date
-x = sort(unique(obs_standard$date))
-
-ind = 2
-a = bind_rows(filter(obs_standard, date %in% x[ind]),
-              filter(track_standard, date %in% x[ind])) %>% 
-  arrange(date_time)
-b = filter(obs_standard, date %in% x[ind])
-d = filter(track_standard, date %in% x[ind])
-
-plot(a$Longitude, a$Latitude,col="tan")
-points(a$Longitude[a$offline %in% 1], a$Latitude[a$offline %in% 1],col="black", pch=5)
-points(a$Longitude[a$offline %in% 0], a$Latitude[a$offline %in% 0],col="blue", pch=0)
-points(a$Longitude[!is.na(a$spp) & a$offline %in% 0],a$Latitude[!is.na(a$spp) & a$offline %in% 0],col="red", pch=16)
-points(a$Longitude[!is.na(a$spp) & a$offline %in% 1],a$Latitude[!is.na(a$spp) & a$offline %in% 1],col="green", pch=20)
-
-
-new.df = b %>% filter(is.na(spp))  %>% rowwise %>% 
-  mutate(distance = distVincentySphere(c(Longitude, Latitude), 
-                                       c(trans$Longitude[15], trans$Latitude[15]))) %>% 
-  filter(distance<550)
+print(Sys.time()-strt); rm(strt)
   
-library(geosphere)
-require(raster)
-sp.mydata <- d
-coordinates(sp.mydata) <- ~Longitude+Latitude
-proj4string(sp.mydata) <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
-ddd=rgeos::gIntersection(sp.mydata,SL)
+obs_standard = cbind(obs_standard, d$transect) %>% 
+  rename(transect = 'd$transect') %>%
+  mutate(offline = replace(offline, is.na(transect),1))
+rm(d)
+ggplot(obs_standard,aes(Longitude,Latitude,col=transect))+geom_point()+theme_bw()
+#
+# track standard
+#
+cl <- makeCluster(as.numeric(detectCores()-1))
+clusterExport(cl, "SL", envir = environment())
+invisible(clusterEvalQ(cl, c(library(geosphere),
+                             library(dplyr),
+                             subFunc <- function(lat, lon) {
+                               ab = as.data.frame(dist2Line(p = cbind(as.numeric(lon),as.numeric(lat)), line = SL, distfun = distVincentyEllipsoid))
+                               ab = mutate(ab, distance = replace(distance, distance>500, NA), ID = replace(ID, is.na(distance), NA))
+                               return(ab)
+                             })))
 
-dd <- distm(sp.mydata,sp.mydata)  
-  
+d <- parRapply(cl, track_standard, function(x) subFunc(x[24],x[25]))
+stopCluster(cl)
 
-# add points for ss and standardized tracks
-obs_standard = obs_standard %>% group_by(date) %>% 
-  arrange(date_time) %>% mutate(index =seq(1:length(Longitude)))
+d <- as.data.frame(matrix(unlist(d), ncol = 4, byrow = TRUE)) # distance(m), long, lat, line ID
+names(d) = c("distance","lon","lat","transect")
+d = mutate(d, transect = names(SL)[transect])
+print(Sys.time()-strt); rm(strt)
+
+track_standard = cbind(track_standard, d$transect) %>% 
+  rename(transect = 'd$transect') %>%
+  mutate(offline = replace(offline, is.na(transect),1))
+rm(d)
+ggplot(track_standard,aes(Longitude,Latitude,col=transect))+geom_point()+theme_bw()
+#
+# obs second side
+#
+cl <- makeCluster(as.numeric(detectCores()-1))
+clusterExport(cl, "SL", envir = environment())
+invisible(clusterEvalQ(cl, c(library(geosphere),
+                             library(dplyr),
+                             subFunc <- function(lat, lon) {
+                               ab = as.data.frame(dist2Line(p = cbind(as.numeric(lon),as.numeric(lat)), line = SL, distfun = distVincentyEllipsoid))
+                               ab = mutate(ab, distance = replace(distance, distance>500, NA), ID = replace(ID, is.na(distance), NA))
+                               return(ab)
+                             })))
+d <- parRapply(cl, obs_ss, function(x) subFunc(x[24],x[25]))
+stopCluster(cl)
+
+d <- as.data.frame(matrix(unlist(d), ncol = 4, byrow = TRUE)) # distance(m), long, lat, line ID
+names(d) = c("distance","lon","lat","transect")
+d = mutate(d, transect = names(SL)[transect])
+print(Sys.time()-strt); rm(strt)
+
+obs_ss = cbind(obs_ss, d$transect) %>% 
+  rename(transect = 'd$transect') %>%
+  mutate(offline = replace(offline, is.na(transect),1))
+rm(d)
+ggplot(obs_ss,aes(Longitude,Latitude,col=transect))+geom_point()+theme_bw()
+#
+# track second side
+#
+cl <- makeCluster(as.numeric(detectCores()-1))
+clusterExport(cl, "SL", envir = environment())
+invisible(clusterEvalQ(cl, c(library(geosphere),
+                             library(dplyr),
+                             subFunc <- function(lat, lon) {
+                               ab = as.data.frame(dist2Line(p = cbind(as.numeric(lon),as.numeric(lat)),line = SL, distfun = distVincentyEllipsoid))
+                               ab = mutate(ab, distance = replace(distance, distance>500, NA), ID = replace(ID, is.na(distance), NA))
+                               return(ab)
+                             })))
+d <- parRapply(cl, track_ss, function(x) subFunc(x[24],x[25]))
+stopCluster(cl)
+
+d <- as.data.frame(matrix(unlist(d), ncol = 4, byrow = TRUE)) # distance(m), long, lat, line ID
+names(d) = c("distance","lon","lat","transect")
+d = mutate(d, transect = names(SL)[transect])
+print(Sys.time()-strt); rm(strt)
+
+track_ss = cbind(track_ss, d$transect) %>% 
+  rename(transect = 'd$transect') %>%
+  mutate(offline = replace(offline, is.na(transect),1))
+rm(d)
+ggplot(track_ss,aes(Longitude,Latitude,col=transect))+geom_point()+theme_bw()
+#---------------------#
+
+
+
+#---------------------#
+# combine track and obs for standard and ss
+#---------------------#
+# add track points for ss and standardized tracks
+obs_track_standard = bind_rows(obs_standard,track_standard) %>% 
+  group_by(date) %>% 
+  arrange(date_time) %>% 
+  mutate(index =seq(1:length(Longitude)))
+
+obs_track_ss = bind_rows(obs_ss,track_ss) %>% 
+  group_by(date) %>% 
+  arrange(date_time) %>% 
+  mutate(index =seq(1:length(Longitude)))
 #---------------------#
 
 
