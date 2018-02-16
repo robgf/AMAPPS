@@ -109,10 +109,10 @@ nodata = as.data.frame(all_dat[is.na(x),])
 
 drill.data = as.data.frame(drill.data)
 drill.data = left_join(drill.data,dplyr::select(spp,spp_cd,common_name,scientific_name),by="spp_cd")
-write.csv(drill.data,"Z:/seabird_database/data_sent/DMajor_OilSpillDrill_Jan2018/observations.csv")
+write.csv(drill.data,"Z:/seabird_database/data_sent/DMajor_OilSpillDrill_Feb2018/observations.csv")
 
 dataset = filter(dataset, dataset_id %in% drill.data$dataset_id)
-write.csv(dataset,"Z:/seabird_database/data_sent/DMajor_OilSpillDrill_Jan2018/datasets.csv")
+write.csv(dataset,"Z:/seabird_database/data_sent/DMajor_OilSpillDrill_Feb2018/datasets.csv")
 # ------------- #
 
 
