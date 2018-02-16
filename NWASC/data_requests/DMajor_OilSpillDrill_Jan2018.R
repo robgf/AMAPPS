@@ -1,0 +1,151 @@
+# ------------- #
+# request from D. Major USFWS for all birds 30 miles out of 43.572209, -67.225253
+# ------------- #
+
+
+# ------------------ # 
+# load packages
+# ------------------ # 
+require(dplyr)
+require(ggplot2)
+require(maps)
+library(sp)
+library(rgeos)
+library(rgdal)
+require(RODBC)
+require(odbc)
+require(ggmap)
+require(lubridate)
+# ------------------ # 
+
+
+# ------------- #
+# create whoi poly
+# ------------- #
+w = as.data.frame(matrix(nrow=1,ncol=2,data=c(-67.225253,43.572209)))
+names(w) = c("lon","lat")
+coordinates(w) = ~lon+lat
+proj4string(w) = CRS("+proj=longlat") 
+w = spTransform(w, CRS("+proj=utm +zone=19 +ellps=WGS84 +datum=WGS84 +units=m +no_defs +towgs84=0,0,0"))
+
+w_30mile_buffer <- gBuffer(w, width = 4828.03, byid = TRUE ) # 3 miles = 4828.03 meters = 482803 km
+w_30mile_buffer = spTransform(w_30mile_buffer, CRS("+proj=longlat +init=epsg:4326"))
+w = spTransform(w, CRS("+proj=longlat +init=epsg:4326"))
+
+# plot
+ww = as.data.frame(w)
+
+bc_bbox <- make_bbox(lat = c(43.3, 43.8), lon = c(-67.5, -66.5))
+mapdata <- get_map(location = bc_bbox, source = "google", maptype = "terrain")
+
+ggmap(mapdata) + coord_fixed(1.3) + 
+  coord_fixed(xlim = c(-67.35, -67.1),  ylim = c(43.5, 43.65), ratio = 1.3) + 
+  geom_point(data = ww, aes(x=lon,y=lat), col = "magenta") +
+  geom_polygon(data = w_30mile_buffer, aes(x = long, y= lat),fill="white",alpha=0.2,col="black") +
+  theme_bw() + ggtitle("30 mile buffer")
+# ------------- #
+
+
+# ------------- #
+# load data
+# ------------- #
+# get bird list
+db <- dbConnect(odbc::odbc(),driver='SQL Server',server='ifw-dbcsqlcl1',database='NWASC')
+birdlist = dbGetQuery(db, "select spp_cd from lu_species where species_type_id in (1,8)")
+dataset = dbGetQuery(db, "select * from dataset")
+spp = dbGetQuery(db, "select * from lu_species")
+
+# get old data
+db <- dbConnect(odbc::odbc(),driver='SQL Server',server='ifw9mbmsvr008',database='SeabirdCatalog')
+old_obs = dbGetQuery(db,"select [Geometry].STY as lat, [Geometry].STX as lon, * from observation
+                     where [Geometry].STY between 43.5 and 43.65
+                     and [Geometry].STX between -67.35 and -67.1")
+old_obs = old_obs %>% 
+  mutate(obs_dt = as.character(as.Date(obs_dt, format = "%Y-%m-%d"))) %>%
+  dplyr::select(-Geometry)
+coordinates(old_obs) <- ~ lon + lat
+proj4string(old_obs) <- CRS("+init=epsg:4269")
+old_obs = as.data.frame(spTransform(old_obs, CRS("+init=epsg:4326 +proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")))
+
+# add new data to old
+db <- odbcConnectAccess2007("//ifw-hqfs1/MB SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
+obs <- sqlQuery(db, "select * from observation
+                where temp_lat between 43.5 and 43.65
+                and temp_lon between -67.35 and -67.1")
+odbcClose(db)
+
+obs = dplyr::rename(obs, lat = temp_lat, lon = temp_lon) %>% 
+  mutate(obs_dt = as.Date(obs_dt,format = "%m/%d/%Y"),
+         observation_id = observation_id + 804175) %>% 
+  mutate(obs_count_general_nb = replace(obs_count_general_nb, obs_count_general_nb==obs_count_intrans_nb, NA))
+
+# combine old and new
+# create month and filter to Jan. + Feb.
+obs = mutate(obs, source_obs_id = as.character(source_obs_id))
+old_obs = old_obs %>% mutate(obs_dt = as.Date(obs_dt,format="%Y-%m-%d"))
+
+all_dat = bind_rows(old_obs, obs) %>% 
+  dplyr::select(spp_cd, lat, lon, obs_dt, dataset_id, 
+                obs_count_intrans_nb, obs_count_general_nb) %>% 
+  mutate(month = month(obs_dt)) %>% 
+  filter(spp_cd %in% birdlist$spp_cd, 
+  #       month %in% c(1,2), 
+         dataset_id %in% dataset$dataset_id[!dataset$share_level_id %in% 1]) 
+# ------------------ #
+
+
+# ------------------ #
+# subset data
+# ------------------ #
+# make spatial
+all_data = all_dat #df
+coordinates(all_dat) = ~lon+lat
+proj4string(all_dat) <- CRS("+proj=longlat +init=epsg:4326")
+
+# pull whats in the bounding box
+x = sp::over(all_dat, w_30mile_buffer)
+drill.data = as.data.frame(all_dat[!is.na(x),])
+nodata = as.data.frame(all_dat[is.na(x),])
+
+drill.data = as.data.frame(drill.data)
+drill.data = left_join(drill.data,dplyr::select(spp,spp_cd,common_name,scientific_name),by="spp_cd")
+write.csv(drill.data,"Z:/seabird_database/data_sent/DMajor_OilSpillDrill_Jan2018/observations.csv")
+
+dataset = filter(dataset, dataset_id %in% drill.data$dataset_id)
+write.csv(dataset,"Z:/seabird_database/data_sent/DMajor_OilSpillDrill_Jan2018/datasets.csv")
+# ------------- #
+
+
+# ------------- #
+# plots
+# ------------- #
+ggmap(mapdata) + coord_fixed(1.3) + 
+  coord_fixed(xlim = c(-67.35, -67.1),  ylim = c(43.5, 43.65), ratio = 1.3) + 
+  geom_point(data = ww, aes(x=lon,y=lat), col = "magenta") +
+  geom_polygon(data = w_30mile_buffer, aes(x = long, y= lat),fill="white",alpha=0.2,col="black") +
+  theme_bw() + ggtitle("bird observations in 30 mile buffer")+
+  geom_point(data = all_data, aes(x=lon, y=lat), col="darkgrey") + 
+  geom_point(data = drill.data, aes(x=lon, y=lat)) 
+
+drill.data = drill.data %>% 
+  mutate(group = ifelse(is.na(obs_count_intrans_nb),"off transect","on transect"),
+         counts = ifelse(is.na(obs_count_intrans_nb),obs_count_general_nb,obs_count_intrans_nb)) %>%
+  left_join(.,dplyr::select(spp,spp_cd,common_name),by="spp_cd")
+
+ggplot(data = drill.data, aes(x = counts, y = reorder(common_name,counts), col=spp_cd))+
+  geom_jitter(width = 0.005)+
+  theme_bw()+
+  ggtitle("Counts\n **not normalized or corrected for effort**")+
+  theme(legend.position = "none")+
+  facet_wrap(~group)+ 
+  ylab("species")
+
+ggmap(mapdata) + coord_fixed(1.3) + 
+  coord_fixed(xlim = c(-67.3, -67.15),  ylim = c(43.52, 43.63), ratio = 1.3) + 
+  geom_point(data = ww, aes(x=lon,y=lat), col = "magenta") +
+  geom_polygon(data = w_30mile_buffer, aes(x = long, y= lat),fill="white",alpha=0.5,col="black") +
+  theme_bw() + ggtitle("bird observations in 30 mile buffer by species")+
+  geom_point(data = drill.data, aes(x=lon, y=lat, col=spp_cd)) + 
+  xlab("Longitude") + ylab("Latitude")
+
+# ------------- #
