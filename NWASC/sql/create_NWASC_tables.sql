@@ -124,12 +124,13 @@ INSERT INTO lu_people([user_id], name, affiliation, active_status,work_email_onl
 	(73,'Rob Serafini','Point Blue','active','rserafini@pointblue.org'),
 	(74,'Caleb Spiegel','USFWS','active','caleb_spiegel@fws.gov'),
 	(75,'Meghan Sadlowski','USFWS','active','meghan_sadlowski@fws.gov'),
-	(76, 'Scott Johnston','USFWS','active','scott_johnston@fws.gov'),
-	(77, 'Randy Dettmers','USFWS','active','randy_dettmers@fws.gov'),
-	(78,'Jo Ann Lutmerding','USFWS','active','jo_lutmerding@fws.gov');
+	(76,'Scott Johnston','USFWS','active','scott_johnston@fws.gov'),
+	(77,'Randy Dettmers','USFWS','active','randy_dettmers@fws.gov'),
+	(78,'Jo Anna Lutmerding','USFWS','active','jo_lutmerding@fws.gov'),
+	(79,'Kaye London','USFWS','active','kaye_london@fws.gov');
 /* 
 update lu_people
-set name = 'Jo Ann Lutmerding'
+set name = 'Jo Anna Lutmerding'
 where [user_id] = 78
 */
 -- select * from lu_people where active_status = 'active'
@@ -2074,7 +2075,10 @@ INSERT INTO requests(
 	(18,'data', 3 ,'all tern data', CAST('2017-12-04' AS DATE),'filled', CAST('2017-12-08' AS DATE), NULL),
 	(19,'data', 77 ,'all landbird data', CAST('2018-01-08' AS DATE),'filled', CAST('2018-01-08' AS DATE), NULL),
 	(20,'data', 3 ,'all RISAMP boat data', CAST('2018-01-10' AS DATE),'filled', CAST('2018-01-10' AS DATE), NULL),
-	(21,'data',78,'all metadata on surveys',CAST('2018-01-16' AS DATE), 'not filled',NULL,NULL);
+	(21,'data',78,'all metadata on surveys',CAST('2018-01-16' AS DATE), 'not filled',NULL,NULL),
+	(22,'data',76,'all birds 3 miles out of Woods Hole in Jan-Feb.',CAST('2018-02-02' AS DATE), 'filled',CAST('2018-02-02' AS DATE),NULL),
+	(23,'data',79,'all BCPE geospatial data',CAST('2018-02-22' AS DATE),'filled',CAST('2018-02-26' AS DATE),NULL),
+	(24,'data',76,'all listed species for ES presentation',CAST('2018-02-22' AS DATE),'not filled',NULL,NULL);
 
 -- example: (id, type, person, description, CAST('req. date' AS DATE), status, CAST('date filled' AS DATE), notes);
 /*  update data_requests script template */  	
