@@ -163,13 +163,23 @@ transects = rename(transects,
                    start_lon = temp_start_lon,
                    stop_lon = temp_stop_lon,
                    start_lat = temp_start_lat,
-                   stop_lat = temp_stop_lat)
+                   stop_lat = temp_stop_lat) %>% 
+  mutate(start_dt = as.Date(start_dt, format = "%m/%d/%Y"),
+         end_dt = as.Date(end_dt, format = "%m/%d/%Y"))
 # max old transect id = 117916, min new transect id is 122266 so there is a gap based on bad info on where to start the new ids
 # but this also means we don't need to alter transect ids which is ideal since they connect obs and tracks
+
+old_transects = old_transects %>% 
+  mutate(start_dt = as.Date(start_dt, format = "%Y-%m-%d"),
+         end_dt = as.Date(end_dt, format = "%Y-%m-%d"))
 
 # join old and new
 all_transects = bind_rows(transects, old_transects) %>% 
   arrange(dataset_id, transect_id)
+
+all_tracks = bind_rows(tracks, old_track_lines, old_track_points) %>% 
+  arrange(dataset_id, track_id) %>% 
+  dplyr::select(-datafile, -piece, -track_gs)
 # ------------------ #
 
 
@@ -177,6 +187,8 @@ all_transects = bind_rows(transects, old_transects) %>%
 # export
 # ------------------ #
 write.csv(all_dat, paste(dir.out, "observations.csv", sep="/"), row.names=FALSE)
+write.csv(all_transects, paste(dir.out, "transects.csv", sep="/"), row.names=FALSE)
+write.csv(all_tracks, paste(dir.out, "tracks.csv", sep="/"), row.names=FALSE)
 write.csv(dataset, paste(dir.out, "datasets.csv", sep="/"), row.names=FALSE)
 # ------------------ #
 
