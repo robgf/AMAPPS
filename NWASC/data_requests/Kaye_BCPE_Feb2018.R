@@ -121,28 +121,26 @@ points = spTransform(points, CRS("+proj=longlat +datum=WGS84"))
 # turn into a dataframe
 old_track_lines = as(as(lines, "SpatialPointsDataFrame"),"data.frame")
 old_track_points = as(points, "data.frame")
-rm(lines, points)
+#rm(lines, points)
 
 # formatting
 old_track_lines = old_track_lines %>% 
   mutate(track_id = seq(1:length(dataset_id))) %>%
-  rename(transect_id = transect_i,
+  dplyr::rename(transect_id = transect_i,
          track_lat = coords.x2,
          track_lon = coords.x1) %>% 
   dplyr::select(-Lines.NR, -Lines.ID, -Line.NR) %>% 
   filter(dataset_id %in% c(12,15,20,21,23,28,29,30,31,39,73,116,117,
                            121,122,123,138,143,149,158,174,411)) %>% 
-  group_by(dataset_id) %>% 
   arrange(dataset_id, track_id)
 
 old_track_points = old_track_points %>%
-  mutate(track_id = seq(1:length(dataset_id))) %>%
-  rename(transect_id = transect_i,
+  mutate(track_id = (seq(1:length(dataset_id)))+2888939) %>%
+  dplyr::rename(transect_id = transect_i,
          track_lat = coords.x2,
          track_lon = coords.x1) %>% 
   filter(dataset_id %in% c(12,15,20,21,23,28,29,30,31,39,73,116,117,
                            121,122,123,138,143,149,158,174,411)) %>% 
-  group_by(dataset_id) %>%  
   arrange(dataset_id, track_id)
 
 # new track and transect data 
@@ -156,10 +154,10 @@ tracks = sqlQuery(db,"select * from track
 odbcCloseAll()
 
 #fix track id
-tracks = mutate(tracks, track_id = track_id + 2353647)
+tracks = mutate(tracks, track_id = track_id + 2925391)
 
 # fix names in transects
-transects = rename(transects, 
+transects = dplyr::rename(transects, 
                    start_lon = temp_start_lon,
                    stop_lon = temp_stop_lon,
                    start_lat = temp_start_lat,
@@ -190,5 +188,15 @@ write.csv(all_dat, paste(dir.out, "observations.csv", sep="/"), row.names=FALSE)
 write.csv(all_transects, paste(dir.out, "transects.csv", sep="/"), row.names=FALSE)
 write.csv(all_tracks, paste(dir.out, "tracks.csv", sep="/"), row.names=FALSE)
 write.csv(dataset, paste(dir.out, "datasets.csv", sep="/"), row.names=FALSE)
+
+#create shapefiles
+coordinates(all_dat) = ~lon + lat
+proj4string(all_dat) <- CRS("+proj=longlat +datum=WGS84")
+writeOGR(all_dat, dsn = dir.out, layer ='observations', driver = 'ESRI Shapefile')
+
+all_tracks = filter(all_tracks, !is.na(track_lat), !is.na(track_lon))
+coordinates(all_tracks) = ~track_lon + track_lat
+proj4string(all_tracks) <- CRS("+proj=longlat +datum=WGS84")
+writeOGR(all_tracks, dsn = dir.out, layer ='tracks', driver = 'ESRI Shapefile')
 # ------------------ #
 
