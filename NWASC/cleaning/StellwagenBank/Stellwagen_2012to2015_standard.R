@@ -116,7 +116,7 @@ if(any(duplicated(x[,c("spp","time","count","Beaufort","animal_age_tx","Range","
 }
 
 # check for any existing effort from notes
-z = x %>% filter(spp %in% c("BEGCNT","ENDCNT"), !is.na(transect))
+z = x %>% filter(spp %in% c("BEGCNT","ENDCNT"), !is.na(transect), !transect %in% c("11to13"))#, offline %in% 0)
 if(dim(z)[1]>0){
   ggplot()+geom_point(data = y, aes(x=Longitude, y=Latitude),col="lightgrey")+
   geom_point(data = z, aes(x=Longitude, y=Latitude),col="red")
@@ -202,20 +202,20 @@ if(dim(z)[1]>0){
   y$zkey = paste(y$spp, y$transect, sep = "_")
   if(any(y$zkey %in% z$zkey)) {
     for(a in seq(1:length(y$time[y$zkey %in% z$zkey]))) {
-      # if(z$spp[a] %in% "BEGCNT" & y$time[y$zkey %in% z$zkey[a]] < z$time) {
-      #   y$offline[y$zkey %in% z$zkey[a]] = 1
-      #   y$transect[y$zkey %in% z$zkey[a]] = NA
-      # }
-      if(z$spp[a] %in% "ENDCNT" & y$time[y$zkey %in% z$zkey[a]] > z$time[a]) {
-      #   y$offline[y$zkey %in% z$zkey[a]] = 1
-      #   y$transect[y$zkey %in% z$zkey[a]] = NA
+      if(z$spp[a] %in% "BEGCNT" & y$time[y$zkey %in% z$zkey[a]] < z$time[a]) {
+        y$offline[y$time > y$time[y$spp %in% "BEGCNT" & y$transect %in% z$transect[a]] & y$time < z$time[a]] = 1
+        y$transect[y$time > y$time[y$spp %in% "BEGCNT" & y$transect %in% z$transect[a]] & y$time < z$time[a]] = NA
+        y$spp[y$zkey %in% z$zkey[a]] = "WAYPNT"
       }
+#      if(z$spp[a] %in% "BEGCNT" & y$time[y$zkey %in% z$zkey[a]] > z$time[a]) {
+#
+#      }
       if(z$spp[a] %in% "ENDCNT" & y$time[y$zkey %in% z$zkey[a]] < z$time[a]) {
        y$offline[y$time > y$time[y$spp %in% "BEGCNT" & y$transect %in% z$transect[a]] &
                    y$time < z$time] = 0
        y$transect[y$time > y$time[y$spp %in% "BEGCNT" & y$transect %in% z$transect[a]] &
                    y$time < z$time] = as.character(z$transect[a])
-       y$spp[y$zkey %in% z$zkey] = "WAYPNT"
+       y$spp[y$zkey %in% z$zkey[a]] = "WAYPNT"
        }
     } ;     rm(a)
     }
@@ -231,6 +231,11 @@ if(all(as.character(x$date) %in% "2015-08-05")) {
   x$Comments[x$time>y$time[y$transect %in% "9to10" & y$spp %in% "ENDCNT"][1] & x$time<z$time] = "Changed to offline due to estimated effort"
   x$offline[x$time>y$time[y$transect %in% "9to10" & y$spp %in% "ENDCNT"][1] & x$time<z$time] = 1
   x$transect[x$time>y$time[y$transect %in% "9to10" & y$spp %in% "ENDCNT"][1] & x$time<z$time] = NA
+}
+if(all(as.character(x$date) %in% "2012-06-08")) {
+  # 16to15 ENDCNT: lists off-effort without an on-effort comment, no speed information to say when above 6 knots again. changed to comment
+  x$Comments[x$transect %in% "16to15" & x$spp %in% "ENDCNT"] = "off effort, below 6 knots; Changed from ENDCNT due to no recording of when on effort started again. Needs adressing"
+  x$spp[x$transect %in% "16to15" & x$spp %in% "ENDCNT"] = "COMMENT"
 }
 
 # then move start/stop from obs to track
