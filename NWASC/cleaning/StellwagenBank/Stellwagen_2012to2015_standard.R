@@ -103,9 +103,9 @@ ggplot(obs_standard,aes(Longitude,Latitude,col=as.character(transect)))+geom_poi
 # break by date
 #-----------------#
 rm(x,y,z)
-n = 13
+n = 16
 date.list =  unique(obs_standard$date)
-x = obs_standard[obs_standard$date %in% date.list[n],]
+x = obs_standard[obs_standard$date %in% date.list[n],] 
 y = track_standard[track_standard$date %in% date.list[n],]
 
 # remove duplicates (ID and time)
@@ -116,10 +116,10 @@ if(any(duplicated(x[,c("spp","time","count","Beaufort","animal_age_tx","Range","
 }
 
 # check for any existing effort from notes
-z = x %>% filter(spp %in% c("BEGCNT","ENDCNT"), !is.na(transect), !transect %in% c("11to13"))#, offline %in% 0)
+z = x %>% filter(spp %in% c("BEGCNT","ENDCNT"), !is.na(transect))
 if(dim(z)[1]>0){
   ggplot()+geom_point(data = y, aes(x=Longitude, y=Latitude),col="lightgrey")+
-  geom_point(data = z, aes(x=Longitude, y=Latitude),col="red")
+  geom_point(data = z, aes(x=Longitude, y=Latitude),col="red")+theme_bw()
 }
 
 #require(FNN)
@@ -193,37 +193,11 @@ y$offline[c(sum.nn$key[1]:sum.nn$key[2],sum.nn$key[3]:sum.nn$key[4],
 y$transect[y$offline %in% 0] = na.locf(y$transect[y$offline %in% 0])
 
 ggplot(y, aes(Longitude, Latitude, col=as.character(transect)))+
-  geom_point()+
+  geom_point()+theme_bw()+
   geom_point(data = x[x$offline %in% 0,], aes(x=Longitude, y = Latitude, col=as.character(transect)))
 
-# correct for real BEG/END points
-if(dim(z)[1]>0){
-  z$zkey = paste(z$spp, z$transect, sep = "_")
-  y$zkey = paste(y$spp, y$transect, sep = "_")
-  if(any(y$zkey %in% z$zkey)) {
-    for(a in seq(1:length(y$time[y$zkey %in% z$zkey]))) {
-      if(z$spp[a] %in% "BEGCNT" & y$time[y$zkey %in% z$zkey[a]] < z$time[a]) {
-        y$offline[y$time > y$time[y$spp %in% "BEGCNT" & y$transect %in% z$transect[a]] & y$time < z$time[a]] = 1
-        y$transect[y$time > y$time[y$spp %in% "BEGCNT" & y$transect %in% z$transect[a]] & y$time < z$time[a]] = NA
-        y$spp[y$zkey %in% z$zkey[a]] = "WAYPNT"
-      }
-#      if(z$spp[a] %in% "BEGCNT" & y$time[y$zkey %in% z$zkey[a]] > z$time[a]) {
-#
-#      }
-      if(z$spp[a] %in% "ENDCNT" & y$time[y$zkey %in% z$zkey[a]] < z$time[a]) {
-       y$offline[y$time > y$time[y$spp %in% "BEGCNT" & y$transect %in% z$transect[a]] &
-                   y$time < z$time] = 0
-       y$transect[y$time > y$time[y$spp %in% "BEGCNT" & y$transect %in% z$transect[a]] &
-                   y$time < z$time] = as.character(z$transect[a])
-       y$spp[y$zkey %in% z$zkey[a]] = "WAYPNT"
-       }
-    } ;     rm(a)
-    }
-  y = select(y, -zkey)
-}
-
 # specific fixes
-if(all(as.character(x$date) %in% "2015-08-05")) {
+if(any(as.character(z$date) %in% "2015-08-05" & z$transect %in% "9to10")) {
   y$spp[y$transect %in% "9to10" & y$time %in% "11:54:50"]="ENDCNT"
   y$Comments[y$transect %in% "9to10" & y$time %in% "11:54:50"]="Estimated effort"
   y$offline[y$time>y$time[y$transect %in% "9to10" & y$spp %in% "ENDCNT"][1] & y$time<z$time] = 1
@@ -232,11 +206,86 @@ if(all(as.character(x$date) %in% "2015-08-05")) {
   x$offline[x$time>y$time[y$transect %in% "9to10" & y$spp %in% "ENDCNT"][1] & x$time<z$time] = 1
   x$transect[x$time>y$time[y$transect %in% "9to10" & y$spp %in% "ENDCNT"][1] & x$time<z$time] = NA
 }
-if(all(as.character(x$date) %in% "2012-06-08")) {
+if(any(as.character(z$date) %in% "2012-06-08" & z$transect %in% "16to15" & z$spp %in% "ENDCNT")) {
   # 16to15 ENDCNT: lists off-effort without an on-effort comment, no speed information to say when above 6 knots again. changed to comment
   x$Comments[x$transect %in% "16to15" & x$spp %in% "ENDCNT"] = "off effort, below 6 knots; Changed from ENDCNT due to no recording of when on effort started again. Needs adressing"
   x$spp[x$transect %in% "16to15" & x$spp %in% "ENDCNT"] = "COMMENT"
+  z$spp[z$transect %in% "16to15" & z$spp %in% "ENDCNT"] = "COMMENT"
 }
+if(any(as.character(z$date) %in% "2012-08-09")){
+  y$offline[y$transect %in% "1to2" & y$time>"15:45:45" & y$time<"15:47:47"] = 1
+  y$transect[y$transect %in% "1to2" & y$time>"15:45:45" & y$time<"15:47:47"] = NA
+  x$offline[x$transect %in% "1to2" & x$time>"15:45:45" & x$time<"15:47:47"] = 1
+  x$transect[x$transect %in% "1to2" & x$time>"15:45:45" & x$time<"15:47:47"] = NA
+  z$spp[z$transect %in% "1to2" & z$time %in% c("15:45:45","15:47:47")] = NA
+  z$offline[z$transect %in% "1to2" & z$time %in% c("15:45:45","15:47:47")] = 0
+  
+  y$spp[y$transect %in% "16to15" & y$spp %in% "BEGCNT"] = "WAYPNT"
+  y$spp[y$transect %in% "16to15" & y$time %in% "11:39:55"] = "BEGCNT"
+  y$offline[y$transect %in% "16to15" & y$time < "11:39:55"] = 1
+  y$transect[y$transect %in% "16to15" & y$time < "11:39:55"] = NA
+  y$Comments[y$transect %in% "16to15" & y$time %in% "11:39:55"] = "Estimated effort"
+  z$spp[z$transect %in% "16to15" & z$spp %in% "ENDCNT" & z$time < "11:00:00"] = NA
+  x$spp[x$transect %in% "16to15" & x$spp %in% "ENDCNT" & x$time < "11:00:00"] = 1
+}
+
+off.list = c("2to4","3to5","6to8","7to9","10to12","11to13","14to16")
+if(any(x$transect %in% off.list)){
+  x$offline[x$transect %in% off.list] = 1
+  x$Comments = as.character(x$Comments)
+  x$Comments[x$transect %in% off.list] = ifelse(!is.na(x$Comments[x$transect %in% off.list]),
+                                                        paste(x$Comments[x$transect %in% off.list],
+                                                              "Changed to offline", sep = "; "),
+                                                        "Changed to offline")
+  #x$transect[x$transect %in% off.list] = NA
+  z$transect[z$transect %in% off.list] = NA
+}
+
+# correct for real BEG/END points
+if(dim(z)[1]>0){
+  z$zkey = paste(z$spp, z$transect, sep = "_")
+  y$zkey = paste(y$spp, y$transect, sep = "_")
+  if(any(y$zkey %in% z$zkey)) {
+    for(a in seq(1:length(y$time[y$zkey %in% z$zkey]))) {
+      if(any(z$spp[a] %in% "BEGCNT" & y$time[y$zkey %in% z$zkey[a]] < z$time[a])) {
+        y$offline[y$time > y$time[y$spp %in% "BEGCNT" & y$transect %in% z$transect[a]] & y$time < z$time[a]] = 1
+        y$transect[y$time > y$time[y$spp %in% "BEGCNT" & y$transect %in% z$transect[a]] & y$time < z$time[a]] = NA
+        y$offline[y$zkey %in% z$zkey[a]] = 1
+        y$transect[y$zkey %in% z$zkey[a]] = NA
+        y$spp[y$zkey %in% z$zkey[a]] = "WAYPNT"
+      }
+#      if(z$spp[a] %in% "BEGCNT" & y$time[y$zkey %in% z$zkey[a]] > z$time[a]) {
+#
+#      }
+      if(any(z$spp[a] %in% "ENDCNT" & y$time[y$zkey %in% z$zkey[a]] < z$time[a])) {
+       y$offline[y$time > y$time[y$spp %in% "BEGCNT" & y$transect %in% z$transect[a]] &
+                   y$time < z$time[a]] = 0
+       y$transect[y$time > y$time[y$spp %in% "BEGCNT" & y$transect %in% z$transect[a]] &
+                   y$time < z$time[a]] = as.character(z$transect[a])
+       y$offline[y$zkey %in% z$zkey[a]] = 1
+       y$transect[y$zkey %in% z$zkey[a]] = NA
+       y$spp[y$zkey %in% z$zkey[a]] = "WAYPNT"
+      }
+      if(any(z$spp[a] %in% "ENDCNT" & y$time[y$zkey %in% z$zkey[a]] > z$time[a])){
+        y$offline[y$time < y$time[y$spp %in% "ENDCNT" & y$transect %in% z$transect[a]] & y$time > z$time[a]] = 1
+        y$transect[y$time < y$time[y$spp %in% "ENDCNT" & y$transect %in% z$transect[a]] & y$time > z$time[a]] = NA
+        y$offline[y$zkey %in% z$zkey[a]] = 1
+        y$transect[y$zkey %in% z$zkey[a]] = NA
+        y$spp[y$zkey %in% z$zkey[a]] = "WAYPNT"
+      }
+    } ;     rm(a)
+    }
+  y = select(y, -zkey)
+}
+t = z$transect[a]
+ggplot(y[y$transect %in% t,], aes(Longitude, Latitude))+geom_point(col="lightgrey")+
+  theme_bw()+
+  geom_point(data = y[y$transect %in% t & y$spp %in% "BEGCNT",], aes(x=Longitude, y=Latitude), col="green")+
+  geom_point(data = y[y$transect %in% t & y$spp %in% "ENDCNT",], aes(x=Longitude, y=Latitude), col="red")+
+  geom_point(data = x[x$transect %in% t & x$offline %in% 0,], aes(x=Longitude, y=Latitude), col="blue")+
+  geom_point(data = x[x$transect %in% t & !x$offline %in% 0,], aes(x=Longitude, y=Latitude), col="tan")+  
+  geom_point(data = z[z$transect %in% t & z$spp %in% "BEGCNT",], aes(x=Longitude, y=Latitude), col="cyan")+
+  geom_point(data = z[z$transect %in% t & z$spp %in% "ENDCNT",], aes(x=Longitude, y=Latitude), col="magenta")
 
 # then move start/stop from obs to track
 x = mutate(x, offline = ifelse(spp %in% c("BEGCNT","ENDCNT") & !is.na(transect),0,offline))
@@ -268,8 +317,8 @@ for(a in seq(1:length(transect.list))) {
 
 ggplot(y, aes(Longitude, Latitude, col=as.character(transect)))+
   geom_point()+
-  geom_point(data = y[y$spp %in% "BEGCNT",], aes(x = Longitude, y = Latitude),  col = "green")+
-  geom_point(data = y[y$spp %in% "ENDCNT",], aes(x = Longitude, y = Latitude),  col = "red")+
+  geom_point(data = y[y$spp %in% "BEGCNT" & y$offline %in% 0,], aes(x = Longitude, y = Latitude),  col = "green")+
+  geom_point(data = y[y$spp %in% "ENDCNT" & y$offline %in% 0,], aes(x = Longitude, y = Latitude),  col = "red")+
   geom_point(data = x[x$offline %in% 0,], aes(Longitude, Latitude, col=as.character(transect)))+
   geom_point(data = x[!x$offline %in% 0,], aes(Longitude, Latitude),col="tan")+
   theme_bw()
