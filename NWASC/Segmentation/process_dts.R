@@ -6,7 +6,7 @@
 # v.spd sets assumed vessel speed in knots when vessel speed is missing
 # Calculates species counts by default; set occurences = TRUE for number of flock sightings
 
-# Distances are in nautical miles
+#  Distances are in nautical miles
 
 # Kyle Dettloff
 # Modified 09-30-16
