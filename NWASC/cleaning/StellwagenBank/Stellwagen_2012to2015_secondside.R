@@ -61,19 +61,27 @@ obs_ss = cbind(obs_ss, d$transect) %>%
 rm(d)
 
 ggplot(obs_ss,aes(Longitude,Latitude,col=as.character(transect)))+geom_point()+theme_bw()
+#-----------------#
+
+#-----------------#
+#-----------------#
 
 #-----------------#
 # break by date
 #-----------------#
 rm(x,y,z)
-n = 1
+n = 18
 date.list =  unique(obs_ss$date)
 x = obs_ss[obs_ss$date %in% date.list[n],] 
 y = track_ss[track_ss$date %in% date.list[n],]
 
-# remove duplicates (ID and time)
+ggplot(x,aes(Longitude,Latitude,col=as.character(transect)))+geom_point()+theme_bw()
+
+
+# remove duplicates (ID and time match)
 # check if they are valid first, or duplicated just for association
 x[duplicated(x[,c("spp","time","count","Beaufort","animal_age_tx","Range","Comments","Flight_Direction")]),]
+
 if(any(duplicated(x[,c("spp","time","count","Beaufort","animal_age_tx","Range","Comments","Flight_Direction")]))) {
   x = x[!duplicated(x[,c("spp","time","count","Beaufort","animal_age_tx","Range","Comments","Flight_Direction")]),]
 }
@@ -168,9 +176,34 @@ if(any(x$transect %in% off.list)){
   x$Comments[x$transect %in% off.list] = ifelse(!is.na(x$Comments[x$transect %in% off.list]),
                                                 paste(x$Comments[x$transect %in% off.list],
                                                       "Changed to offline", sep = "; "),
-                                                "Changed to offline")
+                                                "Changed to offline") 
   #x$transect[x$transect %in% off.list] = NA
   z$transect[z$transect %in% off.list] = NA
+}
+if(all(as.character(x$date) %in% "2012-08-09")){
+  y$transect[y$time > "15:45:40" & y$time < "15:47:20"] = NA
+  y$offline[y$time > "15:45:40" & y$time < "15:47:20"] = 1
+  x$transect[x$time > "15:45:40" & x$time < "15:47:20"] = NA
+  x$offline[x$time %in% c("15:45:40","15:47:20","15:55:00")] = 0
+  x$offline[x$time > "15:45:40" & x$time < "15:47:20"] = 1
+
+  
+  y$spp[y$transect %in% "1to2" & y$spp %in% "BEGCNT"] = "WAYPNT"
+  y$spp[y$transect %in% "13to14" & y$spp %in% "ENDCNT"] = "WAYPNT"
+  
+  z = filter(z, !time %in% c("15:45:40","15:47:20","12:47:05","15:34:50"))
+}
+
+if(all(as.character(x$date) %in% "2015-08-05")){
+  to.add = x[x$time %in% "10:12:09",] %>% 
+    mutate(spp = "BEGCNT",count=0,Range=NA,Bearing=NA,Flight_Height=NA,Flight_Direction=NA,
+           behavior_tx=NA,behavior=NA,age=NA,offline=0)
+  x = rbind(x,to.add); rm(to.add)
+  z = filter(z, !time %in% c("10:10:00"))
+}
+
+if(all(as.character(x$date) %in% "2015-09-28")){
+  y$time = format(strptime(paste(y$time, " PM",sep=""), format='%I:%M:%S %p'), '%H:%M:%S')
 }
 
 # correct for real BEG/END points
@@ -212,48 +245,59 @@ if(dim(z)[1]>0){
 t = z$transect[a]
 ggplot(y[y$transect %in% t,], aes(Longitude, Latitude))+geom_point(col="lightgrey")+
   theme_bw()+
-  geom_point(data = y[y$transect %in% t & y$spp %in% "BEGCNT",], aes(x=Longitude, y=Latitude), col="green")+
-  geom_point(data = y[y$transect %in% t & y$spp %in% "ENDCNT",], aes(x=Longitude, y=Latitude), col="red")+
+  geom_point(data = y[y$transect %in% t & y$spp %in% "BEGCNT",], aes(x=Longitude, y=Latitude), shape=7, col="green")+
+  geom_point(data = y[y$transect %in% t & y$spp %in% "ENDCNT",], aes(x=Longitude, y=Latitude), shape=7, col="red")+
   geom_point(data = x[x$transect %in% t & x$offline %in% 0,], aes(x=Longitude, y=Latitude), col="blue")+
-  geom_point(data = x[x$transect %in% t & !x$offline %in% 0,], aes(x=Longitude, y=Latitude), col="tan")+  
+  geom_point(data = x[x$transect %in% t & x$spp %in% "ENDCNT",], aes(x=Longitude, y=Latitude), shape = 3, col="indianred")+
+  geom_point(data = x[x$transect %in% t & x$spp %in% "BEGCNT",], aes(x=Longitude, y=Latitude), shape = 3, col="darkgreen")+
+  geom_point(data = x[x$transect %in% t & !x$offline %in% 0,], aes(x=Longitude, y=Latitude), shape=7, col="yellow")+
   geom_point(data = z[z$transect %in% t & z$spp %in% "BEGCNT",], aes(x=Longitude, y=Latitude), col="cyan")+
   geom_point(data = z[z$transect %in% t & z$spp %in% "ENDCNT",], aes(x=Longitude, y=Latitude), col="magenta")
 
+
+
+# fix unlabeled offline
+transect.list = as.character(unique(y$transect[!is.na(y$transect)]))
+x = x %>% mutate(offline = ifelse(transect %in% transect.list & is.na(offline),0,offline),
+                 offline = ifelse(!transect %in% transect.list & is.na(offline),1,offline))
+
 # then move start/stop from obs to track
-x = mutate(x, offline = ifelse(spp %in% c("BEGCNT","ENDCNT") & !is.na(transect),0,offline))
 y = bind_rows(y, filter(x, spp %in% c("BEGCNT","ENDCNT"))) %>% 
   arrange(time) %>%
   dplyr::select(Latitude, Longitude, date, time, spp, offline, transect,Comments)
-x = filter(x, !spp %in% c("BEGCNT","ENDCNT"))
+x = filter(x, !spp %in% c("BEGCNT","ENDCNT")) %>%
+  mutate(spp = ifelse(is.na(spp), "COMMENT", spp))
 
 # make sure there is an even number of BEG/END counts
 y %>% filter(spp %in% c("BEGCNT","ENDCNT")) %>% group_by(transect) %>% 
-  summarise(n=n()) %>% filter(!is.na(transect), n %% 2 !=0 )
+  summarise(n=n()) %>% filter(!is.na(transect), !transect %in% off.list, n %% 2 !=0 )
 
 # check for any on transect counts without a transect
 any(x$offline %in% 0 & is.na(x$transect))
 
+
 # relabel any points outside of BEG/END as offline
-transect.list = as.character(unique(y$transect[!is.na(y$transect)]))
 for(a in seq(1:length(transect.list))) {
   if(length(y$spp[y$transect %in% transect.list[a] & y$spp %in% c("BEGCNT","ENDCNT")])==2) { # dont want to run this with more than one end/beg point on the line
     if(any(x$transect %in% transect.list[a] & x$time > y$time[y$transect %in% transect.list[a] & y$spp %in% "ENDCNT"]|
            x$transect %in% transect.list[a] & x$time < y$time[y$transect %in% transect.list[a] & y$spp %in% "BEGCNT"])) {
-      x$offline[x$transect %in% transect.list[a] & x$time > y$time[y$transect %in% transect.list[a] & y$spp %in% "ENDCNT"]|
-                  x$transect %in% transect.list[a] & x$time < y$time[y$transect %in% transect.list[a] & y$spp %in% "BEGCNT"]] = 1
-      x$transect[x$transect %in% transect.list[a] & x$time > y$time[y$transect %in% transect.list[a] & y$spp %in% "ENDCNT"]|
-                   x$transect %in% transect.list[a] & x$time < y$time[y$transect %in% transect.list[a] & y$spp %in% "BEGCNT"]]= NA
+      x$offline[x$transect %in% transect.list[a] & x$time > y$time[y$transect %in% transect.list[a] & y$spp %in% "ENDCNT"]] = 1
+      x$offline[x$transect %in% transect.list[a] & x$time < y$time[y$transect %in% transect.list[a] & y$spp %in% "BEGCNT"]] = 1
+      x$transect[x$transect %in% transect.list[a] & x$time > y$time[y$transect %in% transect.list[a] & y$spp %in% "ENDCNT"]] = NA
+      x$transect[x$transect %in% transect.list[a] & x$time < y$time[y$transect %in% transect.list[a] & y$spp %in% "BEGCNT"]]= NA
     }
   }
 }
 
 ggplot(y, aes(Longitude, Latitude, col=as.character(transect)))+
   geom_point()+
-  geom_point(data = y[y$spp %in% "BEGCNT" & y$offline %in% 0,], aes(x = Longitude, y = Latitude),  col = "green")+
-  geom_point(data = y[y$spp %in% "ENDCNT" & y$offline %in% 0,], aes(x = Longitude, y = Latitude),  col = "red")+
+  geom_point(data = y[y$spp %in% "BEGCNT" & y$offline %in% 0,], aes(x = Longitude, y = Latitude),  shape = 7, col = "green")+
+  geom_point(data = y[y$spp %in% "ENDCNT" & y$offline %in% 0,], aes(x = Longitude, y = Latitude),  shape = 7, col = "red")+
   geom_point(data = x[x$offline %in% 0,], aes(Longitude, Latitude, col=as.character(transect)))+
   geom_point(data = x[!x$offline %in% 0,], aes(Longitude, Latitude),col="tan")+
   theme_bw()
+
+
 
 # export
 write.csv(x, paste(dir.out, "/ss_obs_", as.character(y$date[n]), sep=""))
