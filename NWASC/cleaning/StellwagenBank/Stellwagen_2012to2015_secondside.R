@@ -70,7 +70,7 @@ ggplot(obs_ss,aes(Longitude,Latitude,col=as.character(transect)))+geom_point()+t
 # break by date
 #-----------------#
 rm(x,y,z)
-n = 18
+n = 19
 date.list =  unique(obs_ss$date)
 x = obs_ss[obs_ss$date %in% date.list[n],] 
 y = track_ss[track_ss$date %in% date.list[n],]
@@ -91,6 +91,25 @@ z = x %>% filter(spp %in% c("BEGCNT","ENDCNT"), !is.na(transect))
 if(dim(z)[1]>0){
   ggplot()+geom_point(data = y, aes(x=Longitude, y=Latitude),col="lightgrey")+
     geom_point(data = z, aes(x=Longitude, y=Latitude),col="red")+theme_bw()
+}
+
+# specific time fixes
+if(all(as.character(x$date) %in% "2015-09-28")){
+  y$time = format(strptime(paste(y$time, " PM",sep=""), format='%I:%M:%S %p'), '%H:%M:%S')
+}
+if(all(as.character(x$date) %in% "2015-10-27")){
+  hr = sapply(strsplit(y$time,":"),head,1)
+  y$time = ifelse(hr %in% c("12","01","02","03","04"), 
+                  format(strptime(paste(y$time," PM",sep=""), format='%I:%M:%S %p'), '%H:%M:%S'),
+                  format(strptime(paste(y$time," AM",sep=""), format='%I:%M:%S %p'), '%H:%M:%S'))
+  y = y %>% arrange(time)
+}
+if(all(as.character(x$date) %in% "2015-12-26")){
+  hr = sapply(strsplit(y$time,":"),head,1)
+  y$time = ifelse(hr %in% c("12","01","02","03"), 
+                  format(strptime(paste(y$time," PM",sep=""), format='%I:%M:%S %p'), '%H:%M:%S'),
+                  format(strptime(paste(y$time," AM",sep=""), format='%I:%M:%S %p'), '%H:%M:%S'))
+  y = y %>% arrange(time)
 }
 
 #require(FNN)
@@ -168,7 +187,6 @@ ggplot(y, aes(Longitude, Latitude, col=as.character(transect)))+
   geom_point(data = x[x$offline %in% 0,], aes(x=Longitude, y = Latitude, col=as.character(transect)))
 
 # specific fixes
-
 off.list = c("2to4","3to5","6to8","7to9","10to12","11to13","14to16")
 if(any(x$transect %in% off.list)){
   x$offline[x$transect %in% off.list] = 1
@@ -202,9 +220,21 @@ if(all(as.character(x$date) %in% "2015-08-05")){
   z = filter(z, !time %in% c("10:10:00"))
 }
 
-if(all(as.character(x$date) %in% "2015-09-28")){
-  y$time = format(strptime(paste(y$time, " PM",sep=""), format='%I:%M:%S %p'), '%H:%M:%S')
+if(all(as.character(x$date) %in% "2015-10-27")){
+  z = filter(z, !time %in% c("10:30:23","10:36:09","10:47:40","10:50:49","10:53:00"))
+  x$spp[x$time %in% "10:53:00"]="COMMENT"
+  x$association[x$time %in% "11:09:48"] = "UNJA"
+  to.add = x[x$time %in% c("10:30:23","10:47:40"),]%>% 
+    mutate(spp = "BALN",offline=0)
+  x = rbind(x,to.add); rm(to.add)
 }
+
+if(all(as.character(x$date) %in% "2015-12-26")){
+  z = filter(z, !time %in% c("14:16:07","14:29:37"))
+  y$transect[y$time > "14:16:07" & y$time < "14:29:37"] = NA
+  y$offline[y$time > "14:16:07" & y$time < "14:29:37"] = 1
+}
+
 
 # correct for real BEG/END points
 if(dim(z)[1]>0){
@@ -291,8 +321,8 @@ for(a in seq(1:length(transect.list))) {
 
 ggplot(y, aes(Longitude, Latitude, col=as.character(transect)))+
   geom_point()+
-  geom_point(data = y[y$spp %in% "BEGCNT" & y$offline %in% 0,], aes(x = Longitude, y = Latitude),  shape = 7, col = "green")+
-  geom_point(data = y[y$spp %in% "ENDCNT" & y$offline %in% 0,], aes(x = Longitude, y = Latitude),  shape = 7, col = "red")+
+  geom_point(data = y[y$spp %in% "BEGCNT" & y$offline %in% 0,], aes(x = Longitude, y = Latitude), shape = 7, col = "green")+
+  geom_point(data = y[y$spp %in% "ENDCNT" & y$offline %in% 0,], aes(x = Longitude, y = Latitude), shape = 7, col = "red")+
   geom_point(data = x[x$offline %in% 0,], aes(Longitude, Latitude, col=as.character(transect)))+
   geom_point(data = x[!x$offline %in% 0,], aes(Longitude, Latitude),col="tan")+
   theme_bw()
