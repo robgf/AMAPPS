@@ -127,7 +127,8 @@ INSERT INTO lu_people([user_id], name, affiliation, active_status,work_email_onl
 	(76,'Scott Johnston','USFWS','active','scott_johnston@fws.gov'),
 	(77,'Randy Dettmers','USFWS','active','randy_dettmers@fws.gov'),
 	(78,'Jo Anna Lutmerding','USFWS','active','jo_lutmerding@fws.gov'),
-	(79,'Kaye London','USFWS','active','kaye_london@fws.gov');
+	(79,'Kaye London','USFWS','active','kaye_london@fws.gov'),
+	(80, 'Andrew Allyn','UMass','active',NULL);
 /* 
 update lu_people
 set name = 'Jo Anna Lutmerding'
@@ -1190,7 +1191,8 @@ INSERT INTO lu_parent_project(
 	aerial digital imagery to assess use by birds, marine mammals, turtles, and fish. This proactive 
 	study of potential impacts will facilitate a more efficient track to energy production offshore New 
 	York by providing the necessary information to meet the U.S. Bureau of Ocean Energy Management''s (BOEM''s) 
-	regulatory requirements for environmental review of WEAs.','https://remote.normandeau.com/nys_overview.php');
+	regulatory requirements for environmental review of WEAs.','https://remote.normandeau.com/nys_overview.php'),
+	(25,'GOMCES',,);
 
 /*  update lu_parent_project table */
 /*  update lu_parent_project
@@ -1654,8 +1656,14 @@ INSERT INTO dataset2(
 	(411,2,'AMAPPS_NOAA/NMFS_NEFSC_2017','b','cts','ot',300,300,5,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
 	(412,10,'EcoMonOct2017_GU1706','b','cts','ot',300,300,0,'no',NULL,16,'NOAA',NULL,1)
 -- 	(,21,'DeepwaterWindBlockIsland_bats',NULL,NULL,NULL,NULL,NULL,9,'no',NULL,65,'BOEM,TetraTech,Deepwater Wind RI',NULL,1),
+--  (4,25,'GOMCES 2014','b','cts','ot',NULL,NULL,0,'no',NULL,80,'USFWS, BRI, MDIFW',8,1),
+--  (4,25,'GOMCES 2015','b','cts','ot',NULL,NULL,0,'no',NULL,80,'USFWS, BRI, MDIFW',8,1),
+--  (4,25,'GOMCES 2016','b','cts','ot',NULL,NULL,0,'no',NULL,80,'USFWS, BRI, MDIFW',8,1),
 --	(,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2018','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
 --	(,2,'AMAPPS_NOAA/NMFS_NEFSCBoat2019','b','cts','ot',300,300,9,'yes','yes',52,'BOEM,USFWS,NOAA,NAVY',NULL,1),
+
+-- (dataset_id, parent_project, dataset_name, survey_type_cd, survey_method_cd, dataset_type_cd, whole_survey_width_m, individual_observer_survey_width_m,
+--	share_level_id, in_database, pooled_observations, responsible_party,sponsors,planned_speed_knots,version_nb)
 
 /*  update dataset table */
 /*    
@@ -1852,6 +1860,9 @@ INSERT INTO links_and_literature(
 	(51,116,NULL,'https://www.nefsc.noaa.gov/psb/AMAPPS/docs/NMFS_AMAPPS_2013_annual_report_FINAL3.pdf',NULL,NULL,NULL,NULL),
 	(52,409,NULL,'https://www.nefsc.noaa.gov/psb/AMAPPS/docs/Final_2010AnnualReportAMAPPS_19Apr2011.pdf',NULL,NULL,NULL,NULL),
 	(53,410,NULL,'https://www.nefsc.noaa.gov/psb/AMAPPS/docs/NMFS_AMAPPS_2012_annual_report_FINAL.pdf',NULL,NULL,NULL,NULL);
+--  (54,4__,NULL,'https://www.researchgate.net/publication/324274508_THE_GULF_OF_MAINE_COASTAL_ECOSYSTEM_SURVEY_PROJECT_END_REPORT',NULL,NULL,NULL,'10.13140/RG.2.2.14932.71045')
+--  (id, dataset_id, data_url, report, data_citation, publications, publication_url, publication_DOI)
+
 /*  update links_and_literature script template*/
 /*  update links_and_literature
 	set
@@ -2078,7 +2089,11 @@ INSERT INTO requests(
 	(21,'data',78,'all metadata on surveys',CAST('2018-01-16' AS DATE), 'not filled',NULL,NULL),
 	(22,'data',76,'all birds 3 miles out of Woods Hole in Jan-Feb.',CAST('2018-02-02' AS DATE), 'filled',CAST('2018-02-02' AS DATE),NULL),
 	(23,'data',79,'all BCPE geospatial data',CAST('2018-02-22' AS DATE),'filled',CAST('2018-02-26' AS DATE),NULL),
-	(24,'data',76,'all listed species for ES presentation',CAST('2018-02-22' AS DATE),'not filled',NULL,NULL);
+	(24,'service',79,'all BCPE data summarized',CAST('2018-02-22' AS DATE),'filled',CAST('2018-02-26' AS DATE),NULL),
+	(25,'data',76,'all listed species for ES presentation',CAST('2018-02-22' AS DATE),'not filled',NULL,NULL),
+	(26,'data',60,'flight heights for shorebirds',CAST('2018-04-12' AS DATE),'filled',CAST('2018-04-13' AS DATE),NULL),
+	(27,'data',60,'make boxplot for shorebird flight heights',CAST('2018-04-12' AS DATE),'filled',CAST('2018-04-13' AS DATE),NULL),
+	(28,'data',65,'all effort data',CAST('2018-04-30' AS DATE),'not filled',NULL,NULL);
 
 -- example: (id, type, person, description, CAST('req. date' AS DATE), status, CAST('date filled' AS DATE), notes);
 /*  update data_requests script template */  	
