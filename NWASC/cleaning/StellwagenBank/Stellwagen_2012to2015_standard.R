@@ -103,7 +103,7 @@ ggplot(obs_standard,aes(Longitude,Latitude,col=as.character(transect)))+geom_poi
 # break by date
 #-----------------#
 rm(x,y,z)
-n = 19 # 17 does not have a track to go with obs
+n = 17 # 17 does not have a track to go with obs
 date.list =  unique(obs_standard$date)
 x = obs_standard[obs_standard$date %in% date.list[n],] 
 y = track_standard[track_standard$date %in% date.list[n],]
@@ -127,7 +127,7 @@ if(dim(z)[1]>0){
 }
 
 #specific fixes
-if(all(as.character(x$date) %in% c("2015-10-27","2015-12-26"))){
+if(all(as.character(x$date) %in% c("2015-10-27","2015-12-26","2015-09-28"))){
   hr = sapply(strsplit(y$time,":"),head,1)
   y$time = ifelse(hr %in% c("12","01","02","03","04","05"), 
                   format(strptime(paste(y$time," PM",sep=""), format='%I:%M:%S %p'), '%H:%M:%S'),
@@ -135,10 +135,15 @@ if(all(as.character(x$date) %in% c("2015-10-27","2015-12-26"))){
   y = y %>% arrange(time)
 }
 
+
+
 #require(FNN)
 ref_lat_lon = cbind(trans$Latitude, trans$Longitude)
 latlon = cbind(y$Latitude, y$Longitude)
 nns <- get.knnx(ref_lat_lon, latlon, k=1) #k=10 produced the same matches so might as well k=1
+
+
+
 #nns returns a list with 1:nn.index (indices of the matched points) and 2:nn.dist (distances for each of those points)
 sum.nn = nns %>% as.data.frame() %>% 
   mutate(ID = seq(1:length(nn.dist))) %>%
@@ -192,6 +197,7 @@ sum.nn = nns %>% as.data.frame() %>%
   arrange(time)
 sum.nn
 
+
 # add spp to track
 #require(zoo)
 y = y %>% mutate(spp = "WAYPNT", transect = NA, offline = 1)
@@ -204,6 +210,22 @@ y$offline[c(sum.nn$key[1]:sum.nn$key[2],sum.nn$key[3]:sum.nn$key[4],
             sum.nn$key[9]:sum.nn$key[10],sum.nn$key[11]:sum.nn$key[12],
             sum.nn$key[13]:sum.nn$key[14],sum.nn$key[15]:sum.nn$key[16])]=0
 y$transect[y$offline %in% 0] = na.locf(y$transect[y$offline %in% 0])
+
+
+if(all(as.character(x$date) %in% "2013-09-20")){
+  transect.list=c("16to15", "13to14","12to11","9to10",
+                  "8to7", "5to6", "4to3", "1to2")  
+  y = x %>% 
+    filter(transect %in% transect.list) %>% 
+    arrange(transect, time) %>% 
+    group_by(transect) %>% 
+    filter(row_number()==1 | 
+             row_number()==n()) %>% 
+    mutate(spp = ifelse(row_number()==1,"BEGCNT","ENDCNT")) %>%
+    ungroup() %>% 
+    mutate(offline=0,Comment="estimated effort") %>%
+    select(-count,-Range,-animal_age_tx,-behavior_tx,-plumage_tx,-behavior,-age)
+}
 
 ggplot(y, aes(Longitude, Latitude, col=as.character(transect)))+
   geom_point()+theme_bw()+
