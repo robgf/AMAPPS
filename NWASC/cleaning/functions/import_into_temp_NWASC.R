@@ -28,10 +28,10 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   # load dataset descriptions
   # ------------------------ #
   db <- odbcConnectAccess2007("//ifw-hqfs1/MB SeaDuck/seabird_database/data_import/in_progress/NWASC_temp.accdb")
-  transects.in.db = sqlFetch(db, "transect")
-  tracks.in.db = sqlFetch(db, "track")
-  obs.in.db = sqlFetch(db, "observation")
-  camera.in.db = sqlFetch(db, "camera_effort")
+  transects.in.db = sqlQuery(db, paste("select * from transect"))
+  tracks.in.db = sqlQuery(db, paste("select * from track"))
+  obs.in.db = sqlQuery(db, paste("select * from observation"))
+  camera.in.db = sqlQuery(db, paste("select * from camera_effort"))
   
   db <- dbConnect(odbc::odbc(), driver='SQL Server',server='ifw-dbcsqlcl1', database='NWASC')
   data.in.db = dbGetQuery(db,"select * from dataset")
@@ -82,12 +82,19 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   
   # reformat, create, and/or rename
   data=as.data.frame(data)
-  if(any(colnames(data) %in% c("spp","type"))) {dat$spp_cd = data[,which(colnames(data) %in% c("spp","type"))]}
+  if(any(colnames(data) %in% c("spp","type","speciesid"))) {dat$spp_cd = data[,which(colnames(data) %in% c("spp","type","speciesid"))]}
+  if(any(colnames(data) %in% c("original.spp.codes"))) {dat$original_species_tx = data[,which(colnames(data) %in% c("original.spp.codes"))]}
   if(any(colnames(data) %in% c("beaufort"))) {dat$seastate_beaufort_nb = data[,which(colnames(data) %in% c("beaufort"))]}  
   if(any(colnames(data) %in% c("windspeed","wind.speed"))) {dat$wind_speed_tx = data[,which(colnames(data) %in% c("windspeed","wind.speed"))]}  
   if(any(colnames(data) %in% c("wind.direction"))) {dat$wind_dir_tx = data[,which(colnames(data) %in% c("wind.direction"))]}  
-  if(any(colnames(data) %in% c("index","id"))) {dat$source_obs_id = data[,which(colnames(data) %in% c("index","id"))]}
+  
+  if(any(colnames(data) %in% c("index","id"))) {
+    if(length(which(colnames(data) %in% c("index","id")))==1){
+      dat$source_obs_id = data[,which(colnames(data) %in% c("index","id"))]
+    }else print("STOP: There are two options for source ID, one needs to be chosen")
+    }
   if(all(is.na(dat$source_obs_id))) {dat$source_obs_id = 1:dim(data)[1]}
+  
   if(any(colnames(data) %in% c("transect"))) {dat$source_transect_id = data$transect}
   if(length(dat$source_transect_id)==0 & any(colnames(data) %in% c("offline")) & any(!colnames(data) %in% c("transect"))) {dat$source_transect_id[data$offline==0] = 1}
   if(any(colnames(data) %in% c("date","start_date","gps_date","obs_date","start_dt","gps_dt","obs_dt"))) {
@@ -110,15 +117,15 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
   if(any(colnames(data) %in% c("angle"))) {dat$angle_from_observer_nb = data[,which(colnames(data) %in% c("angle"))]}
   if(any(colnames(data) %in% c("distance","distdesc"))) {dat$distance_to_animal_tx = data[,which(colnames(data) %in% c("distance","distdesc"))]}
   if(any(colnames(data) %in% c("heading"))) {dat$heading_tx = data[,which(colnames(data) %in% c("heading"))]}
-  if(any(colnames(data) %in% c("sec","secs","seconds"))) {dat$seconds_from_midnight_nb = data[,which(colnames(data) %in% c("sec","secs","seconds"))]}
+  if(any(colnames(data) %in% c("sec","secs","seconds","time_secs"))) {dat$seconds_from_midnight_nb = data[,which(colnames(data) %in% c("sec","secs","seconds","time_secs"))]}
   if(any(colnames(data) %in% c("distance_to_animal"))) {dat$distance_to_animal_tx = data[,which(colnames(data) %in% c("distance_to_animal"))]}
   if(any(colnames(data) %in% c("travel_direction"))) {dat$travel_direction_tx = data[,which(colnames(data) %in% c("travel_direction"))]}
   if(any(colnames(data) %in% c("visibility"))) {dat$visibility_tx = data[,which(colnames(data) %in% c("visibility"))]}
   if(any(colnames(data) %in% c("flight_dir,flidir","fltdir"))) {dat$travel_direction_tx = data[,which(colnames(data) %in% c("flight_dir,flidir","fltdir"))]}
-  if(any(colnames(data) %in% c("lon", "long", "longitude"))) {dat$temp_lon = data[,which(colnames(data) %in% c("lon", "long", "longitude"))]} 
-  if(any(colnames(data) %in% c("lat", "latitude"))) {dat$temp_lat = data[,which(colnames(data) %in% c("lat", "latitude"))]}
+  if(any(colnames(data) %in% c("lon", "long", "longitude","longitude_dd"))) {dat$temp_lon = data[,which(colnames(data) %in% c("lon", "long", "longitude","longitude_dd"))]} 
+  if(any(colnames(data) %in% c("lat", "latitude","latitude_dd"))) {dat$temp_lat = data[,which(colnames(data) %in% c("lat", "latitude","latitude_dd"))]}
   if(any(colnames(data) %in% c("observer_confidence", "confidence"))) {dat$observer_confidence_tx = data[,which(colnames(data) %in% c("observer_confidence", "confidence"))]}
-  if(any(colnames(data) %in% c("observer", "observers"))) {dat$observer_tx = data[,which(colnames(data) %in% c("observer", "observers"))]}
+  if(any(colnames(data) %in% c("observer", "observers","obs"))) {dat$observer_tx = data[,which(colnames(data) %in% c("observer", "observers","obs"))]}
   if(any(colnames(data) %in% c("comments","comment"))) {dat$comments_tx = data[,which(colnames(data) %in% c("comments","comment"))]}
   if(any(colnames(data) %in% c("count","obs_count_general_nb","number","groupsize"))) {
     dat$obs_count_intrans_nb = data[,which(colnames(data) %in% c("count","obs_count_general_nb","number","groupsize"))]
@@ -190,7 +197,7 @@ import_into_temp_NWASC <- function(id, data, data_track, data_transect, data_cam
                        behavior_id = as.numeric(behavior_id),
                        age_id = as.numeric(age_id),
                        sex_id = as.numeric(sex_id))
-  rm(obs.in.db)
+  #rm(obs.in.db)
     # ------------------------ #
     
   
