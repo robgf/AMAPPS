@@ -82,9 +82,10 @@ if(any(!is.na(x$Effort))) {
   
   if(length(unique(x$Observer))>1){
     x$transect=NA
-    x$transect[x$Observer %in% unique(x$Observer)[1]]=1
-    x$transect[x$Observer %in% unique(x$Observer)[2]]=2
-  }
+    x$transect[x$Observer %in% unique(x$Observer)[1] & x$offline %in% 0]=1
+    x$transect[x$Observer %in% unique(x$Observer)[2] & x$offline %in% 0]=2
+    if(length(unique(x$Observer))>2){x$transect[x$Observer %in% unique(x$Observer)[3] & x$offline %in% 0]=3}
+  } else x$transect[x$offline %in% 0]=1
   
   y = x %>% mutate(spp = ifelse(spp %in% c("BEGCNT","ENDCNT"),spp,"WAYPNT")) %>% 
     select(ID, time, spp, Comments, date, Observer, Beaufort, Latitude, Longitude, 
@@ -93,14 +94,31 @@ if(any(!is.na(x$Effort))) {
            Comments = ifelse(spp %in% c("BEGCNT","ENDCNT"),Comments,NA)) 
   x = filter(x, !spp %in% c("BEGCNT","ENDCNT"))
   
+  if(all(!x$spp %in% c("BEGCNT","ENDCNT"))){
+    y = y %>% group_by(transect) %>%
+      arrange(time) %>% 
+      mutate(spp = replace(spp, row_number()==1,"BEGCNT"),
+             spp = replace(spp, row_number()==n(),"ENDCNT"),
+             spp = replace(spp, offline %in% 1, "WAYPNT")) %>% 
+      ungroup
+  }
+  
   ggplot()+
     geom_point(data = y[y$spp %in% "BEGCNT",], aes(x=Longitude, y=Latitude),col="green",shape=7,size=3)+
     geom_point(data = y[y$spp %in% "ENDCNT",], aes(x=Longitude, y=Latitude),col="red",shape=7,size=3)+
-    geom_point(data = y, aes(x=Longitude, y=Latitude, col=transect))+
+    geom_point(data = y, aes(x=Longitude, y=Latitude, col=as.character(transect)))+
     geom_point(data = y[y$offline %in% 1,], aes(x=Longitude, y=Latitude),col="lightgrey")+
-    theme_bw()+
-    theme(legend.position="none")
+    theme_bw()#+
+    #theme(legend.position="none")
+  
+  y = y %>% arrange(Observer,time)
 }
+
+# specific corrections
+if(n==1){
+  x$transect[x$Observer %in% unique(x$Observer)[1]]=1
+  x$transect[x$Observer %in% unique(x$Observer)[2]]=2}
+if(n==3){y$spp[109]="COMMENT"; y$offline[109]=1}
 
 # export
 write.csv(x, paste(dir.out, "/ww_obs_", as.character(x$date[n]), sep=""))
