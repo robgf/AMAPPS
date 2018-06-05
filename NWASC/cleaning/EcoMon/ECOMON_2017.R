@@ -12,6 +12,7 @@
 require(dplyr)
 require(readxl)
 require(odbc)
+require(zoo)
 # ------------ #
 
 
@@ -59,13 +60,13 @@ obs = mutate(obs,
              time = sapply(strsplit(sightdatetimelocal," "),tail,1)) %>% 
   dplyr::select(-sightdatetimelocal)
 
-effort = mutate(effort, 
-                date = as.Date(sapply(strsplit(datetimelocal," "),head,1),format="%d-%b-%y"), 
-                hour = substring(sapply(strsplit(datetimelocal," "),tail,2)[1],1,2),
+effort = effort %>% rowwise() %>% 
+  mutate(date = as.Date(sapply(strsplit(datetimelocal," "),head,1),format="%d-%b-%y"), 
+                hour = as.numeric(substring(sapply(strsplit(datetimelocal," "),tail,2)[1],1,2)),
                 min = substring(sapply(strsplit(datetimelocal," "),tail,2)[1],4,5),
                 sec = substring(sapply(strsplit(datetimelocal," "),tail,2)[1],7,8),
                 p = sapply(strsplit(datetimelocal," "),tail,1),
-                hour = ifelse(p %in% "PM" & !hour %in% "12",as.numeric(hour)+12,hour),
+                hour = ifelse(p %in% "PM" & !hour %in% "12", hour+12, hour),
                 time = paste(hour,min,sec,sep=":")) %>% 
   dplyr::select(-datetimelocal,-hour,-min,-sec,-p)
 # ------- #
@@ -101,14 +102,69 @@ obs = obs %>%
 # add type in effort
 # ------- #
 effort = mutate(effort, type = NA,
-                type = replace(type,event %in% 1,"BEGCNT"),
-                type = replace(type,event %in% 3,"ENDCNT"),
-                offline = ifelse(effort %in% 'off',1,0))
+                type =ifelse(event %in% 1,"BEGCNT",ifelse(event %in% 3,"ENDCNT","WAYPNT")))
 # ------- #
 
 # ------- #
 # assign transect ids and effort to obs
 # ------- #
+# check that there are BEG and ENDs for all 
+effort %>% filter(type %in% c("BEGCNT","ENDCNT")) %>% 
+  arrange(date, time, transect) %>% 
+  group_by(tripid,transect) %>% 
+  summarise(count = n()) %>% 
+  filter(count %% 2!=0)
+
+# combine and assign
+obstrack = bind_rows(obs,effort) %>% 
+  arrange(tripid,date,time)  
+  
+# fix those with odd efforts
+# x = effort[effort$tripid %in% "GU1702" & effort$transect %in% 83,] %>% 
+#   mutate(type = ifelse(type %in% "WAYPNT","W",type)) %>% arrange(time)
+
+#GU1701    69.0   
+effort$type[effort$tripid %in% "GU1701" & effort$transect %in% 69 & effort$time %in% "13:44:14"] = "BEGCNT"
+effort$comments[effort$tripid %in% "GU1701" & effort$transect %in% 69 & effort$time %in% "13:44:14"] = "Added BEGCNT based on effort"
+#GU1701    70.0     
+effort$type[effort$tripid %in% "GU1701" & effort$transect %in% 70 & effort$time %in% "17:32:39"][2] = "COMMENT"
+effort$comments[effort$tripid %in% "GU1701" & effort$transect %in% 70 & effort$time %in% "17:32:39"][2] = "Changed to comment based on effort"
+#GU1702     4.00    
+effort$type[effort$tripid %in% "GU1702" & effort$transect %in% 4 & effort$time %in% "18:45:16"] = "ENDCNT"
+effort$comments[effort$tripid %in% "GU1702" & effort$transect %in% 4 & effort$time %in% "18:45:16"] = "Added ENDCNT based on effort"
+#GU1702     8.00
+# one have one BEG???
+effort$type[effort$tripid %in% "GU1702" & effort$transect %in% 4 & effort$time %in% "6:45:45"] = "COMMENT"
+effort$comments[effort$tripid %in% "GU1702" & effort$transect %in% 4 & effort$time %in% "6:45:45"] = "changed to COMMENT based on effort"
+#GU1702     9.00     
+effort$type[effort$tripid %in% "GU1702" & effort$transect %in% 9 & effort$time %in% "7:44:01"] = "BEGCNT"
+effort$comments[effort$tripid %in% "GU1702" & effort$transect %in% 9 & effort$time %in% "7:44:01"] = "Added BEGCNT based on effort"
+#GU1702    11.0      
+effort$type[effort$tripid %in% "GU1702" & effort$transect %in% 11 & effort$time %in% "12:10:42"] = "BEGCNT"
+effort$comments[effort$tripid %in% "GU1702" & effort$transect %in% 11 & effort$time %in% "12:10:42"] = "Added BEGCNT based on effort"
+#GU1702    12.0    
+effort$type[effort$tripid %in% "GU1702" & effort$transect %in% 12 & effort$time %in% "18:10:17"] = "ENDCNT"
+effort$comments[effort$tripid %in% "GU1702" & effort$transect %in% 12 & effort$time %in% "18:10:17"] = "Added ENDCNT based on effort"
+#GU1702    35.0     
+effort$type[effort$tripid %in% "GU1702" & effort$transect %in% 35 & effort$time %in% "18:48:28"] = "ENDCNT"
+effort$comments[effort$tripid %in% "GU1702" & effort$transect %in% 35 & effort$time %in% "18:48:28"] = "Added ENDCNT based on effort"
+#GU1702    83.0     
+effort$type[effort$tripid %in% "GU1702" & effort$transect %in% 83 & effort$time %in% "8:35:22"] = "ENDCNT"
+effort$comments[effort$tripid %in% "GU1702" & effort$transect %in% 83 & effort$time %in% "8:35:22"] = "Added ENDCNT based on effort"
+
+#
+obstrack = obstrack %>% 
+  mutate(newId = seq(1:length(id)), effort = ifelse(newId %in% 1:3,"off",effort)) # because can't start off effort with na.locf
+obstrack$effort = na.locf(obstrack$effort)
+obstrack$transect[obstrack$effort %in% "on"] = na.locf(obstrack$transect[obstrack$effort %in% "on"])
+obstrack$effort[obstrack$type %in% c('BEGCNT','ENDCNT')] = "on"
+obstrack$transect[obstrack$effort %in% "off"] = NA
+obstrack$offline = ifelse(obstrack$effort %in% "off",1,0)
+
+# pull obstrack apart
+rm(obs,effort)
+obs = obstrack[!obstrack$type %in% c("BEGCNT","ENDCNT","WAYPNT"),]
+effort = obstrack[obstrack$type %in% c("BEGCNT","ENDCNT","WAYPNT"),]
 # ------- #
 
 # ------------ #
@@ -148,3 +204,16 @@ write.csv(effort1, paste(dir.out,"GU1701_effort.csv",sep="/"))
 write.csv(effort2, paste(dir.out,"GU1702_effort.csv",sep="/"))
 write.csv(effort6, paste(dir.out,"GU1706_effort.csv",sep="/"))
 # ------------ #
+
+# test plot
+transect.list = sort(unique(effort1$transect))
+
+n = c(1:5)
+
+ggplot(effort1[effort1$transect %in% transect.list[n],],aes(lon,lat,col=as.character(transect)))+geom_point()+
+  geom_point(data=effort1[effort1$transect %in% transect.list[n] & effort1$type %in% "BEGCNT",], aes(x=lon, y=lat),col="darkgreen",size=3,shape=7)+
+  geom_point(data=effort1[effort1$transect %in% transect.list[n] & effort1$type %in% "ENDCNT",], aes(x=lon, y=lat),col="red",size=3,shape=9)+
+  theme_bw()+
+  geom_point(data=obs1[obs1$transect %in% transect.list[n] & obs1$offline %in% 0,],aes(x=lon,y=lat,col=as.character(transect)),shape=3,size=3)+
+  geom_point(data=obs1[obs1$transect %in% transect.list[n] & !obs1$offline %in% 0,],aes(x=lon,y=lat),shape=3,size=3,col="grey")
+
